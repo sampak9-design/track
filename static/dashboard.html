@@ -650,6 +650,42 @@
         <div class="integ-block">
           <div class="integ-block-header">
             <div class="integ-block-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              Parâmetros UTM — Facebook Ads
+            </div>
+          </div>
+          <p class="integ-desc">Adicione estes parâmetros na URL de destino dos seus anúncios para rastrear a origem dos cadastros e depósitos.</p>
+
+          <div class="webhook-row">
+            <div class="webhook-label-row">Parâmetros dinâmicos (Facebook preenche automaticamente)</div>
+            <div class="webhook-url-box">
+              <span class="webhook-url-text" id="utm-params-dinamicos">utm_source=facebook&utm_medium={{placement}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{adset.name}}</span>
+              <button class="btn-copy" onclick="copiarTexto('utm-params-dinamicos', this)">Copiar</button>
+            </div>
+          </div>
+
+          <div class="webhook-row" style="margin-top:10px">
+            <div class="webhook-label-row">URL completa de exemplo</div>
+            <div class="webhook-url-box">
+              <span class="webhook-url-text" id="utm-url-exemplo">https://sua-plataforma.com/register?utm_source=facebook&utm_medium={{placement}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}</span>
+              <button class="btn-copy" onclick="copiarTexto('utm-url-exemplo', this)">Copiar</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Como usar</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#6b7280;line-height:1.6">
+              <div>1. Copie os <span style="color:#c9d1e0">parâmetros dinâmicos</span> acima</div>
+              <div>2. No Gerenciador de Anúncios → edite o anúncio → <span style="color:#c9d1e0">URL do site</span></div>
+              <div>3. Cole após a URL da sua plataforma: <span style="color:#4f6ef7;font-family:'Courier New',monospace">https://plataforma.com/register?<em>parâmetros aqui</em></span></div>
+              <div>4. O Facebook substituirá automaticamente os valores <span style="color:#f59e0b">{"{{"}campo{"}}"}</span> ao exibir o anúncio</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="integ-block">
+          <div class="integ-block-header">
+            <div class="integ-block-title">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               Meta Pixel — Conversions API
             </div>
@@ -1152,6 +1188,15 @@
 
   // ── Copiar ──
   function copiar(id, btn) {
+    const txt = document.getElementById(id).textContent.trim();
+    navigator.clipboard.writeText(txt).then(() => {
+      btn.textContent = "✓ Copiado";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+
+  function copiarTexto(id, btn) {
     const txt = document.getElementById(id).textContent.trim();
     navigator.clipboard.writeText(txt).then(() => {
       btn.textContent = "✓ Copiado";
