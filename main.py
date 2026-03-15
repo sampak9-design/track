@@ -130,7 +130,7 @@ async def cadastro(request: Request):
     if not result.data:
         raise HTTPException(status_code=500, detail="Erro ao salvar cadastro")
 
-    await enviar_meta("Lead", email=registro["email"], phone=registro["telefone"])
+    await enviar_meta("track_cadastro", email=registro["email"], phone=registro["telefone"])
 
     print(f"[CADASTRO] {registro['email']} salvo")
     return {"status": "ok", "id": result.data[0]["id"]}
