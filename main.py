@@ -120,11 +120,18 @@ async def cadastro(request: Request):
     data = await request.json()
     print(f"[CADASTRO PAYLOAD] {data}")
 
+    inner = data.get("data") or data
+    utm   = inner.get("utm") or {}
+
     registro = {
-        "nome":     data.get("nome"),
-        "email":    data.get("email"),
-        "telefone": data.get("telefone"),
-        **extrair_utms(data),
+        "nome":     (inner.get("firstName","") + " " + inner.get("lastName","")).strip() or inner.get("nome"),
+        "email":    inner.get("email")    or data.get("email"),
+        "telefone": inner.get("phone")    or inner.get("telefone") or data.get("telefone"),
+        "utm_source":   utm.get("source")   or data.get("utm_source"),
+        "utm_medium":   utm.get("medium")   or data.get("utm_medium"),
+        "utm_campaign": utm.get("campaign") or data.get("utm_campaign"),
+        "utm_content":  utm.get("content")  or data.get("utm_content"),
+        "utm_term":     utm.get("term")     or data.get("utm_term"),
     }
 
     result = db.table("cadastros").insert(registro).execute()
