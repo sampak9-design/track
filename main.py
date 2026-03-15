@@ -118,6 +118,7 @@ async def salvar_config_meta(request: Request):
 @app.post("/cadastro")
 async def cadastro(request: Request):
     data = await request.json()
+    print(f"[CADASTRO PAYLOAD] {data}")
 
     registro = {
         "nome":     data.get("nome"),
@@ -139,6 +140,7 @@ async def cadastro(request: Request):
 @app.post("/deposito")
 async def deposito(request: Request):
     data = await request.json()
+    print(f"[DEPOSITO PAYLOAD] {data}")
 
     registro = {
         "email": data.get("email"),
