@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tracker — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; font-size: 13px; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 3px; }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 210px; min-width: 210px;
+      background: #13151f;
+      border-right: 1px solid #1e2235;
+      display: flex; flex-direction: column;
+    }
+    .sidebar-logo {
+      padding: 18px 16px 14px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid #1e2235;
+    }
+    .logo-icon {
+      width: 28px; height: 28px; background: #4f6ef7;
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+    }
+    .logo-text { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; letter-spacing: -0.3px; }
+
+    .nav-section { padding: 10px 0 4px; }
+    .nav-label { padding: 6px 16px 4px; font-size: 0.68rem; color: #3d4466; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 16px; cursor: pointer;
+      color: #6b7280; font-size: 0.82rem; font-weight: 500;
+      transition: all 0.12s; position: relative;
+      border-radius: 0;
+    }
+    .nav-item:hover { color: #c9d1e0; background: #191c2d; }
+    .nav-item.ativo { color: #fff; background: #1e2235; }
+    .nav-item.ativo::before {
+      content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+      width: 3px; background: #4f6ef7; border-radius: 0 3px 3px 0;
+    }
+    .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+    .nav-item.ativo svg { opacity: 1; }
+    .nav-badge {
+      margin-left: auto; background: #ef4444; color: white;
+      font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 10px;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto; padding: 12px;
+      border-top: 1px solid #1e2235;
+    }
+    .user-row {
+      display: flex; align-items: center; gap: 9px; padding: 8px 6px;
+      cursor: pointer; border-radius: 8px; transition: background 0.12s;
+    }
+    .user-row:hover { background: #191c2d; }
+    .avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #4f6ef7, #7c3aed);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: white; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 0.7rem; color: #6b7280; }
+
+    /* ─── MAIN ─── */
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-width: 0; }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: #13151f; border-bottom: 1px solid #1e2235;
+      padding: 0 24px; height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .topbar-breadcrumb { font-size: 0.78rem; color: #4a5568; }
+    .topbar-title { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
+    .topbar-sep { color: #2d3148; margin: 0 4px; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+    .topbar-icon-btn {
+      background: none; border: 1px solid #1e2235; color: #6b7280;
+      width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      transition: all 0.12s;
+    }
+    .topbar-icon-btn:hover { border-color: #4f6ef7; color: #4f6ef7; background: #1a1d2e; }
+    .btn-atualizar {
+      background: #4f6ef7; color: white; border: none;
+      padding: 7px 16px; border-radius: 7px; cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; letter-spacing: 0.2px; font-family: inherit;
+      transition: background 0.12s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-atualizar:hover { background: #3d5ce5; }
+    .btn-atualizar.loading { opacity: 0.7; cursor: default; }
+    .update-info { font-size: 0.72rem; color: #4a5568; }
+
+    /* ─── FILTER BAR ─── */
+    .filter-bar {
+      background: #13151f; border-bottom: 1px solid #1e2235;
+      padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 3px; }
+    .filter-label { font-size: 0.68rem; color: #4a5568; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-select {
+      background: #0f1117; border: 1px solid #1e2235; color: #c9d1e0;
+      padding: 6px 28px 6px 10px; border-radius: 7px; font-size: 0.8rem;
+      font-family: inherit; cursor: pointer; outline: none; min-width: 130px;
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      transition: border-color 0.12s;
+    }
+    .filter-select:focus, .filter-select:hover { border-color: #2d3a6e; }
+
+    /* ─── CONTENT ─── */
+    .content { padding: 20px 24px; flex: 1; }
+    .secao { display: none; }
+    .secao.visivel { display: block; }
+
+    /* ─── METRIC CARDS ─── */
+    .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .metric-card {
+      background: #13151f; border: 1px solid #1e2235;
+      border-radius: 10px; padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: border-color 0.15s;
+    }
+    .metric-card:hover { border-color: #2d3a6e; }
+    .metric-header { display: flex; align-items: center; justify-content: space-between; }
+    .metric-label { font-size: 0.75rem; color: #6b7280; font-weight: 500; }
+    .metric-info { color: #3d4466; cursor: help; font-size: 12px; }
+    .metric-value { font-size: 1.65rem; font-weight: 700; line-height: 1; letter-spacing: -0.5px; }
+    .metric-sub { font-size: 0.72rem; color: #4a5568; display: flex; align-items: center; gap: 4px; }
+    .metric-sub .up { color: #22c55e; }
+    .metric-sub .down { color: #ef4444; }
+    .c-green { color: #22c55e; }
+    .c-blue { color: #4f6ef7; }
+    .c-purple { color: #a855f7; }
+    .c-yellow { color: #f59e0b; }
+    .c-white { color: #e2e8f0; }
+    .c-red { color: #ef4444; }
+
+    /* ─── ROW 2 CARDS ─── */
+    .cards-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+
+    /* ─── PANEL ─── */
+    .panel {
+      background: #13151f; border: 1px solid #1e2235;
+      border-radius: 10px; padding: 18px 20px; margin-bottom: 16px;
+    }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .panel-title { font-size: 0.82rem; font-weight: 600; color: #c9d1e0; }
+    .panel-subtitle { font-size: 0.72rem; color: #4a5568; margin-top: 2px; }
+    .panel-action { font-size: 0.75rem; color: #4f6ef7; cursor: pointer; background: none; border: none; font-family: inherit; }
+    .panel-action:hover { text-decoration: underline; }
+
+    /* ─── FUNIL ─── */
+    .funil { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .funil-col {
+      padding: 16px 12px; border-right: 1px solid #1e2235; position: relative;
+    }
+    .funil-col:last-child { border-right: none; }
+    .funil-col-label { font-size: 0.72rem; color: #6b7280; font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .funil-pct-bar { height: 4px; background: #1e2235; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
+    .funil-pct-fill { height: 100%; background: #4f6ef7; border-radius: 2px; transition: width 0.6s ease; }
+    .funil-num { font-size: 1.4rem; font-weight: 700; color: #e2e8f0; line-height: 1; margin-bottom: 4px; }
+    .funil-pct-text { font-size: 0.72rem; color: #22c55e; font-weight: 600; }
+    .funil-pct-text.zero { color: #4a5568; }
+    .funil-arrow-badge {
+      position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+      background: #1e2235; border: 1px solid #2d3148;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #6b7280; font-size: 10px; z-index: 1;
+    }
+
+    /* ─── GRID COLS ─── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .grid-60-40 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; margin-bottom: 16px; }
+    @media (max-width: 1100px) { .grid-2, .grid-60-40, .grid-3, .cards-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px) { .grid-2, .grid-60-40, .grid-3, .cards-grid { grid-template-columns: 1fr; } }
+
+    canvas { max-height: 200px; }
+
+    /* ─── TABELA ─── */
+    .tabela-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 1px solid #1e2235; }
+    th { text-align: left; padding: 8px 12px; color: #4a5568; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    td { padding: 10px 12px; color: #c9d1e0; font-size: 0.8rem; border-bottom: 1px solid #131520; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #191c2d; }
+    .empty-state { text-align: center; padding: 40px; color: #3d4466; }
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.82rem; }
+
+    /* ─── BADGES ─── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+    .badge-blue { background: #1a2a5e; color: #60a5fa; }
+    .badge-green { background: #14291e; color: #22c55e; }
+    .badge-purple { background: #2a1a4e; color: #c084fc; }
+    .badge-yellow { background: #2a1f0e; color: #fbbf24; }
+    .badge-gray { background: #1e2235; color: #6b7280; }
+    .badge-red { background: #2a1118; color: #f87171; }
+
+    /* ─── SEARCH BAR ─── */
+    .search-bar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .search-input-wrap {
+      position: relative; flex: 1; min-width: 200px;
+    }
+    .search-input-wrap .s-icon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      color: #4a5568; font-size: 13px; pointer-events: none;
+    }
+    .search-input {
+      width: 100%; background: #13151f; border: 1px solid #1e2235;
+      border-radius: 7px; padding: 7px 12px 7px 32px;
+      color: #e2e8f0; font-size: 0.8rem; font-family: inherit; outline: none;
+    }
+    .search-input:focus { border-color: #4f6ef7; }
+    .search-count { font-size: 0.75rem; color: #4a5568; white-space: nowrap; }
+
+    /* ─── INTEGRAÇÕES ─── */
+    .integ-section { max-width: 680px; }
+    .integ-block {
+      background: #13151f; border: 1px solid #1e2235;
+      border-radius: 10px; padding: 20px 22px; margin-bottom: 14px;
+    }
+    .integ-block-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .integ-block-title { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    .integ-status { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e66; }
+    .dot-gray { background: #4a5568; }
+    .integ-desc { font-size: 0.78rem; color: #4a5568; margin-bottom: 16px; line-height: 1.5; }
+    .webhook-row { margin-bottom: 10px; }
+    .webhook-label-row { font-size: 0.72rem; color: #6b7280; font-weight: 500; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .webhook-url-box {
+      background: #0f1117; border: 1px solid #1e2235; border-radius: 7px;
+      padding: 9px 12px; font-size: 0.78rem; color: #4f6ef7;
+      font-family: 'Courier New', monospace;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .webhook-url-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-copy {
+      background: #1e2235; color: #c9d1e0; border: none;
+      padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.72rem;
+      font-family: inherit; font-weight: 500; flex-shrink: 0; transition: all 0.12s;
+    }
+    .btn-copy:hover { background: #2d3148; }
+    .btn-copy.copied { background: #14291e; color: #22c55e; }
+    .pixel-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .pixel-field { background: #0f1117; border: 1px solid #1e2235; border-radius: 7px; padding: 9px 12px; }
+    .pixel-field-label { font-size: 0.68rem; color: #4a5568; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pixel-field-value { font-size: 0.82rem; color: #c9d1e0; font-weight: 500; }
+
+    /* ─── CHART LEGEND ─── */
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #6b7280; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ─── MINI STAT ROW ─── */
+    .stat-row { display: flex; flex-direction: column; gap: 8px; }
+    .stat-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #131520; }
+    .stat-item:last-child { border-bottom: none; }
+    .stat-name { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #c9d1e0; }
+    .stat-bar-wrap { flex: 1; margin: 0 12px; height: 4px; background: #1e2235; border-radius: 2px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 2px; background: #4f6ef7; }
+    .stat-val { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; min-width: 30px; text-align: right; }
+
+    /* ─── TOOLTIP ─── */
+    .tooltip-wrap { position: relative; display: inline-block; }
+    .tooltip-wrap:hover .tooltip-box { opacity: 1; pointer-events: auto; }
+    .tooltip-box {
+      position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: #1e2235; border: 1px solid #2d3148; border-radius: 6px;
+      padding: 6px 10px; font-size: 0.72rem; color: #c9d1e0; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Tracker</span>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item ativo" onclick="mudarSecao('resumo',this)" id="nav-resumo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Resumo
+    </div>
+    <div class="nav-item" onclick="mudarSecao('cadastros',this)" id="nav-cadastros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Cadastros
+    </div>
+    <div class="nav-item" onclick="mudarSecao('depositos',this)" id="nav-depositos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Depósitos
+    </div>
+    <div class="nav-item" onclick="mudarSecao('utms',this)" id="nav-utms">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      UTMs
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Configuração</div>
+    <div class="nav-item" onclick="mudarSecao('integracoes',this)" id="nav-integracoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Integrações
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-row" onclick="sair()">
+      <div class="avatar" id="user-avatar">U</div>
+      <div class="user-info">
+        <div class="user-name" id="user-email-disp">Usuário</div>
+        <div class="user-role">Sair da conta</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-breadcrumb">Dashboard</span>
+      <span class="topbar-sep">—</span>
+      <span class="topbar-title" id="titulo-pagina">Principal</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="update-info" id="update-time"></span>
+      <button class="btn-atualizar" id="btn-att" onclick="carregar()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Atualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Período de Visualização</span>
+      <select class="filter-select" id="periodo" onchange="carregar()">
+        <option value="hoje">Hoje</option>
+        <option value="7d">Últimos 7 dias</option>
+        <option value="30d" selected>Últimos 30 dias</option>
+        <option value="tudo">Todo o período</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Fonte de Tráfego</span>
+      <select class="filter-select" id="filtro-source" onchange="aplicarFiltros()">
+        <option value="">Qualquer</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Campanha</span>
+      <select class="filter-select" id="filtro-campaign" onchange="aplicarFiltros()">
+        <option value="">Qualquer</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ RESUMO ════ -->
+    <div class="secao visivel" id="sec-resumo">
+
+      <!-- Cards principais -->
+      <div class="cards-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Total Depositado</span>
+            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Soma de todos os depósitos no período</span></span>
+          </div>
+          <div class="metric-value c-green" id="r-total-dep">R$ 0,00</div>
+          <div class="metric-sub" id="r-dep-hoje"><span>0 hoje</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Cadastros</span>
+            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Total de leads cadastrados</span></span>
+          </div>
+          <div class="metric-value c-blue" id="r-cadastros">0</div>
+          <div class="metric-sub" id="r-cad-sub"><span>0 hoje</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">FTDs</span>
+            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Primeiros depósitos únicos por email</span></span>
+          </div>
+          <div class="metric-value c-purple" id="r-ftds">0</div>
+          <div class="metric-sub" id="r-ftd-sub"><span class="up" id="r-ftd-taxa">0%</span> de conversão</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Depósitos</span>
+            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Total de transações de depósito</span></span>
+          </div>
+          <div class="metric-value c-yellow" id="r-depositos">0</div>
+          <div class="metric-sub" id="r-dep-sub"><span>Ticket médio: <strong id="r-ticket">R$ 0</strong></span></div>
+        </div>
+      </div>
+
+      <!-- Cards secundários -->
+      <div class="cards-grid-3">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Taxa Cad → FTD</span></div>
+          <div class="metric-value c-white" id="r-taxa-ftd">0%</div>
+          <div class="metric-sub">Cadastros que depositaram</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Taxa FTD → Recorrente</span></div>
+          <div class="metric-value c-white" id="r-taxa-rec">0%</div>
+          <div class="metric-sub">FTDs com depósito repetido</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Depósitos Recorrentes</span></div>
+          <div class="metric-value c-white" id="r-recorrentes">0</div>
+          <div class="metric-sub">Não são primeiro depósito</div>
+        </div>
+      </div>
+
+      <!-- Funil -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Funil de Conversão</div>
+            <div class="panel-subtitle">Acompanhe a jornada do lead até o depósito</div>
+          </div>
+        </div>
+        <div class="funil">
+          <div class="funil-col">
+            <div class="funil-col-label">Cadastros</div>
+            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-cad" style="width:100%"></div></div>
+            <div class="funil-num" id="f-cadastros">0</div>
+            <div class="funil-pct-text">100%</div>
+            <div class="funil-arrow-badge">›</div>
+          </div>
+          <div class="funil-col">
+            <div class="funil-col-label">FTDs</div>
+            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-ftd" style="width:0%"></div></div>
+            <div class="funil-num" id="f-ftds">0</div>
+            <div class="funil-pct-text zero" id="f-ftd-pct">0%</div>
+            <div class="funil-arrow-badge">›</div>
+          </div>
+          <div class="funil-col">
+            <div class="funil-col-label">Total Depósitos</div>
+            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-dep" style="width:0%"></div></div>
+            <div class="funil-num" id="f-depositos">0</div>
+            <div class="funil-pct-text zero" id="f-dep-pct">0%</div>
+            <div class="funil-arrow-badge">›</div>
+          </div>
+          <div class="funil-col">
+            <div class="funil-col-label">Valor Total</div>
+            <div class="funil-pct-bar"><div class="funil-pct-fill" style="width:100%;background:#22c55e"></div></div>
+            <div class="funil-num c-green" id="f-valor" style="font-size:1.1rem;margin-top:4px">R$ 0</div>
+            <div class="funil-pct-text" id="f-ticket" style="color:#4a5568">ticket: R$ 0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="grid-60-40">
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header">
+            <div class="panel-title">Cadastros por Origem</div>
+          </div>
+          <div id="no-cad-source" class="empty-state" style="display:none;padding:20px 0">
+            <div class="empty-icon">📊</div><p>Sem dados de UTM ainda</p>
+          </div>
+          <canvas id="g-source-cad"></canvas>
+        </div>
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header">
+            <div class="panel-title">Tipo de Depósito</div>
+          </div>
+          <canvas id="g-dep-tipo"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════ CADASTROS ════ -->
+    <div class="secao" id="sec-cadastros">
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="s-icon">🔍</span>
+          <input class="search-input" type="text" id="busca-cad" placeholder="Buscar por nome ou email..." oninput="filtrarCadastros()">
+        </div>
+        <span class="search-count" id="cad-count">0 registros</span>
+      </div>
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Origem</th>
+                <th>Campanha</th>
+                <th>Conteúdo</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="t-cadastros">
+              <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ DEPÓSITOS ════ -->
+    <div class="secao" id="sec-depositos">
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="s-icon">🔍</span>
+          <input class="search-input" type="text" id="busca-dep" placeholder="Buscar por email..." oninput="filtrarDepositos()">
+        </div>
+        <span class="search-count" id="dep-count">0 registros</span>
+      </div>
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div class="tabela-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Valor</th>
+                <th>Tipo</th>
+                <th>Origem</th>
+                <th>Campanha</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="t-depositos">
+              <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ UTMs ════ -->
+    <div class="secao" id="sec-utms">
+      <div class="grid-2">
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Cadastros por utm_source</div></div>
+          <div id="utm-cad-source-bars" class="stat-row"></div>
+        </div>
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Depósitos por utm_source</div></div>
+          <div id="utm-dep-source-bars" class="stat-row"></div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Cadastros por utm_campaign</div></div>
+          <div id="utm-cad-camp-bars" class="stat-row"></div>
+        </div>
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Depósitos por utm_campaign</div></div>
+          <div id="utm-dep-camp-bars" class="stat-row"></div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Gráfico — Cadastros por Fonte</div></div>
+          <canvas id="g-utms-cad-source"></canvas>
+        </div>
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel-header"><div class="panel-title">Gráfico — Depósitos por Fonte</div></div>
+          <canvas id="g-utms-dep-source"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INTEGRAÇÕES ════ -->
+    <div class="secao" id="sec-integracoes">
+      <div class="integ-section">
+
+        <div class="integ-block">
+          <div class="integ-block-header">
+            <div class="integ-block-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Webhooks de Entrada
+            </div>
+          </div>
+          <p class="integ-desc">Use estas URLs para enviar eventos ao Tracker a partir de outras ferramentas (n8n, Make, Zapier, etc.). Faça uma requisição POST com o corpo em JSON.</p>
+
+          <div class="webhook-row">
+            <div class="webhook-label-row">Evento: Cadastro (Lead)</div>
+            <div class="webhook-url-box">
+              <span class="webhook-url-text" id="url-cadastro"></span>
+              <button class="btn-copy" onclick="copiar('url-cadastro', this)">Copiar</button>
+            </div>
+          </div>
+
+          <div class="webhook-row">
+            <div class="webhook-label-row">Evento: Depósito (Purchase)</div>
+            <div class="webhook-url-box">
+              <span class="webhook-url-text" id="url-deposito"></span>
+              <button class="btn-copy" onclick="copiar('url-deposito', this)">Copiar</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Exemplo de payload (Cadastro)</div>
+            <pre style="font-size:0.72rem;color:#4f6ef7;font-family:'Courier New',monospace;line-height:1.6">POST /cadastro
+{
+  "nome": "João Silva",
+  "email": "joao@email.com",
+  "telefone": "11999999999",
+  "utm_source": "facebook",
+  "utm_medium": "cpc",
+  "utm_campaign": "campanha-1"
+}</pre>
+          </div>
+        </div>
+
+        <div class="integ-block">
+          <div class="integ-block-header">
+            <div class="integ-block-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              Meta Pixel — Conversions API
+            </div>
+            <div class="integ-status" id="meta-status-badge">
+              <div class="dot dot-gray"></div>
+              <span style="color:#6b7280;font-size:0.75rem;font-weight:600">Não configurado</span>
+            </div>
+          </div>
+          <p class="integ-desc">Eventos de Cadastro (Lead) e Depósito (Purchase) são enviados automaticamente ao Facebook via Conversions API com dados de email e telefone hasheados em SHA-256.</p>
+
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+            <div>
+              <div class="webhook-label-row">Pixel ID</div>
+              <input id="meta-pixel-id" type="text" placeholder="Ex: 1187084585660332"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+            </div>
+            <div>
+              <div class="webhook-label-row">Access Token</div>
+              <input id="meta-token" type="password" placeholder="EAALo2..."
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+              <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="show-token" onchange="toggleToken()" style="cursor:pointer">
+                <label for="show-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onclick="salvarMeta()" id="btn-salvar-meta"
+              style="background:#4f6ef7;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+              onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
+              Salvar configuração
+            </button>
+            <span id="meta-save-msg" style="font-size:0.78rem;display:none"></span>
+          </div>
+
+          <div style="margin-top:16px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+            <div style="font-size:0.7rem;color:#4a5568;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Eventos enviados</div>
+            <div style="display:flex;gap:10px">
+              <div><span class="badge badge-blue">Lead</span> <span style="font-size:0.72rem;color:#6b7280">— Cadastro</span></div>
+              <div><span class="badge badge-green">Purchase</span> <span style="font-size:0.72rem;color:#6b7280">— Depósito (BRL)</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  const SUPABASE_URL = "https://iimxiaeowdkruqvkmfhh.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_FoecAw-1cgx_cBqTOrG_AQ_Z0AiMa8s";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let allCadastros = [], allDepositos = [];
+  let graficos = {};
+
+  const CORES = ["#4f6ef7","#22c55e","#f59e0b","#a855f7","#ef4444","#06b6d4","#f97316","#84cc16","#ec4899","#14b8a6"];
+
+  const titulos = {
+    resumo: "Principal", cadastros: "Cadastros",
+    depositos: "Depósitos", utms: "UTMs", integracoes: "Integrações"
+  };
+
+  // ── Auth ──
+  sb.auth.getSession().then(({ data }) => {
+    if (!data.session) { window.location.href = "index.html"; return; }
+    const email = data.session.user.email || "";
+    document.getElementById("user-email-disp").textContent = email;
+    document.getElementById("user-avatar").textContent = email[0].toUpperCase();
+    carregar();
+  });
+
+  async function sair() {
+    await sb.auth.signOut();
+    window.location.href = "index.html";
+  }
+
+  // ── Navegação ──
+  function mudarSecao(id, el) {
+    document.querySelectorAll(".secao").forEach(s => s.classList.remove("visivel"));
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("ativo"));
+    document.getElementById("sec-" + id).classList.add("visivel");
+    el.classList.add("ativo");
+    document.getElementById("titulo-pagina").textContent = titulos[id] || id;
+    if (id === "utms") renderUTMBars();
+    if (id === "integracoes") preencherWebhookURLs();
+  }
+
+  // ── Webhooks ──
+  function preencherWebhookURLs() {
+    const base = window.location.origin;
+    document.getElementById("url-cadastro").textContent = base + "/cadastro";
+    document.getElementById("url-deposito").textContent = base + "/deposito";
+  }
+
+  // ── Período ──
+  function filtrarPeriodo(arr) {
+    const p = document.getElementById("periodo").value;
+    if (p === "tudo") return arr;
+    const dias = p === "hoje" ? 0 : p === "7d" ? 7 : 30;
+    const inicio = new Date();
+    if (p === "hoje") inicio.setHours(0,0,0,0);
+    else inicio.setTime(inicio.getTime() - dias * 86400000);
+    return arr.filter(r => new Date(r.created_at) >= inicio);
+  }
+
+  // ── Filtros de UTM ──
+  function aplicarFiltros() {
+    const src = document.getElementById("filtro-source").value;
+    const camp = document.getElementById("filtro-campaign").value;
+    const c = filtrarPeriodo(allCadastros).filter(r =>
+      (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp)
+    );
+    const d = filtrarPeriodo(allDepositos).filter(r =>
+      (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp)
+    );
+    renderResumoData(c, d);
+    renderTabelaCadastros(c);
+    renderTabelaDepositos(d);
+  }
+
+  function popularFiltros(c, d) {
+    const sources = [...new Set([...c, ...d].map(r => r.utm_source).filter(Boolean))].sort();
+    const camps = [...new Set([...c, ...d].map(r => r.utm_campaign).filter(Boolean))].sort();
+
+    const selSrc = document.getElementById("filtro-source");
+    const selCamp = document.getElementById("filtro-campaign");
+    const curSrc = selSrc.value, curCamp = selCamp.value;
+
+    selSrc.innerHTML = '<option value="">Qualquer</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join("");
+    selCamp.innerHTML = '<option value="">Qualquer</option>' + camps.map(s => `<option value="${s}">${s}</option>`).join("");
+
+    if (sources.includes(curSrc)) selSrc.value = curSrc;
+    if (camps.includes(curCamp)) selCamp.value = curCamp;
+  }
+
+  // ── Carregar ──
+  async function carregar() {
+    const btn = document.getElementById("btn-att");
+    btn.classList.add("loading");
+    btn.textContent = "Atualizando...";
+
+    const [{ data: c, error: ec }, { data: d, error: ed }] = await Promise.all([
+      sb.from("cadastros").select("*").order("created_at", { ascending: false }),
+      sb.from("depositos").select("*").order("created_at", { ascending: false }),
+    ]);
+
+    allCadastros = c || [];
+    allDepositos = d || [];
+
+    popularFiltros(allCadastros, allDepositos);
+    aplicarFiltros();
+
+    const agora = new Date();
+    document.getElementById("update-time").textContent =
+      "Atualizado " + agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    btn.classList.remove("loading");
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Atualizar`;
+  }
+
+  // ── Render Resumo ──
+  function renderResumoData(c, d) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+    const totalDep = d.reduce((s, r) => s + (Number(r.valor) || 0), 0);
+
+    // FTD: ordena por data e pega o primeiro depósito por email
+    const depOrdenado = [...d].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    const ftdMap = new Map();
+    depOrdenado.forEach(r => { if (!ftdMap.has(r.email)) ftdMap.set(r.email, r); });
+    const ftds = ftdMap.size;
+    const recorrentes = d.length - ftds;
+
+    const ticket = d.length ? (totalDep / d.length) : 0;
+    const taxaFTD = c.length ? Math.round(ftds / c.length * 100) : 0;
+    const taxaRec = ftds ? Math.round(recorrentes / ftds * 100) : 0;
+
+    const cadHoje = c.filter(r => new Date(r.created_at) >= hoje).length;
+    const depHoje = d.filter(r => new Date(r.created_at) >= hoje).length;
+
+    setText("r-total-dep", "R$ " + totalDep.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+    setText("r-cadastros", c.length);
+    setText("r-ftds", ftds);
+    setText("r-depositos", d.length);
+    setText("r-dep-hoje", depHoje + " hoje");
+    setText("r-cad-sub", cadHoje + " hoje");
+    setText("r-ftd-taxa", taxaFTD + "%");
+    setText("r-taxa-ftd", taxaFTD + "%");
+    setText("r-taxa-rec", taxaRec + "%");
+    setText("r-recorrentes", recorrentes);
+    setText("r-ticket", "R$ " + Math.round(ticket).toLocaleString("pt-BR"));
+
+    // Funil
+    setText("f-cadastros", c.length);
+    setText("f-ftds", ftds);
+    setText("f-depositos", d.length);
+    setText("f-valor", "R$ " + totalDep.toLocaleString("pt-BR", { minimumFractionDigits: 0 }));
+    setText("f-ticket", "ticket: R$ " + Math.round(ticket));
+
+    const ftdPct = c.length ? Math.round(ftds / c.length * 100) : 0;
+    const depPct = c.length ? Math.round(d.length / c.length * 100) : 0;
+    setText("f-ftd-pct", ftdPct + "%");
+    setText("f-dep-pct", depPct + "%");
+
+    const ftdEl = document.getElementById("f-ftd-pct");
+    const depEl = document.getElementById("f-dep-pct");
+    if (ftdEl) ftdEl.className = "funil-pct-text" + (ftdPct > 0 ? "" : " zero");
+    if (depEl) depEl.className = "funil-pct-text" + (depPct > 0 ? "" : " zero");
+
+    setStyle("fp-ftd", "width", ftdPct + "%");
+    setStyle("fp-dep", "width", depPct + "%");
+
+    renderGraficoSourceCad(c);
+    renderGraficoDepTipo(ftds, recorrentes);
+  }
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+  function setStyle(id, prop, val) {
+    const el = document.getElementById(id);
+    if (el) el.style[prop] = val;
+  }
+
+  // ── Gráficos Resumo ──
+  function renderGraficoSourceCad(c) {
+    const m = contarPor(c, "utm_source");
+    const keys = Object.keys(m);
+    if (!keys.length) {
+      document.getElementById("no-cad-source").style.display = "flex";
+      return;
+    }
+    document.getElementById("no-cad-source").style.display = "none";
+    criarDoughnut("g-source-cad", keys, Object.values(m));
+  }
+
+  function renderGraficoDepTipo(ftds, rec) {
+    criarDoughnut("g-dep-tipo", ["FTD", "Recorrente"], [ftds, rec], ["#a855f7","#22c55e"]);
+  }
+
+  function criarDoughnut(id, labels, dados, cores) {
+    if (graficos[id]) graficos[id].destroy();
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    const bg = cores || CORES;
+    graficos[id] = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels,
+        datasets: [{ data: dados, backgroundColor: bg, borderWidth: 0, hoverOffset: 4 }]
+      },
+      options: {
+        cutout: "65%",
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: "#6b7280", font: { size: 11, family: "Inter" }, padding: 12, boxWidth: 10 }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Gráfico barras horizontal ──
+  function criarBarras(id, labels, dados, cores) {
+    if (graficos[id]) graficos[id].destroy();
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    graficos[id] = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{ data: dados, backgroundColor: cores || CORES, borderRadius: 4, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { color: "#1e2235" },
+            ticks: { color: "#4a5568", font: { size: 11 } }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: "#c9d1e0", font: { size: 11 } }
+          }
+        }
+      }
+    });
+  }
+
+  // ── UTM Bars ──
+  function renderUTMBars() {
+    const src = document.getElementById("filtro-source").value;
+    const camp = document.getElementById("filtro-campaign").value;
+    const c = filtrarPeriodo(allCadastros).filter(r => (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp));
+    const d = filtrarPeriodo(allDepositos).filter(r => (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp));
+
+    renderStatBars("utm-cad-source-bars", contarPor(c, "utm_source"), "#4f6ef7");
+    renderStatBars("utm-dep-source-bars", contarPor(d, "utm_source"), "#22c55e");
+    renderStatBars("utm-cad-camp-bars", contarPor(c, "utm_campaign"), "#a855f7");
+    renderStatBars("utm-dep-camp-bars", contarPor(d, "utm_campaign"), "#f59e0b");
+
+    criarBarras("g-utms-cad-source", ...mapaParaArrays(contarPor(c, "utm_source")));
+    criarBarras("g-utms-dep-source", ...mapaParaArrays(contarPor(d, "utm_source")));
+  }
+
+  function mapaParaArrays(m) {
+    const entries = Object.entries(m).sort((a,b) => b[1]-a[1]).slice(0,8);
+    return [entries.map(e=>e[0]), entries.map(e=>e[1])];
+  }
+
+  function renderStatBars(containerId, m, cor) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const entries = Object.entries(m).sort((a,b) => b[1]-a[1]).slice(0,8);
+    const total = entries.reduce((s, e) => s + e[1], 0);
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty-state" style="padding:20px 0"><p>Sem dados no período</p></div>';
+      return;
+    }
+    container.innerHTML = entries.map(([k, v]) => `
+      <div class="stat-item">
+        <span class="stat-name">${k}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${total ? Math.round(v/total*100) : 0}%;background:${cor}"></div></div>
+        <span class="stat-val">${v}</span>
+      </div>
+    `).join("");
+  }
+
+  // ── Helpers ──
+  function contarPor(arr, campo) {
+    const m = {};
+    arr.forEach(r => { const k = r[campo] || "Direto"; m[k] = (m[k]||0) + 1; });
+    return m;
+  }
+
+  // ── Tabelas ──
+  function renderTabelaCadastros(dados) {
+    const tb = document.getElementById("t-cadastros");
+    document.getElementById("cad-count").textContent = dados.length + " registros";
+    if (!dados.length) {
+      tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum cadastro no período</p></div></td></tr>';
+      return;
+    }
+    tb.innerHTML = dados.map(r => `<tr>
+      <td>${r.nome||"—"}</td>
+      <td style="color:#9ca3af">${r.email||"—"}</td>
+      <td style="color:#9ca3af">${r.telefone||"—"}</td>
+      <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+      <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+      <td style="color:#9ca3af">${r.utm_content||"—"}</td>
+      <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
+    </tr>`).join("");
+  }
+
+  function renderTabelaDepositos(dados) {
+    const tb = document.getElementById("t-depositos");
+    document.getElementById("dep-count").textContent = dados.length + " registros";
+    if (!dados.length) {
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💰</div><p>Nenhum depósito no período</p></div></td></tr>';
+      return;
+    }
+
+    // FTD detection: ordena por data e primeiro por email = FTD
+    const sorted = [...dados].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    const ftdEmails = new Set();
+    sorted.forEach(r => { if (!ftdEmails.has(r.email)) ftdEmails.add(r.email); });
+    const ftdFirstSeen = new Map();
+    sorted.forEach(r => { if (!ftdFirstSeen.has(r.email)) ftdFirstSeen.set(r.email, r.id); });
+
+    tb.innerHTML = dados.map(r => {
+      const isFTD = ftdFirstSeen.get(r.email) === r.id;
+      const tipo = isFTD
+        ? '<span class="badge badge-purple">FTD</span>'
+        : '<span class="badge badge-green">Recorrente</span>';
+      return `<tr>
+        <td style="color:#9ca3af">${r.email||"—"}</td>
+        <td><span class="badge badge-green">R$ ${Number(r.valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}</span></td>
+        <td>${tipo}</td>
+        <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function filtrarCadastros() {
+    const q = document.getElementById("busca-cad").value.toLowerCase();
+    const src = document.getElementById("filtro-source").value;
+    const camp = document.getElementById("filtro-campaign").value;
+    renderTabelaCadastros(
+      filtrarPeriodo(allCadastros).filter(r =>
+        (!src || r.utm_source === src) &&
+        (!camp || r.utm_campaign === camp) &&
+        ((r.nome||"").toLowerCase().includes(q) || (r.email||"").toLowerCase().includes(q))
+      )
+    );
+  }
+
+  function filtrarDepositos() {
+    const q = document.getElementById("busca-dep").value.toLowerCase();
+    const src = document.getElementById("filtro-source").value;
+    const camp = document.getElementById("filtro-campaign").value;
+    renderTabelaDepositos(
+      filtrarPeriodo(allDepositos).filter(r =>
+        (!src || r.utm_source === src) &&
+        (!camp || r.utm_campaign === camp) &&
+        (r.email||"").toLowerCase().includes(q)
+      )
+    );
+  }
+
+  // ── Meta Config ──
+  async function carregarConfigMeta() {
+    try {
+      const r = await fetch("/config/meta");
+      const cfg = await r.json();
+      if (cfg.pixel_id) document.getElementById("meta-pixel-id").value = cfg.pixel_id;
+      if (cfg.token) document.getElementById("meta-token").value = cfg.token;
+      atualizarStatusMeta(cfg.configurado);
+    } catch(e) {}
+  }
+
+  function atualizarStatusMeta(configurado) {
+    const badge = document.getElementById("meta-status-badge");
+    if (!badge) return;
+    if (configurado) {
+      badge.innerHTML = '<div class="dot dot-green"></div><span style="color:#22c55e;font-size:0.75rem;font-weight:600">Conectado</span>';
+    } else {
+      badge.innerHTML = '<div class="dot dot-gray"></div><span style="color:#6b7280;font-size:0.75rem;font-weight:600">Não configurado</span>';
+    }
+  }
+
+  async function salvarMeta() {
+    const pixel_id = document.getElementById("meta-pixel-id").value.trim();
+    const token = document.getElementById("meta-token").value.trim();
+    const btn = document.getElementById("btn-salvar-meta");
+    const msg = document.getElementById("meta-save-msg");
+
+    if (!pixel_id || !token) {
+      msg.textContent = "⚠ Preencha Pixel ID e Token";
+      msg.style.color = "#f59e0b";
+      msg.style.display = "inline";
+      return;
+    }
+
+    btn.textContent = "Salvando...";
+    btn.style.opacity = "0.7";
+
+    try {
+      const r = await fetch("/config/meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pixel_id, token })
+      });
+      if (r.ok) {
+        msg.textContent = "✓ Salvo com sucesso";
+        msg.style.color = "#22c55e";
+        msg.style.display = "inline";
+        atualizarStatusMeta(true);
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao salvar");
+      msg.style.color = "#ef4444";
+      msg.style.display = "inline";
+    }
+
+    btn.textContent = "Salvar configuração";
+    btn.style.opacity = "1";
+  }
+
+  function toggleToken() {
+    const input = document.getElementById("meta-token");
+    input.type = document.getElementById("show-token").checked ? "text" : "password";
+  }
+
+  // Carregar config ao abrir integrações
+  const _origMudarSecao = window.mudarSecao;
+  function mudarSecao(id, el) {
+    document.querySelectorAll(".secao").forEach(s => s.classList.remove("visivel"));
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("ativo"));
+    document.getElementById("sec-" + id).classList.add("visivel");
+    el.classList.add("ativo");
+    document.getElementById("titulo-pagina").textContent = titulos[id] || id;
+    if (id === "utms") renderUTMBars();
+    if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); }
+  }
+
+  // ── Copiar ──
+  function copiar(id, btn) {
+    const txt = document.getElementById(id).textContent.trim();
+    navigator.clipboard.writeText(txt).then(() => {
+      btn.textContent = "✓ Copiado";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

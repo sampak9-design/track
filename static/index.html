@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 28px; }
+    label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #6366f1; }
+    button {
+      width: 100%;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4f46e5; }
+    .erro { color: #f87171; font-size: 0.85rem; margin-top: 12px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tracker</h1>
+    <p>Acesse o painel de conversoes</p>
+    <label>Email</label>
+    <input type="email" id="email" placeholder="seu@email.com">
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="••••••••">
+    <button onclick="login()">Entrar</button>
+    <div class="erro" id="erro"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://iimxiaeowdkruqvkmfhh.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_FoecAw-1cgx_cBqTOrG_AQ_Z0AiMa8s";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Se ja estiver logado, vai direto pro dashboard
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = "dashboard.html";
+    });
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const erro = document.getElementById("erro");
+      erro.style.display = "none";
+
+      const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+      if (error) {
+        erro.textContent = "Email ou senha incorretos.";
+        erro.style.display = "block";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    });
+  </script>
+</body>
+</html>
