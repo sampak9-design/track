@@ -48,7 +48,7 @@ def get_meta_config():
         print(f"[CFG] Erro ao ler config: {e}")
         return None, None
 
-async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None):
+async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None, first_name: str = None, last_name: str = None):
     pixel_id, token = get_meta_config()
     if not pixel_id or not token:
         print(f"[META ✗] Pixel ID ou Token não configurado")
@@ -59,6 +59,10 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
         user_data["em"] = [sha256(email)]
     if phone:
         user_data["ph"] = [sha256(phone)]
+    if first_name:
+        user_data["fn"] = [sha256(first_name)]
+    if last_name:
+        user_data["ln"] = [sha256(last_name)]
 
     evento = {
         "event_name":    event_name,
@@ -138,7 +142,13 @@ async def cadastro(request: Request):
     if not result.data:
         raise HTTPException(status_code=500, detail="Erro ao salvar cadastro")
 
-    await enviar_meta("track_cadastro", email=registro["email"], phone=registro["telefone"])
+    await enviar_meta(
+        "track_cadastro",
+        email=registro["email"],
+        phone=registro["telefone"],
+        first_name=inner.get("firstName"),
+        last_name=inner.get("lastName"),
+    )
 
     print(f"[CADASTRO] {registro['email']} salvo")
     return {"status": "ok", "id": result.data[0]["id"]}
