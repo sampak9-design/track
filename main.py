@@ -150,7 +150,7 @@ async def deposito(request: Request):
     if not result.data:
         raise HTTPException(status_code=500, detail="Erro ao salvar deposito")
 
-    await enviar_meta("Purchase", email=registro["email"], value=registro["valor"])
+    await enviar_meta("track_deposito", email=registro["email"], value=registro["valor"])
 
     print(f"[DEPOSITO] {registro['email']} - R$ {registro['valor']}")
     return {"status": "ok", "id": result.data[0]["id"]}
