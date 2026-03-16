@@ -538,7 +538,8 @@ async def tracker_entrada(request: Request):
 def get_leads():
     try:
         # 1. Cadastros como fonte principal
-        cads = db.table("cadastros").select("*").order("created_at", ascending=False).execute().data or []
+        cads = db.table("cadastros").select("*").execute().data or []
+        cads.sort(key=lambda x: x.get("created_at") or "", reverse=True)
 
         # 2. Telegram members: status mais recente por primeiro nome
         all_events = db.table("telegram_members").select("*").order("created_at", ascending=True).execute().data or []
