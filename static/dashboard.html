@@ -654,6 +654,7 @@
                 <th>Campanha</th>
                 <th>Conteúdo</th>
                 <th>Data</th>
+                <th style="text-align:center">Telegram</th>
               </tr>
             </thead>
             <tbody id="t-cadastros">
@@ -1199,7 +1200,7 @@
   const SUPABASE_ANON_KEY = "sb_publishable_FoecAw-1cgx_cBqTOrG_AQ_Z0AiMa8s";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let allCadastros = [], allDepositos = [];
+  let allCadastros = [], allDepositos = [], allTelegramMembers = [];
   let graficos = {};
 
   const CORES = ["#4f6ef7","#22c55e","#f59e0b","#a855f7","#ef4444","#06b6d4","#f97316","#84cc16","#ec4899","#14b8a6"];
@@ -1420,13 +1421,15 @@
     btn.classList.add("loading");
     btn.disabled = true;
 
-    const [{ data: c, error: ec }, { data: d, error: ed }] = await Promise.all([
+    const [{ data: c }, { data: d }, { data: tm }] = await Promise.all([
       sb.from("cadastros").select("*").order("created_at", { ascending: false }),
       sb.from("depositos").select("*").order("created_at", { ascending: false }),
+      sb.from("telegram_members").select("user_id,first_name,last_name,username,event,created_at").order("created_at", { ascending: false }),
     ]);
 
     allCadastros = c || [];
     allDepositos = d || [];
+    allTelegramMembers = tm || [];
 
     popularFiltros(allCadastros, allDepositos);
     aplicarFiltros();
@@ -1621,22 +1624,54 @@
   }
 
   // ── Tabelas ──
+  function buildTelegramStatusMap() {
+    // latest event per user_id
+    const byUser = {};
+    allTelegramMembers.forEach(m => {
+      const uid = m.user_id;
+      if (!uid) return;
+      if (!byUser[uid] || m.created_at > byUser[uid].created_at) byUser[uid] = m;
+    });
+    // index by first_name lowercase for matching
+    const byName = {};
+    Object.values(byUser).forEach(m => {
+      const key = (m.first_name || "").toLowerCase().trim();
+      if (key) byName[key] = m;
+    });
+    return byName;
+  }
+
   function renderTabelaCadastros(dados) {
     const tb = document.getElementById("t-cadastros");
     document.getElementById("cad-count").textContent = dados.length + " registros";
     if (!dados.length) {
-      tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum cadastro no período</p></div></td></tr>';
+      tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum cadastro no período</p></div></td></tr>';
       return;
     }
-    tb.innerHTML = dados.map(r => `<tr>
-      <td>${r.nome||"—"}</td>
-      <td style="color:#9ca3af">${r.email||"—"}</td>
-      <td style="color:#9ca3af">${r.telefone||"—"}</td>
-      <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
-      <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
-      <td style="color:#9ca3af">${r.utm_content||"—"}</td>
-      <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
-    </tr>`).join("");
+    const tgMap = buildTelegramStatusMap();
+    tb.innerHTML = dados.map(r => {
+      const firstName = (r.nome || "").split(" ")[0].toLowerCase().trim();
+      const tg = tgMap[firstName];
+      let tgCell;
+      if (!tg) {
+        tgCell = '<span style="color:#3d4466;font-size:0.72rem">—</span>';
+      } else if (tg.event === "join") {
+        tgCell = '<span style="background:#14291e;color:#22c55e;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px">✓ Entrou</span>';
+      } else {
+        const dt = tg.created_at ? new Date(tg.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
+        tgCell = `<span style="background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px" title="Saiu em ${dt}">✗ Saiu</span>`;
+      }
+      return `<tr>
+        <td>${r.nome||"—"}</td>
+        <td style="color:#9ca3af">${r.email||"—"}</td>
+        <td style="color:#9ca3af">${r.telefone||"—"}</td>
+        <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td style="color:#9ca3af">${r.utm_content||"—"}</td>
+        <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
+        <td style="text-align:center">${tgCell}</td>
+      </tr>`;
+    }).join("");
   }
 
   function renderTabelaDepositos(dados) {
