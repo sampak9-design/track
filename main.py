@@ -482,7 +482,7 @@ async def telegram_setup(request: Request):
     if not bot_token:
         raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN não configurado")
 
-    webhook_url = str(request.base_url).rstrip("/") + "/telegram/webhook"
+    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
