@@ -557,8 +557,8 @@ async def verificar_canal(username: str):
 
 
 @app.get("/telegram/detectar-canais")
-async def detectar_canais():
-    """Busca canais onde o bot é admin via getUpdates (para canais privados)."""
+async def detectar_canais(request: Request):
+    """Pausa webhook, busca updates com my_chat_member, reativa webhook."""
     bot_token = TELEGRAM_BOT_TOKEN
     try:
         result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
@@ -570,17 +570,29 @@ async def detectar_canais():
     if not bot_token:
         raise HTTPException(status_code=400, detail="Bot não configurado")
 
-    salvos = 0
+    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+
     async with httpx.AsyncClient() as client:
-        # Pega updates recentes incluindo my_chat_member
+        # 1. Deletar webhook temporariamente
+        await client.post(f"https://api.telegram.org/bot{bot_token}/deleteWebhook")
+
+        # 2. Buscar updates pendentes
         resp = await client.get(
             f"https://api.telegram.org/bot{bot_token}/getUpdates",
             params={"allowed_updates": ["my_chat_member"], "limit": 100}
         )
-    data = resp.json()
+        data = resp.json()
+
+        # 3. Reativar webhook imediatamente
+        await client.post(
+            f"https://api.telegram.org/bot{bot_token}/setWebhook",
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]}
+        )
+
     if not data.get("ok"):
         raise HTTPException(status_code=400, detail=data.get("description", "Erro ao buscar updates"))
 
+    salvos = 0
     for update in data.get("result", []):
         mcm = update.get("my_chat_member")
         if not mcm:
