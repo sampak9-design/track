@@ -609,22 +609,27 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         conv_pagina = round(registros / pageviews * 100, 2) if pageviews > 0 else 0
         retencao = round((joins - saidas) / joins * 100, 2) if joins > 0 else 0
 
-        # Evolução diária (últimos 14 dias de pageviews e joins)
+        # Evolução diária (últimos 14 dias de pageviews, joins e saidas)
         from collections import defaultdict
         import datetime
         pv_data = r_pv.data or []
         jo_data = r_jo.data or []
+        sa_data = r_sa.data or []
         pv_por_dia = defaultdict(int)
         jo_por_dia = defaultdict(int)
+        sa_por_dia = defaultdict(int)
         for row in pv_data:
             dia = (row.get("created_at") or "")[:10]
             if dia: pv_por_dia[dia] += 1
         for row in jo_data:
             dia = (row.get("created_at") or "")[:10]
             if dia: jo_por_dia[dia] += 1
+        for row in sa_data:
+            dia = (row.get("created_at") or "")[:10]
+            if dia: sa_por_dia[dia] += 1
         hoje = datetime.date.today()
         dias = [(hoje - datetime.timedelta(days=i)).isoformat() for i in range(13, -1, -1)]
-        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d]} for d in dias]
+        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d], "saidas": sa_por_dia[d]} for d in dias]
 
         return {
             "pageviews": pageviews,

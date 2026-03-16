@@ -1226,7 +1226,8 @@
         }),
         datasets: [
           { label: "PageViews", data: dados.map(d=>d.pageviews), borderColor: "#4f6ef7", backgroundColor: "#4f6ef722", fill: true, tension: 0.4, pointRadius: 3 },
-          { label: "Entradas", data: dados.map(d=>d.entradas), borderColor: "#22c55e", backgroundColor: "#22c55e22", fill: true, tension: 0.4, pointRadius: 3 }
+          { label: "Entradas", data: dados.map(d=>d.entradas), borderColor: "#22c55e", backgroundColor: "#22c55e22", fill: true, tension: 0.4, pointRadius: 3 },
+          { label: "Saídas", data: dados.map(d=>d.saidas||0), borderColor: "#ef4444", backgroundColor: "#ef444422", fill: true, tension: 0.4, pointRadius: 3 }
         ]
       },
       options: {
