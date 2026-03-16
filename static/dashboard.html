@@ -1707,16 +1707,17 @@
     tb.innerHTML = lista.map(l => {
       const nome = [l.first_name, l.last_name].filter(Boolean).join(" ") || "—";
       const username = l.username ? `<div style="font-size:0.7rem;color:#4a5568">@${l.username}</div>` : "";
-      const ativo = l.status === "join";
-      const status = ativo
+      const status = l.status === "join"
         ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#14291e;color:#22c55e;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%;display:inline-block"></span>Ativo</span>'
-        : `<span style="display:inline-flex;align-items:center;gap:5px;background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px" title="Saiu em ${l.saiu_em ? new Date(l.saiu_em).toLocaleString('pt-BR') : ''}"><span style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block"></span>Saiu</span>`;
+        : l.status === "leave"
+          ? `<span style="display:inline-flex;align-items:center;gap:5px;background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px" title="Saiu em ${l.saiu_em ? new Date(l.saiu_em).toLocaleString('pt-BR') : ''}"><span style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block"></span>Saiu</span>`
+          : '<span style="color:#3d4466">—</span>';
       const fonte = l.utm_source
         ? `<span style="display:inline-flex;align-items:center;gap:5px;background:#1a1f3a;border:1px solid #2d3148;color:#7c94fa;font-size:0.72rem;padding:3px 9px;border-radius:6px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${l.utm_source}</span>`
         : '<span style="color:#3d4466">—</span>';
       const ltv = l.ltv > 0 ? `<span style="color:#22c55e;font-weight:600">R$ ${l.ltv.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span>` : '<span style="color:#3d4466">—</span>';
       return `<tr>
-        <td style="color:#4a5568;font-size:0.75rem">${l.user_id}</td>
+        <td style="color:#4a5568;font-size:0.75rem">${l.user_id || '<span style="color:#3d4466">—</span>'}</td>
         <td><div style="font-size:0.82rem;font-weight:600;color:#c9d1e0">${nome}</div>${username}</td>
         <td style="color:#9ca3af;font-size:0.78rem">${l.canal||"—"}</td>
         <td>${fonte}</td>
