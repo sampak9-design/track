@@ -1187,10 +1187,13 @@
         const pctEl = row.querySelector(".funil-h-pct");
         if (pctEl) pctEl.textContent = pct !== null ? pct + "%" : "";
       }
-      setBar("pageviews", s.pageviews, maxVal, null);
-      setBar("entradas", s.entradas, maxVal, s.ctr);
-      setBar("registros", s.registros, maxVal, s.conv_pagina);
-      setBar("ftd", s.ftd, maxVal, s.ftd > 0 ? Math.round(s.ftd/Math.max(s.registros,1)*100) : 0);
+      const pctEntradas  = s.pageviews > 0 ? Math.round(s.entradas  / s.pageviews * 100) : null;
+      const pctRegistros = s.entradas  > 0 ? Math.round(s.registros / s.entradas  * 100) : null;
+      const pctFtd       = s.registros > 0 ? Math.round(s.ftd       / s.registros * 100) : null;
+      setBar("pageviews",  s.pageviews, maxVal, null);
+      setBar("entradas",   s.entradas,  maxVal, pctEntradas);
+      setBar("registros",  s.registros, maxVal, pctRegistros);
+      setBar("ftd",        s.ftd,       maxVal, pctFtd);
 
       // Evolução chart
       renderEvolucao(s.evolucao || []);
