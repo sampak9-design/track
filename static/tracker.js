@@ -35,18 +35,37 @@
   } catch (ex) {}
 
   // Intercept clicks on Telegram links — attach UTMs to server
-  document.addEventListener('click', function (e) {
-    var link = e.target.closest('a[href*="t.me"]');
-    if (!link) return;
+  var beaconBase = script.src.replace('/static/tracker.js', '');
 
+  function isTelegramHref(href) {
+    return href && (href.indexOf('t.me') !== -1 || href.indexOf('telegram.me') !== -1 || href.indexOf('telegram.dog') !== -1);
+  }
+
+  function sendEntrada() {
     var savedUtms = {};
     try { savedUtms = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
-
-    // Send entrada event with UTMs to tracker backend
     var payload = Object.assign({ channel_id: channelId, page_url: location.href }, savedUtms);
     try {
       var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-      navigator.sendBeacon(script.src.replace('/static/tracker.js', '/tracker/entrada'), blob);
+      navigator.sendBeacon(beaconBase + '/tracker/entrada', blob);
     } catch (ex) {}
+  }
+
+  document.addEventListener('click', function (e) {
+    // Sobe na árvore DOM para encontrar o <a> mesmo que o clique seja num filho
+    var el = e.target;
+    while (el && el.tagName !== 'A') el = el.parentElement;
+    if (el && el.tagName === 'A' && isTelegramHref(el.href)) {
+      sendEntrada();
+      return;
+    }
+    // Detecta botões/divs que redirecionam para Telegram via onclick ou data-href
+    var btn = e.target.closest('[data-href],[onclick]');
+    if (btn) {
+      var dh = btn.getAttribute('data-href') || '';
+      if (isTelegramHref(dh)) { sendEntrada(); return; }
+      var oc = btn.getAttribute('onclick') || '';
+      if (isTelegramHref(oc)) { sendEntrada(); return; }
+    }
   });
 })();
