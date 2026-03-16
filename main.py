@@ -542,7 +542,8 @@ def get_leads():
         cads.sort(key=lambda x: x.get("created_at") or "", reverse=True)
 
         # 2. Telegram members: status mais recente por primeiro nome
-        all_events = db.table("telegram_members").select("*").order("created_at", ascending=True).execute().data or []
+        all_events = db.table("telegram_members").select("*").execute().data or []
+        all_events.sort(key=lambda x: x.get("created_at") or "")
         first_join_by_name = {}   # primeiro_nome -> created_at do primeiro join
         latest_by_name = {}       # primeiro_nome -> evento mais recente
         for ev in all_events:
@@ -553,7 +554,8 @@ def get_leads():
             latest_by_name[first] = ev
 
         # 3. Depósitos indexados por email
-        deps = db.table("depositos").select("*").order("created_at", ascending=True).execute().data or []
+        deps = db.table("depositos").select("*").execute().data or []
+        deps.sort(key=lambda x: x.get("created_at") or "")
         dep_by_email = {}
         for d in deps:
             email = d.get("email", "")
@@ -609,8 +611,8 @@ def get_leads():
 def telegram_members_status():
     """Retorna o status atual (join/leave mais recente) por user_id."""
     try:
-        r = db.table("telegram_members").select("user_id,first_name,last_name,username,event,created_at").order("created_at", ascending=False).execute()
-        rows = r.data or []
+        r = db.table("telegram_members").select("user_id,first_name,last_name,username,event,created_at").execute()
+        rows = sorted(r.data or [], key=lambda x: x.get("created_at") or "", reverse=True)
         # Pega o evento mais recente por user_id
         by_user = {}
         for row in rows:
