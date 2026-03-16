@@ -573,9 +573,12 @@ def get_leads():
         canal_nome = canais[0]["nome"] if canais else "—"
 
         leads = []
+        matched_cad_names = set()
         for uid, user in latest.items():
             first = (user.get("first_name") or "").lower().strip()
             cad = cad_by_name.get(first)
+            if cad:
+                matched_cad_names.add(first)
             email = (cad or {}).get("email", "")
             dep = dep_by_email.get(email, {})
             entrada = first_join.get(uid)
@@ -596,7 +599,32 @@ def get_leads():
                 "status": user.get("event", "join"),
                 "saiu_em": saiu_em,
             })
-        leads.sort(key=lambda x: x.get("entrada") or "", reverse=True)
+
+        # Adiciona cadastros sem entrada no Telegram
+        for key, cad in cad_by_name.items():
+            if key in matched_cad_names:
+                continue
+            email = cad.get("email", "")
+            dep = dep_by_email.get(email, {})
+            nome_parts = (cad.get("nome") or "").split()
+            leads.append({
+                "user_id": None,
+                "username": "",
+                "first_name": nome_parts[0] if nome_parts else "",
+                "last_name": " ".join(nome_parts[1:]) if len(nome_parts) > 1 else "",
+                "canal": canal_nome,
+                "utm_source": cad.get("utm_source") or "",
+                "page_url": cad.get("utm_content") or "",
+                "entrada": None,
+                "registro": cad.get("created_at"),
+                "ftd": dep.get("ftd"),
+                "depositos": dep.get("count", 0),
+                "ltv": dep.get("ltv", 0.0),
+                "status": None,
+                "saiu_em": None,
+            })
+
+        leads.sort(key=lambda x: x.get("registro") or x.get("entrada") or "", reverse=True)
         return {"leads": leads}
     except Exception as e:
         print(f"[LEADS ERRO] {e}")
