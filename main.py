@@ -466,6 +466,53 @@ async def remover_canal_telegram(canal_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok"}
 
+@app.get("/telegram/verificar-canal")
+async def verificar_canal(username: str):
+    """Verifica canal via API do Telegram e salva automaticamente."""
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        if result.data:
+            bot_token = result.data[0]["valor"]
+    except Exception:
+        pass
+
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+
+    chat_id = username if username.startswith("@") else "@" + username
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"https://api.telegram.org/bot{bot_token}/getChat",
+            params={"chat_id": chat_id}
+        )
+
+    data = resp.json()
+    if not data.get("ok"):
+        raise HTTPException(status_code=400, detail=data.get("description", "Canal não encontrado"))
+
+    chat = data["result"]
+    nome = chat.get("title", username)
+    uname = "@" + chat.get("username", "") if chat.get("username") else username
+    tg_id = chat.get("id")
+    invite = chat.get("invite_link", "")
+
+    # Salva ou atualiza no banco
+    try:
+        existing = db.table("telegram_canais").select("id").eq("username", uname).execute()
+        if existing.data:
+            db.table("telegram_canais").update({"nome": nome, "link": invite, "telegram_id": str(tg_id)}).eq("username", uname).execute()
+            canal_id = existing.data[0]["id"]
+        else:
+            ins = db.table("telegram_canais").insert({"nome": nome, "username": uname, "link": invite, "telegram_id": str(tg_id)}).execute()
+            canal_id = ins.data[0]["id"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    print(f"[CANAL] Conectado: {nome} ({uname}) id={tg_id}")
+    return {"ok": True, "id": canal_id, "nome": nome, "username": uname, "link": invite, "telegram_id": tg_id}
+
 
 @app.get("/telegram/setup")
 async def telegram_setup(request: Request):

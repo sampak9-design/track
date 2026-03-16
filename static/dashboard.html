@@ -1049,30 +1049,38 @@
           </div>
         </div>
 
-        <!-- Adicionar canal manualmente -->
+        <!-- Conectar canal via username -->
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2235">
-          <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Adicionar Canal</div>
-          <div style="display:flex;flex-direction:column;gap:8px;max-width:500px">
-            <div style="display:flex;gap:8px">
-              <input id="canal-nome" type="text" placeholder="Nome do canal (ex: Investidor de Elite)"
-                style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+          <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Conectar Canal</div>
+          <div style="display:flex;gap:8px;max-width:500px">
+            <input id="canal-username-conectar" type="text" placeholder="@username do canal (ex: @meucanal)"
+              style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'"
+              onkeydown="if(event.key==='Enter') conectarCanal()">
+            <button onclick="conectarCanal()" id="btn-conectar-canal"
+              style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
+              onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
+              Conectar
+            </button>
+          </div>
+          <span id="canal-add-msg" style="font-size:0.78rem;margin-top:8px;display:none"></span>
+
+          <!-- Campos extras para canal privado (sem @username público) -->
+          <div style="margin-top:12px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235;max-width:500px">
+            <div style="font-size:0.72rem;color:#6b7280;margin-bottom:8px">Canal <b style="color:#c9d1e0">privado</b> (sem @username)? Preencha manualmente:</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <input id="canal-nome-manual" type="text" placeholder="Nome do canal"
+                style="background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:7px 10px;color:#e2e8f0;font-size:0.8rem;font-family:inherit;outline:none;"
                 onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-              <input id="canal-username" type="text" placeholder="@username"
-                style="width:140px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+              <input id="canal-link-manual" type="text" placeholder="Link de convite (https://t.me/+...)"
+                style="background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:7px 10px;color:#e2e8f0;font-size:0.8rem;font-family:inherit;outline:none;"
                 onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-            </div>
-            <div style="display:flex;gap:8px">
-              <input id="canal-link" type="text" placeholder="Link de convite (https://t.me/+...)"
-                style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-              <button onclick="adicionarCanal()"
-                style="background:#a855f7;color:white;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
-                onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
-                + Adicionar
+              <button onclick="adicionarCanalManual()"
+                style="background:#1e2235;color:#a855f7;border:1px solid #a855f7;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600;width:fit-content">
+                + Adicionar manualmente
               </button>
             </div>
           </div>
-          <span id="canal-add-msg" style="font-size:0.78rem;display:none;margin-top:6px;display:block"></span>
         </div>
 
         <!-- Instrução -->
@@ -1905,10 +1913,39 @@
     `).join("");
   }
 
-  async function adicionarCanal() {
-    const nome = document.getElementById("canal-nome").value.trim();
-    const username = document.getElementById("canal-username").value.trim();
-    const link = document.getElementById("canal-link").value.trim();
+  async function conectarCanal() {
+    const username = document.getElementById("canal-username-conectar").value.trim();
+    const msg = document.getElementById("canal-add-msg");
+    const btn = document.getElementById("btn-conectar-canal");
+
+    if (!username) {
+      msg.textContent = "⚠ Informe o @username do canal";
+      msg.style.color = "#f59e0b"; msg.style.display = "block"; return;
+    }
+
+    btn.textContent = "Verificando..."; btn.style.opacity = "0.7";
+    try {
+      const r = await fetch("/telegram/verificar-canal?username=" + encodeURIComponent(username));
+      if (r.ok) {
+        msg.textContent = "✓ Canal conectado com sucesso!";
+        msg.style.color = "#22c55e"; msg.style.display = "block";
+        document.getElementById("canal-username-conectar").value = "";
+        carregarCanais();
+        setTimeout(() => { msg.style.display = "none"; }, 4000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || "Canal não encontrado. Verifique se o bot é admin.");
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao conectar canal");
+      msg.style.color = "#ef4444"; msg.style.display = "block";
+    }
+    btn.textContent = "Conectar"; btn.style.opacity = "1";
+  }
+
+  async function adicionarCanalManual() {
+    const nome = document.getElementById("canal-nome-manual").value.trim();
+    const link = document.getElementById("canal-link-manual").value.trim();
     const msg = document.getElementById("canal-add-msg");
 
     if (!nome) {
@@ -1920,15 +1957,13 @@
       const r = await fetch("/config/telegram/canal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, username, link })
+        body: JSON.stringify({ nome, username: "", link })
       });
       if (r.ok) {
-        const data = await r.json();
         msg.textContent = "✓ Canal adicionado";
         msg.style.color = "#22c55e"; msg.style.display = "block";
-        document.getElementById("canal-nome").value = "";
-        document.getElementById("canal-username").value = "";
-        document.getElementById("canal-link").value = "";
+        document.getElementById("canal-nome-manual").value = "";
+        document.getElementById("canal-link-manual").value = "";
         carregarCanais();
         setTimeout(() => { msg.style.display = "none"; }, 3000);
       } else {
