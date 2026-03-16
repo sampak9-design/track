@@ -5,7 +5,6 @@
   })();
 
   var channelId = script.getAttribute('data-channel-id') || '';
-  var channelUsername = script.getAttribute('data-channel-username') || '';
 
   // Capture UTM params from URL
   var params = new URLSearchParams(window.location.search);
@@ -26,6 +25,15 @@
   // Store channel info
   if (channelId) localStorage.setItem('_trk_channel', channelId);
 
+  // Send pageview on page load
+  var savedUtmsForPageview = {};
+  try { savedUtmsForPageview = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
+  var pageviewPayload = Object.assign({ channel_id: channelId, page_url: location.href }, savedUtmsForPageview);
+  try {
+    var pageviewBlob = new Blob([JSON.stringify(pageviewPayload)], { type: 'application/json' });
+    navigator.sendBeacon(script.src.replace('/static/tracker.js', '/tracker/pageview'), pageviewBlob);
+  } catch (ex) {}
+
   // Intercept clicks on Telegram links — attach UTMs to server
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[href*="t.me"]');
@@ -34,10 +42,11 @@
     var savedUtms = {};
     try { savedUtms = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
 
-    // Send click event with UTMs to tracker backend
-    var payload = Object.assign({ channel_id: channelId }, savedUtms);
+    // Send entrada event with UTMs to tracker backend
+    var payload = Object.assign({ channel_id: channelId, page_url: location.href }, savedUtms);
     try {
-      navigator.sendBeacon(script.src.replace('/static/tracker.js', '/tracker/click'), JSON.stringify(payload));
+      var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      navigator.sendBeacon(script.src.replace('/static/tracker.js', '/tracker/entrada'), blob);
     } catch (ex) {}
   });
 })();

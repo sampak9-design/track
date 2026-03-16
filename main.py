@@ -488,17 +488,154 @@ async def adicionar_canal_telegram(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": result.data[0]["id"]}
 
-@app.post("/tracker/click")
-async def tracker_click(request: Request):
-    """Recebe clique em link do Telegram com UTMs capturados pelo tracker.js."""
+@app.post("/tracker/pageview")
+async def tracker_pageview(request: Request):
     try:
         data = await request.json()
     except Exception:
         return {"ok": True}
-    channel_id = data.get("channel_id")
+    canal_id = data.get("channel_id")
+    page_url = data.get("page_url", "")
     utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
-    print(f"[TRACKER CLICK] canal={channel_id} utms={utms}")
+    try:
+        db.table("tracker_pageviews").insert({
+            "canal_id": canal_id,
+            "page_url": page_url,
+            **utms
+        }).execute()
+    except Exception as e:
+        print(f"[PAGEVIEW ERRO] {e}")
     return {"ok": True}
+
+@app.post("/tracker/entrada")
+async def tracker_entrada(request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+    canal_id = data.get("channel_id")
+    page_url = data.get("page_url", "")
+    utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
+    try:
+        db.table("tracker_entradas").insert({
+            "canal_id": canal_id,
+            "page_url": page_url,
+            **utms
+        }).execute()
+    except Exception as e:
+        print(f"[ENTRADA ERRO] {e}")
+    return {"ok": True}
+
+@app.get("/tracker/stats")
+async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim: str = None):
+    """Retorna métricas do dashboard para o canal e período selecionados."""
+    try:
+        # Helper to apply date filters
+        def aplicar_datas(q, inicio, fim):
+            if inicio:
+                q = q.gte("created_at", inicio + "T00:00:00")
+            if fim:
+                q = q.lte("created_at", fim + "T23:59:59")
+            return q
+
+        # PageViews
+        q_pv = db.table("tracker_pageviews").select("id,created_at", count="exact")
+        if canal_id:
+            q_pv = q_pv.eq("canal_id", canal_id)
+        q_pv = aplicar_datas(q_pv, data_inicio, data_fim)
+        r_pv = q_pv.execute()
+        pageviews = r_pv.count or 0
+
+        # Entradas (cliques no link t.me)
+        q_en = db.table("tracker_entradas").select("id,created_at", count="exact")
+        if canal_id:
+            q_en = q_en.eq("canal_id", canal_id)
+        q_en = aplicar_datas(q_en, data_inicio, data_fim)
+        r_en = q_en.execute()
+        entradas = r_en.count or 0
+
+        # Saídas (telegram_members event=leave)
+        q_sa = db.table("telegram_members").select("id,created_at", count="exact").eq("event", "leave")
+        q_sa = aplicar_datas(q_sa, data_inicio, data_fim)
+        r_sa = q_sa.execute()
+        saidas = r_sa.count or 0
+
+        # Joins (telegram_members event=join)
+        q_jo = db.table("telegram_members").select("id,created_at", count="exact").eq("event", "join")
+        q_jo = aplicar_datas(q_jo, data_inicio, data_fim)
+        r_jo = q_jo.execute()
+        joins = r_jo.count or 0
+
+        # Registros (cadastros)
+        q_ca = db.table("cadastros").select("id,email,created_at", count="exact")
+        q_ca = aplicar_datas(q_ca, data_inicio, data_fim)
+        r_ca = q_ca.execute()
+        registros = r_ca.count or 0
+
+        # Depósitos para FTD e redep
+        q_dep = db.table("depositos").select("id,email,valor,created_at")
+        q_dep = aplicar_datas(q_dep, data_inicio, data_fim)
+        r_dep = q_dep.execute()
+        deps = r_dep.data or []
+        sorted_deps = sorted(deps, key=lambda x: x.get("created_at",""))
+        seen = set()
+        ftd_count = 0
+        redep_count = 0
+        ftd_valor = 0.0
+        redep_valor = 0.0
+        for d in sorted_deps:
+            email = d.get("email","")
+            valor = float(d.get("valor") or 0)
+            if email not in seen:
+                seen.add(email)
+                ftd_count += 1
+                ftd_valor += valor
+            else:
+                redep_count += 1
+                redep_valor += valor
+
+        # Rates
+        ctr = round(entradas / pageviews * 100, 2) if pageviews > 0 else 0
+        conv_telegram = round(joins / entradas * 100, 2) if entradas > 0 else 0
+        conv_pagina = round(registros / pageviews * 100, 2) if pageviews > 0 else 0
+        retencao = round((joins - saidas) / joins * 100, 2) if joins > 0 else 0
+
+        # Evolução diária (últimos 14 dias de pageviews e entradas)
+        from collections import defaultdict
+        import datetime
+        pv_data = r_pv.data or []
+        en_data = r_en.data or []
+        pv_por_dia = defaultdict(int)
+        en_por_dia = defaultdict(int)
+        for row in pv_data:
+            dia = (row.get("created_at") or "")[:10]
+            if dia: pv_por_dia[dia] += 1
+        for row in en_data:
+            dia = (row.get("created_at") or "")[:10]
+            if dia: en_por_dia[dia] += 1
+        hoje = datetime.date.today()
+        dias = [(hoje - datetime.timedelta(days=i)).isoformat() for i in range(13, -1, -1)]
+        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": en_por_dia[d]} for d in dias]
+
+        return {
+            "pageviews": pageviews,
+            "entradas": entradas,
+            "saidas": saidas,
+            "joins": joins,
+            "registros": registros,
+            "ftd": ftd_count,
+            "ftd_valor": ftd_valor,
+            "redep": redep_count,
+            "redep_valor": redep_valor,
+            "ctr": ctr,
+            "conv_telegram": conv_telegram,
+            "conv_pagina": conv_pagina,
+            "retencao": retencao,
+            "evolucao": evolucao,
+        }
+    except Exception as e:
+        print(f"[STATS ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/config/telegram/canal/{canal_id}")
 async def remover_canal_telegram(canal_id: int):

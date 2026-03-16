@@ -406,116 +406,163 @@
     <!-- ════ RESUMO ════ -->
     <div class="secao visivel" id="sec-resumo">
 
-      <!-- Cards principais -->
-      <div class="cards-grid">
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-label">Total Depositado</span>
-            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Soma de todos os depósitos no período</span></span>
-          </div>
-          <div class="metric-value c-green" id="r-total-dep">R$ 0,00</div>
-          <div class="metric-sub" id="r-dep-hoje"><span>0 hoje</span></div>
+      <!-- Filter bar -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
+        <div>
+          <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Canal</div>
+          <select id="stats-canal" onchange="carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 28px 7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;cursor:pointer;min-width:180px;-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+            <option value="">Todos os Canais</option>
+          </select>
         </div>
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-label">Cadastros</span>
-            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Total de leads cadastrados</span></span>
-          </div>
-          <div class="metric-value c-blue" id="r-cadastros">0</div>
-          <div class="metric-sub" id="r-cad-sub"><span>0 hoje</span></div>
+        <div>
+          <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Inicial</div>
+          <input type="date" id="stats-inicio" onchange="carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
         </div>
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-label">FTDs</span>
-            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Primeiros depósitos únicos por email</span></span>
-          </div>
-          <div class="metric-value c-purple" id="r-ftds">0</div>
-          <div class="metric-sub" id="r-ftd-sub"><span class="up" id="r-ftd-taxa">0%</span> de conversão</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-header">
-            <span class="metric-label">Depósitos</span>
-            <span class="metric-info tooltip-wrap">ⓘ<span class="tooltip-box">Total de transações de depósito</span></span>
-          </div>
-          <div class="metric-value c-yellow" id="r-depositos">0</div>
-          <div class="metric-sub" id="r-dep-sub"><span>Ticket médio: <strong id="r-ticket">R$ 0</strong></span></div>
+        <div>
+          <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Final</div>
+          <input type="date" id="stats-fim" onchange="carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
         </div>
       </div>
 
-      <!-- Cards secundários -->
-      <div class="cards-grid-3">
+      <!-- 6 metric cards -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px">
         <div class="metric-card">
-          <div class="metric-header"><span class="metric-label">Taxa Cad → FTD</span></div>
-          <div class="metric-value c-white" id="r-taxa-ftd">0%</div>
-          <div class="metric-sub">Cadastros que depositaram</div>
+          <div class="metric-header"><span class="metric-label">PageViews</span></div>
+          <div class="metric-value" style="color:#4f6ef7" id="s-pageviews">0</div>
+          <div class="metric-sub">cliques rastreados</div>
         </div>
         <div class="metric-card">
-          <div class="metric-header"><span class="metric-label">Taxa FTD → Recorrente</span></div>
-          <div class="metric-value c-white" id="r-taxa-rec">0%</div>
-          <div class="metric-sub">FTDs com depósito repetido</div>
+          <div class="metric-header"><span class="metric-label">Entradas</span></div>
+          <div class="metric-value" style="color:#22c55e" id="s-entradas">0</div>
+          <div class="metric-sub">cliques no link</div>
         </div>
         <div class="metric-card">
-          <div class="metric-header"><span class="metric-label">Depósitos Recorrentes</span></div>
-          <div class="metric-value c-white" id="r-recorrentes">0</div>
-          <div class="metric-sub">Não são primeiro depósito</div>
+          <div class="metric-header"><span class="metric-label">Saídas</span></div>
+          <div class="metric-value" style="color:#ef4444" id="s-saidas">0</div>
+          <div class="metric-sub">saíram do canal</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Registros</span></div>
+          <div class="metric-value" style="color:#a855f7" id="s-registros">0</div>
+          <div class="metric-sub">cadastros</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">FTD</span></div>
+          <div class="metric-value" style="color:#f59e0b" id="s-ftd">0</div>
+          <div class="metric-sub" id="s-ftd-valor">R$ 0,00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Redepósitos</span></div>
+          <div class="metric-value" style="color:#06b6d4" id="s-redep">0</div>
+          <div class="metric-sub" id="s-redep-valor">R$ 0,00</div>
         </div>
       </div>
 
-      <!-- Funil -->
-      <div class="panel">
+      <!-- 4 rate cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CTR (Taxa de Cliques)</span></div>
+          <div class="metric-value c-white" id="s-ctr">0%</div>
+          <div class="metric-sub">Entradas / PageViews</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Conversão Telegram</span></div>
+          <div class="metric-value c-white" id="s-conv-tg">0%</div>
+          <div class="metric-sub">Joins / Entradas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Conversão da Página</span></div>
+          <div class="metric-value c-white" id="s-conv-pg">0%</div>
+          <div class="metric-sub">Registros / PageViews</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Taxa de Retenção</span></div>
+          <div class="metric-value c-white" id="s-retencao">0%</div>
+          <div class="metric-sub">(Joins - Saídas) / Joins</div>
+        </div>
+      </div>
+
+      <!-- Funil + Tempo Médio -->
+      <div style="display:flex;gap:14px;margin-bottom:16px">
+        <!-- Funil horizontal -->
+        <div class="panel" style="flex:1;margin-bottom:0">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Funil de Conversão</div>
+              <div class="panel-subtitle">Jornada do visitante até o depósito</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div id="funil-pageviews" style="display:flex;align-items:center;gap:10px">
+              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">PageViews</span>
+              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
+                <div class="funil-h-fill" style="height:100%;width:0%;background:#4f6ef7;border-radius:4px;transition:width 0.6s ease"></div>
+              </div>
+              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
+            </div>
+            <div id="funil-entradas" style="display:flex;align-items:center;gap:10px">
+              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">Entradas</span>
+              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
+                <div class="funil-h-fill" style="height:100%;width:0%;background:#22c55e;border-radius:4px;transition:width 0.6s ease"></div>
+              </div>
+              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
+              <span class="funil-h-pct" style="font-size:0.72rem;color:#22c55e;background:#14291e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
+            </div>
+            <div id="funil-registros" style="display:flex;align-items:center;gap:10px">
+              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">Registros</span>
+              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
+                <div class="funil-h-fill" style="height:100%;width:0%;background:#a855f7;border-radius:4px;transition:width 0.6s ease"></div>
+              </div>
+              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
+              <span class="funil-h-pct" style="font-size:0.72rem;color:#a855f7;background:#2a1a4e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
+            </div>
+            <div id="funil-ftd" style="display:flex;align-items:center;gap:10px">
+              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">FTD</span>
+              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
+                <div class="funil-h-fill" style="height:100%;width:0%;background:#f59e0b;border-radius:4px;transition:width 0.6s ease"></div>
+              </div>
+              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
+              <span class="funil-h-pct" style="font-size:0.72rem;color:#f59e0b;background:#2a1f0e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tempo Médio -->
+        <div class="panel" style="width:200px;flex-shrink:0;margin-bottom:0">
+          <div class="panel-header" style="margin-bottom:12px">
+            <div class="panel-title">Tempo Médio</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → Saída</div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-saida">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → Registro</div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-reg">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → FTD</div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-ftd">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Registro → FTD</div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-reg-ftd">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evolução Temporal -->
+      <div class="panel" style="margin-bottom:0">
         <div class="panel-header">
           <div>
-            <div class="panel-title">Funil de Conversão</div>
-            <div class="panel-subtitle">Acompanhe a jornada do lead até o depósito</div>
+            <div class="panel-title">Evolução Temporal</div>
+            <div class="panel-subtitle">Acompanhe a evolução diária de PageViews e Entradas</div>
           </div>
         </div>
-        <div class="funil">
-          <div class="funil-col">
-            <div class="funil-col-label">Cadastros</div>
-            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-cad" style="width:100%"></div></div>
-            <div class="funil-num" id="f-cadastros">0</div>
-            <div class="funil-pct-text">100%</div>
-            <div class="funil-arrow-badge">›</div>
-          </div>
-          <div class="funil-col">
-            <div class="funil-col-label">FTDs</div>
-            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-ftd" style="width:0%"></div></div>
-            <div class="funil-num" id="f-ftds">0</div>
-            <div class="funil-pct-text zero" id="f-ftd-pct">0%</div>
-            <div class="funil-arrow-badge">›</div>
-          </div>
-          <div class="funil-col">
-            <div class="funil-col-label">Total Depósitos</div>
-            <div class="funil-pct-bar"><div class="funil-pct-fill" id="fp-dep" style="width:0%"></div></div>
-            <div class="funil-num" id="f-depositos">0</div>
-            <div class="funil-pct-text zero" id="f-dep-pct">0%</div>
-            <div class="funil-arrow-badge">›</div>
-          </div>
-          <div class="funil-col">
-            <div class="funil-col-label">Valor Total</div>
-            <div class="funil-pct-bar"><div class="funil-pct-fill" style="width:100%;background:#22c55e"></div></div>
-            <div class="funil-num c-green" id="f-valor" style="font-size:1.1rem;margin-top:4px">R$ 0</div>
-            <div class="funil-pct-text" id="f-ticket" style="color:#4a5568">ticket: R$ 0</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Gráficos -->
-      <div class="grid-60-40">
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header">
-            <div class="panel-title">Cadastros por Origem</div>
-          </div>
-          <div id="no-cad-source" class="empty-state" style="display:none;padding:20px 0">
-            <div class="empty-icon">📊</div><p>Sem dados de UTM ainda</p>
-          </div>
-          <canvas id="g-source-cad"></canvas>
-        </div>
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header">
-            <div class="panel-title">Tipo de Depósito</div>
-          </div>
-          <canvas id="g-dep-tipo"></canvas>
+        <div style="height:200px;position:relative">
+          <canvas id="g-evolucao"></canvas>
         </div>
       </div>
 
@@ -1097,6 +1144,100 @@
     depositos: "Depósitos", utms: "UTMs", integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
   };
 
+  // ── Stats / Resumo ──
+  async function carregarStats() {
+    const canal = document.getElementById("stats-canal").value;
+    const inicio = document.getElementById("stats-inicio").value;
+    const fim = document.getElementById("stats-fim").value;
+
+    let url = "/tracker/stats?";
+    if (canal) url += "canal_id=" + encodeURIComponent(canal) + "&";
+    if (inicio) url += "data_inicio=" + inicio + "&";
+    if (fim) url += "data_fim=" + fim + "&";
+
+    try {
+      const r = await fetch(url);
+      const s = await r.json();
+
+      // Cards
+      document.getElementById("s-pageviews").textContent = s.pageviews.toLocaleString("pt-BR");
+      document.getElementById("s-entradas").textContent = s.entradas.toLocaleString("pt-BR");
+      document.getElementById("s-saidas").textContent = s.saidas.toLocaleString("pt-BR");
+      document.getElementById("s-registros").textContent = s.registros.toLocaleString("pt-BR");
+      document.getElementById("s-ftd").textContent = s.ftd.toLocaleString("pt-BR");
+      document.getElementById("s-ftd-valor").textContent = "R$ " + Number(s.ftd_valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+      document.getElementById("s-redep").textContent = s.redep.toLocaleString("pt-BR");
+      document.getElementById("s-redep-valor").textContent = "R$ " + Number(s.redep_valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+
+      // Rates
+      document.getElementById("s-ctr").textContent = s.ctr + "%";
+      document.getElementById("s-conv-tg").textContent = s.conv_telegram + "%";
+      document.getElementById("s-conv-pg").textContent = s.conv_pagina + "%";
+      document.getElementById("s-retencao").textContent = s.retencao + "%";
+
+      // Funil bars
+      const maxVal = Math.max(s.pageviews, 1);
+      function setBar(id, val, max, pct) {
+        const row = document.getElementById("funil-" + id);
+        if (!row) return;
+        row.querySelector(".funil-h-fill").style.width = Math.round(val/max*100) + "%";
+        row.querySelector(".funil-h-count").textContent = val.toLocaleString("pt-BR");
+        const pctEl = row.querySelector(".funil-h-pct");
+        if (pctEl) pctEl.textContent = pct !== null ? pct + "%" : "";
+      }
+      setBar("pageviews", s.pageviews, maxVal, null);
+      setBar("entradas", s.entradas, maxVal, s.ctr);
+      setBar("registros", s.registros, maxVal, s.conv_pagina);
+      setBar("ftd", s.ftd, maxVal, s.ftd > 0 ? Math.round(s.ftd/Math.max(s.registros,1)*100) : 0);
+
+      // Evolução chart
+      renderEvolucao(s.evolucao || []);
+    } catch(e) {
+      console.error("Stats erro:", e);
+    }
+  }
+
+  async function popularCanalSelect() {
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      const sel = document.getElementById("stats-canal");
+      (cfg.canais || []).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.nome;
+        sel.appendChild(opt);
+      });
+    } catch(e) {}
+  }
+
+  function renderEvolucao(dados) {
+    const ctx = document.getElementById("g-evolucao");
+    if (!ctx) return;
+    if (window._chartEvolucao) window._chartEvolucao.destroy();
+    window._chartEvolucao = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: dados.map(d => {
+          const [,m,dia] = d.data.split("-");
+          return dia + "/" + m;
+        }),
+        datasets: [
+          { label: "PageViews", data: dados.map(d=>d.pageviews), borderColor: "#4f6ef7", backgroundColor: "#4f6ef722", fill: true, tension: 0.4, pointRadius: 3 },
+          { label: "Entradas", data: dados.map(d=>d.entradas), borderColor: "#22c55e", backgroundColor: "#22c55e22", fill: true, tension: 0.4, pointRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: "#c9d1e0", font: { size: 11 } } } },
+        scales: {
+          x: { grid: { color: "#1e2235" }, ticks: { color: "#6b7280", font: { size: 10 } } },
+          y: { grid: { color: "#1e2235" }, ticks: { color: "#c9d1e0", font: { size: 11 } }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
   // ── Auth ──
   sb.auth.getSession().then(({ data }) => {
     if (!data.session) { window.location.href = "index.html"; return; }
@@ -1104,6 +1245,12 @@
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
     carregar();
+    popularCanalSelect();
+    carregarStats();
+    const hoje = new Date();
+    const trintaDias = new Date(hoje); trintaDias.setDate(trintaDias.getDate() - 30);
+    document.getElementById("stats-inicio").value = trintaDias.toISOString().split("T")[0];
+    document.getElementById("stats-fim").value = hoje.toISOString().split("T")[0];
   });
 
   async function sair() {
@@ -1670,6 +1817,7 @@
     document.getElementById("sec-" + id).classList.add("visivel");
     el.classList.add("ativo");
     document.getElementById("titulo-pagina").textContent = titulos[id] || id;
+    if (id === "resumo") carregarStats();
     if (id === "utms") renderUTMBars();
     if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
     if (id === "canais") { carregarCanais(); }
