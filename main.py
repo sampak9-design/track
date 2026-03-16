@@ -630,7 +630,6 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             "pageviews": pageviews,
             "entradas": entradas,
             "saidas": saidas,
-            "joins": joins,
             "cliques": cliques,
             "registros": registros,
             "ftd": ftd_count,
