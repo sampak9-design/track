@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from starlette.middleware.cors import CORSMiddleware
 from supabase import create_client
 import uvicorn
 import httpx
@@ -17,6 +18,13 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 app = FastAPI()
 db  = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
