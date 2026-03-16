@@ -1926,21 +1926,60 @@
       } else {
         // Nenhum canal encontrado
         body.innerHTML = `
-          <div style="background:#2a1f06;border:1px solid #f59e0b44;border-radius:10px;padding:20px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span style="font-size:0.9rem;font-weight:700;color:#f59e0b">Nenhum canal encontrado</span>
+          <div style="background:#2a1f06;border:1px solid #f59e0b44;border-radius:10px;padding:16px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style="font-size:0.85rem;font-weight:700;color:#f59e0b">Nenhum canal detectado automaticamente</span>
             </div>
-            <p style="font-size:0.82rem;color:#c9a84c;line-height:1.6">O bot precisa ser adicionado como Admin <b>depois</b> de salvar o token aqui. Remova o bot do canal e adicione-o novamente como administrador.</p>
-            <button onclick="wizDetectarCanal()" id="btn-wiz-retry"
-              style="width:100%;margin-top:14px;background:#f59e0b;color:#0f1117;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <p style="font-size:0.78rem;color:#c9a84c;line-height:1.5;margin-bottom:12px">Remova o bot do canal, adicione de volta como admin e tente novamente.</p>
+            <button onclick="wizDetectarCanal()"
+              style="width:100%;background:#f59e0b;color:#0f1117;border:none;padding:10px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Já removi e adicionei novamente
             </button>
+          </div>
+          <div style="padding:16px;background:#0f1117;border:1px solid #1e2235;border-radius:10px">
+            <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Adicionar canal manualmente</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <input id="wiz-canal-nome" type="text" placeholder="Nome do canal (ex: Investidor de Elite)"
+                style="width:100%;background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+              <input id="wiz-canal-link" type="text" placeholder="Link de convite (https://t.me/+...)"
+                style="width:100%;background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+              <div id="wiz-manual-msg" style="font-size:0.78rem;display:none"></div>
+              <button onclick="wizSalvarManual()"
+                style="background:#a855f7;color:white;border:none;padding:10px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+                Salvar Canal →
+              </button>
+            </div>
           </div>`;
       }
     } catch(e) {
       body.innerHTML = `<div style="color:#ef4444;font-size:0.82rem">✗ ${e.message||"Erro ao detectar"}</div>`;
+    }
+  }
+
+  async function wizSalvarManual() {
+    const nome = document.getElementById("wiz-canal-nome").value.trim();
+    const link = document.getElementById("wiz-canal-link").value.trim();
+    const msg = document.getElementById("wiz-manual-msg");
+    if (!nome) { msg.textContent = "⚠ Informe o nome do canal"; msg.style.color="#f59e0b"; msg.style.display="block"; return; }
+    try {
+      const r = await fetch("/config/telegram/canal", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ nome, username: "", link })
+      });
+      if (r.ok) {
+        wizardStep = 4;
+        renderWizard();
+      } else {
+        const e = await r.json().catch(()=>({}));
+        throw new Error(e.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao salvar");
+      msg.style.color = "#ef4444"; msg.style.display = "block";
     }
   }
 
