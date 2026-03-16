@@ -554,7 +554,9 @@ def get_leads():
         cads = db.table("cadastros").select("*").execute().data or []
         cad_by_name = {}
         for c in cads:
-            key = (c.get("nome") or "").split()[0].lower().strip()
+            parts = (c.get("nome") or "").split()
+            if not parts: continue
+            key = parts[0].lower().strip()
             if key: cad_by_name[key] = c
 
         # Depósitos indexados por email
