@@ -556,6 +556,63 @@ async def verificar_canal(username: str):
     return {"ok": True, "id": canal_id, "nome": nome, "username": uname, "link": invite, "telegram_id": tg_id}
 
 
+@app.get("/telegram/detectar-canais")
+async def detectar_canais():
+    """Busca canais onde o bot é admin via getUpdates (para canais privados)."""
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        if result.data:
+            bot_token = result.data[0]["valor"]
+    except Exception:
+        pass
+
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+
+    salvos = 0
+    async with httpx.AsyncClient() as client:
+        # Pega updates recentes incluindo my_chat_member
+        resp = await client.get(
+            f"https://api.telegram.org/bot{bot_token}/getUpdates",
+            params={"allowed_updates": ["my_chat_member"], "limit": 100}
+        )
+    data = resp.json()
+    if not data.get("ok"):
+        raise HTTPException(status_code=400, detail=data.get("description", "Erro ao buscar updates"))
+
+    for update in data.get("result", []):
+        mcm = update.get("my_chat_member")
+        if not mcm:
+            continue
+        chat = mcm.get("chat", {})
+        new_status = mcm.get("new_chat_member", {}).get("status", "")
+        if chat.get("type") not in ("channel", "supergroup"):
+            continue
+        if new_status not in ("administrator", "member"):
+            continue
+
+        chat_id    = chat.get("id")
+        chat_title = chat.get("title", "")
+        chat_uname = ("@" + chat.get("username")) if chat.get("username") else ""
+
+        try:
+            existing = db.table("telegram_canais").select("id").eq("telegram_id", str(chat_id)).execute()
+            if not existing.data:
+                db.table("telegram_canais").insert({
+                    "nome": chat_title,
+                    "username": chat_uname,
+                    "telegram_id": str(chat_id),
+                    "link": "",
+                }).execute()
+                salvos += 1
+                print(f"[DETECTAR] Canal salvo: {chat_title} id={chat_id}")
+        except Exception as e:
+            print(f"[DETECTAR ERRO] {e}")
+
+    return {"ok": True, "salvos": salvos}
+
+
 @app.get("/telegram/setup")
 async def telegram_setup(request: Request):
     """Registra o webhook do bot no Telegram."""

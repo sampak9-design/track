@@ -1049,48 +1049,30 @@
           </div>
         </div>
 
-        <!-- Conectar canal via username -->
+        <!-- Detectar canais automaticamente -->
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2235">
-          <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Conectar Canal</div>
-          <div style="display:flex;gap:8px;max-width:500px">
-            <input id="canal-username-conectar" type="text" placeholder="@username do canal (ex: @meucanal)"
-              style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'"
-              onkeydown="if(event.key==='Enter') conectarCanal()">
-            <button onclick="conectarCanal()" id="btn-conectar-canal"
-              style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;max-width:560px">
+            <div>
+              <div style="font-size:0.8rem;font-weight:600;color:#c9d1e0">Detectar canais automaticamente</div>
+              <div style="font-size:0.72rem;color:#6b7280;margin-top:2px">Busca todos os canais onde o bot foi adicionado como admin</div>
+            </div>
+            <button onclick="detectarCanais()" id="btn-detectar-canais"
+              style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap"
               onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
-              Conectar
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Detectar Canais
             </button>
           </div>
           <span id="canal-add-msg" style="font-size:0.78rem;margin-top:8px;display:none"></span>
 
-          <!-- Campos extras para canal privado (sem @username público) -->
-          <div style="margin-top:12px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235;max-width:500px">
-            <div style="font-size:0.72rem;color:#6b7280;margin-bottom:8px">Canal <b style="color:#c9d1e0">privado</b> (sem @username)? Preencha manualmente:</div>
-            <div style="display:flex;flex-direction:column;gap:7px">
-              <input id="canal-nome-manual" type="text" placeholder="Nome do canal"
-                style="background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:7px 10px;color:#e2e8f0;font-size:0.8rem;font-family:inherit;outline:none;"
-                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-              <input id="canal-link-manual" type="text" placeholder="Link de convite (https://t.me/+...)"
-                style="background:#13151f;border:1px solid #1e2235;border-radius:7px;padding:7px 10px;color:#e2e8f0;font-size:0.8rem;font-family:inherit;outline:none;"
-                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-              <button onclick="adicionarCanalManual()"
-                style="background:#1e2235;color:#a855f7;border:1px solid #a855f7;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600;width:fit-content">
-                + Adicionar manualmente
-              </button>
+          <div style="margin-top:12px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235;max-width:560px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Canal privado não apareceu?</div>
+            <div style="display:flex;flex-direction:column;gap:5px;font-size:0.78rem;color:#6b7280;line-height:1.6">
+              <div>1. Clique em <span style="color:#4f6ef7">Ativar</span> no bot acima</div>
+              <div>2. <span style="color:#ef4444">Remova</span> o bot do canal no Telegram</div>
+              <div>3. <span style="color:#22c55e">Adicione de volta</span> o bot como administrador</div>
+              <div>4. Clique em <span style="color:#a855f7">Detectar Canais</span> novamente</div>
             </div>
-          </div>
-        </div>
-
-        <!-- Instrução -->
-        <div style="margin-top:16px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
-          <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Como configurar</div>
-          <div style="display:flex;flex-direction:column;gap:6px;font-size:0.78rem;color:#6b7280;line-height:1.6">
-            <div>1. Crie um bot no Telegram via <span style="color:#4f6ef7">@BotFather</span> e copie o token</div>
-            <div>2. Adicione o bot como <span style="color:#c9d1e0">administrador</span> do seu canal com permissão de ver membros</div>
-            <div>3. Cole o token acima em "Meus Bots" e clique em <span style="color:#c9d1e0">Adicionar Bot</span></div>
-            <div>4. Clique em <span style="color:#4f6ef7">Ativar</span> para registrar o webhook no Telegram</div>
           </div>
         </div>
       </div>
@@ -1913,67 +1895,35 @@
     `).join("");
   }
 
-  async function conectarCanal() {
-    const username = document.getElementById("canal-username-conectar").value.trim();
+  async function detectarCanais() {
     const msg = document.getElementById("canal-add-msg");
-    const btn = document.getElementById("btn-conectar-canal");
-
-    if (!username) {
-      msg.textContent = "⚠ Informe o @username do canal";
-      msg.style.color = "#f59e0b"; msg.style.display = "block"; return;
-    }
-
-    btn.textContent = "Verificando..."; btn.style.opacity = "0.7";
+    const btn = document.getElementById("btn-detectar-canais");
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> Buscando...';
+    btn.style.opacity = "0.7";
+    msg.style.display = "none";
     try {
-      const r = await fetch("/telegram/verificar-canal?username=" + encodeURIComponent(username));
+      const r = await fetch("/telegram/detectar-canais");
+      const data = await r.json();
       if (r.ok) {
-        msg.textContent = "✓ Canal conectado com sucesso!";
-        msg.style.color = "#22c55e"; msg.style.display = "block";
-        document.getElementById("canal-username-conectar").value = "";
+        if (data.salvos > 0) {
+          msg.textContent = "✓ " + data.salvos + " canal(is) detectado(s)!";
+          msg.style.color = "#22c55e";
+        } else {
+          msg.textContent = "Nenhum canal novo encontrado. Siga os passos abaixo.";
+          msg.style.color = "#f59e0b";
+        }
+        msg.style.display = "block";
         carregarCanais();
-        setTimeout(() => { msg.style.display = "none"; }, 4000);
+        setTimeout(() => { msg.style.display = "none"; }, 5000);
       } else {
-        const err = await r.json().catch(() => ({}));
-        throw new Error(err.detail || "Canal não encontrado. Verifique se o bot é admin.");
+        throw new Error(data.detail || "Erro ao detectar");
       }
     } catch(e) {
-      msg.textContent = "✗ " + (e.message || "Erro ao conectar canal");
+      msg.textContent = "✗ " + (e.message || "Erro ao detectar canais");
       msg.style.color = "#ef4444"; msg.style.display = "block";
     }
-    btn.textContent = "Conectar"; btn.style.opacity = "1";
-  }
-
-  async function adicionarCanalManual() {
-    const nome = document.getElementById("canal-nome-manual").value.trim();
-    const link = document.getElementById("canal-link-manual").value.trim();
-    const msg = document.getElementById("canal-add-msg");
-
-    if (!nome) {
-      msg.textContent = "⚠ Informe o nome do canal";
-      msg.style.color = "#f59e0b"; msg.style.display = "block"; return;
-    }
-
-    try {
-      const r = await fetch("/config/telegram/canal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, username: "", link })
-      });
-      if (r.ok) {
-        msg.textContent = "✓ Canal adicionado";
-        msg.style.color = "#22c55e"; msg.style.display = "block";
-        document.getElementById("canal-nome-manual").value = "";
-        document.getElementById("canal-link-manual").value = "";
-        carregarCanais();
-        setTimeout(() => { msg.style.display = "none"; }, 3000);
-      } else {
-        const err = await r.json().catch(() => ({}));
-        throw new Error(err.detail || r.status);
-      }
-    } catch(e) {
-      msg.textContent = "✗ " + (e.message || "Erro ao adicionar canal");
-      msg.style.color = "#ef4444"; msg.style.display = "block";
-    }
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Detectar Canais';
+    btn.style.opacity = "1";
   }
 
   async function removerCanal(id) {
