@@ -13,6 +13,7 @@ load_dotenv()
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 app = FastAPI()
 db  = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -173,6 +174,72 @@ async def deposito(request: Request):
 
     print(f"[DEPOSITO] {registro['email']} - R$ {registro['valor']}")
     return {"status": "ok", "id": result.data[0]["id"]}
+
+
+# ── Telegram ─────────────────────────────────────────────────────
+@app.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    update = await request.json()
+
+    chat_member = update.get("chat_member")
+    if not chat_member:
+        return {"ok": True}
+
+    user        = chat_member.get("new_chat_member", {}).get("user", {})
+    new_status  = chat_member.get("new_chat_member", {}).get("status", "")
+    old_status  = chat_member.get("old_chat_member", {}).get("status", "")
+
+    user_id    = user.get("id")
+    username   = user.get("username")
+    first_name = user.get("first_name", "")
+    last_name  = user.get("last_name", "")
+
+    # Determinar evento
+    joined  = old_status in ("left", "kicked") and new_status == "member"
+    left    = old_status == "member" and new_status in ("left", "kicked")
+
+    if not joined and not left:
+        return {"ok": True}
+
+    event = "join" if joined else "leave"
+    event_name_meta = "JoinChannel" if joined else "LeaveChannel"
+
+    registro = {
+        "user_id":    user_id,
+        "username":   username,
+        "first_name": first_name,
+        "last_name":  last_name,
+        "event":      event,
+    }
+
+    try:
+        db.table("telegram_members").insert(registro).execute()
+    except Exception as e:
+        print(f"[TELEGRAM ERRO] {e}")
+
+    await enviar_meta(event_name_meta, first_name=first_name, last_name=last_name)
+
+    print(f"[TELEGRAM] {event.upper()} — @{username or user_id} ({first_name} {last_name})")
+    return {"ok": True}
+
+
+@app.get("/telegram/setup")
+async def telegram_setup(request: Request):
+    """Registra o webhook do bot no Telegram."""
+    if not TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN não configurado")
+
+    webhook_url = str(request.base_url).rstrip("/") + "/telegram/webhook"
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setWebhook",
+            json={"url": webhook_url, "allowed_updates": ["chat_member"]},
+        )
+
+    result = resp.json()
+    print(f"[TELEGRAM SETUP] {result}")
+    return result
 
 
 if __name__ == "__main__":
