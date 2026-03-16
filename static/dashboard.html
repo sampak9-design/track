@@ -1421,15 +1421,15 @@
     btn.classList.add("loading");
     btn.disabled = true;
 
-    const [{ data: c }, { data: d }, { data: tm }] = await Promise.all([
+    const [{ data: c }, { data: d }, tmRes] = await Promise.all([
       sb.from("cadastros").select("*").order("created_at", { ascending: false }),
       sb.from("depositos").select("*").order("created_at", { ascending: false }),
-      sb.from("telegram_members").select("user_id,first_name,last_name,username,event,created_at").order("created_at", { ascending: false }),
+      fetch("/telegram/members-status").then(r => r.json()).catch(() => ({ members: [] })),
     ]);
 
     allCadastros = c || [];
     allDepositos = d || [];
-    allTelegramMembers = tm || [];
+    allTelegramMembers = tmRes.members || [];
 
     popularFiltros(allCadastros, allDepositos);
     aplicarFiltros();
@@ -1625,16 +1625,10 @@
 
   // ── Tabelas ──
   function buildTelegramStatusMap() {
-    // latest event per user_id
-    const byUser = {};
-    allTelegramMembers.forEach(m => {
-      const uid = m.user_id;
-      if (!uid) return;
-      if (!byUser[uid] || m.created_at > byUser[uid].created_at) byUser[uid] = m;
-    });
-    // index by first_name lowercase for matching
+    // Backend already returns latest event per user_id
+    // Index by first_name lowercase for matching with cadastros
     const byName = {};
-    Object.values(byUser).forEach(m => {
+    allTelegramMembers.forEach(m => {
       const key = (m.first_name || "").toLowerCase().trim();
       if (key) byName[key] = m;
     });

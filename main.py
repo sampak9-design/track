@@ -534,6 +534,24 @@ async def tracker_entrada(request: Request):
         print(f"[ENTRADA ERRO] {e}")
     return {"ok": True}
 
+@app.get("/telegram/members-status")
+def telegram_members_status():
+    """Retorna o status atual (join/leave mais recente) por user_id."""
+    try:
+        r = db.table("telegram_members").select("user_id,first_name,last_name,username,event,created_at").order("created_at", ascending=False).execute()
+        rows = r.data or []
+        # Pega o evento mais recente por user_id
+        by_user = {}
+        for row in rows:
+            uid = row.get("user_id")
+            if not uid:
+                continue
+            if uid not in by_user:
+                by_user[uid] = row
+        return {"members": list(by_user.values())}
+    except Exception as e:
+        return {"members": []}
+
 @app.get("/tracker/stats")
 async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim: str = None):
     """Retorna métricas do dashboard para o canal e período selecionados."""
