@@ -369,7 +369,7 @@
   <div class="filter-bar">
     <div class="filter-group">
       <span class="filter-label">Período de Visualização</span>
-      <select class="filter-select" id="periodo" onchange="carregar()">
+      <select class="filter-select" id="periodo" onchange="sincronizarDatasStats();carregar()">
         <option value="hoje">Hoje</option>
         <option value="7d">Últimos 7 dias</option>
         <option value="30d" selected>Últimos 30 dias</option>
@@ -1329,11 +1329,8 @@
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
     carregar();
     popularCanalSelect();
+    sincronizarDatasStats();
     carregarStats();
-    const hoje = new Date();
-    const trintaDias = new Date(hoje); trintaDias.setDate(trintaDias.getDate() - 30);
-    document.getElementById("stats-inicio").value = trintaDias.toISOString().split("T")[0];
-    document.getElementById("stats-fim").value = hoje.toISOString().split("T")[0];
   });
 
   async function sair() {
@@ -1352,6 +1349,31 @@
   }
 
   // ── Período ──
+  function periodoParaDatas() {
+    const p = document.getElementById("periodo").value;
+    const hoje = new Date();
+    const fim = hoje.toISOString().split("T")[0];
+    let inicio;
+    if (p === "hoje") {
+      inicio = fim;
+    } else if (p === "7d") {
+      const d = new Date(hoje); d.setDate(d.getDate() - 7);
+      inicio = d.toISOString().split("T")[0];
+    } else if (p === "30d") {
+      const d = new Date(hoje); d.setDate(d.getDate() - 30);
+      inicio = d.toISOString().split("T")[0];
+    } else {
+      inicio = ""; // tudo
+    }
+    return { inicio, fim: p === "tudo" ? "" : fim };
+  }
+
+  function sincronizarDatasStats() {
+    const { inicio, fim } = periodoParaDatas();
+    document.getElementById("stats-inicio").value = inicio;
+    document.getElementById("stats-fim").value = fim;
+  }
+
   function filtrarPeriodo(arr) {
     const p = document.getElementById("periodo").value;
     if (p === "tudo") return arr;
@@ -1408,6 +1430,8 @@
 
     popularFiltros(allCadastros, allDepositos);
     aplicarFiltros();
+    sincronizarDatasStats();
+    carregarStats();
 
     const agora = new Date();
     document.getElementById("update-time").textContent =
