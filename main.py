@@ -387,17 +387,93 @@ async def telegram_webhook(request: Request):
     return {"ok": True}
 
 
+@app.get("/config/telegram")
+def ler_config_telegram():
+    try:
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["telegram_bot_token", "telegram_bot_username"]).execute()
+        cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
+        token = cfg.get("telegram_bot_token") or TELEGRAM_BOT_TOKEN
+        username = cfg.get("telegram_bot_username", "")
+        canais_res = db.table("telegram_canais").select("*").execute()
+        canais = canais_res.data or []
+        return {"token": token or "", "username": username, "configurado": bool(token), "canais": canais}
+    except Exception:
+        return {"token": "", "username": "", "configurado": False, "canais": []}
+
+@app.post("/config/telegram")
+async def salvar_config_telegram(request: Request):
+    global TELEGRAM_BOT_TOKEN
+    data = await request.json()
+    token = data.get("token", "").strip()
+    username = data.get("username", "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="token é obrigatório")
+    try:
+        for chave, valor in [("telegram_bot_token", token), ("telegram_bot_username", username)]:
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            if existing.data:
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+            else:
+                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+        TELEGRAM_BOT_TOKEN = token
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    print(f"[CONFIG] Telegram Bot atualizado: {username}")
+    return {"status": "ok"}
+
+@app.delete("/config/telegram")
+async def remover_config_telegram():
+    global TELEGRAM_BOT_TOKEN
+    try:
+        for chave in ["telegram_bot_token", "telegram_bot_username"]:
+            db.table("configuracoes").delete().eq("chave", chave).execute()
+        TELEGRAM_BOT_TOKEN = ""
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok"}
+
+@app.post("/config/telegram/canal")
+async def adicionar_canal_telegram(request: Request):
+    data = await request.json()
+    nome = data.get("nome", "").strip()
+    username = data.get("username", "").strip()
+    if not nome:
+        raise HTTPException(status_code=400, detail="nome é obrigatório")
+    try:
+        result = db.table("telegram_canais").insert({"nome": nome, "username": username}).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok", "id": result.data[0]["id"]}
+
+@app.delete("/config/telegram/canal/{canal_id}")
+async def remover_canal_telegram(canal_id: int):
+    try:
+        db.table("telegram_canais").delete().eq("id", canal_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok"}
+
+
 @app.get("/telegram/setup")
 async def telegram_setup(request: Request):
     """Registra o webhook do bot no Telegram."""
-    if not TELEGRAM_BOT_TOKEN:
+    # tenta pegar token do Supabase primeiro
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        if result.data:
+            bot_token = result.data[0]["valor"]
+    except Exception:
+        pass
+
+    if not bot_token:
         raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN não configurado")
 
     webhook_url = str(request.base_url).rstrip("/") + "/telegram/webhook"
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setWebhook",
+            f"https://api.telegram.org/bot{bot_token}/setWebhook",
             json={"url": webhook_url, "allowed_updates": ["chat_member"]},
         )
 

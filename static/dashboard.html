@@ -333,8 +333,12 @@
   <div class="nav-section">
     <div class="nav-label">Configuração</div>
     <div class="nav-item" onclick="mudarSecao('integracoes',this)" id="nav-integracoes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      Integrações
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="9" y="3" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="2" y="15" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/></svg>
+      Pixels
+    </div>
+    <div class="nav-item" onclick="mudarSecao('canais',this)" id="nav-canais">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+      Canais
     </div>
   </div>
 
@@ -864,6 +868,131 @@
       </div>
     </div>
 
+    <!-- ════ CANAIS ════ -->
+    <div class="secao" id="sec-canais">
+
+      <!-- Meus Bots -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="3"/><path d="M12 8v3"/><path d="M9 15h.01M15 15h.01"/></svg>
+            <span class="panel-title">Meus Bots</span>
+          </div>
+        </div>
+
+        <!-- Bot não configurado -->
+        <div id="bot-nao-configurado">
+          <p style="font-size:0.8rem;color:#6b7280;margin-bottom:14px">Configure um bot do Telegram para rastrear entradas e saídas do canal.</p>
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:480px">
+            <div>
+              <div class="webhook-label-row">Bot Token</div>
+              <input id="canal-bot-token" type="password" placeholder="Ex: 123456789:AAFz..."
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+              <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="show-bot-token" onchange="document.getElementById('canal-bot-token').type=this.checked?'text':'password'" style="cursor:pointer">
+                <label for="show-bot-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+              </div>
+            </div>
+            <div>
+              <div class="webhook-label-row">Nome do Bot (ex: @meubot)</div>
+              <input id="canal-bot-username" type="text" placeholder="@seubot"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button onclick="salvarBot()" id="btn-salvar-bot"
+                style="background:#4f6ef7;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
+                Adicionar Bot
+              </button>
+              <span id="bot-save-msg" style="font-size:0.78rem;display:none"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot configurado -->
+        <div id="bot-configurado" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;max-width:480px">
+            <div style="width:40px;height:40px;background:#1a2a5e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#4f6ef7" stroke="none"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.85rem;font-weight:600;color:#e2e8f0" id="bot-display-username">@bot</div>
+              <div style="font-size:0.72rem;color:#22c55e;display:flex;align-items:center;gap:4px;margin-top:2px">
+                <div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>
+                Bot Ativo
+              </div>
+              <div style="font-size:0.72rem;color:#6b7280;margin-top:2px" id="bot-canais-count">0 canal conectado</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button onclick="ativarWebhookBot()" title="Ativar webhook"
+                style="background:#1e2235;border:none;color:#4f6ef7;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px"
+                onmouseover="this.style.background='#252840'" onmouseout="this.style.background='#1e2235'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                Ativar
+              </button>
+              <button onclick="removerBot()" title="Remover bot"
+                style="background:#1e2235;border:none;color:#ef4444;width:32px;height:32px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center"
+                onmouseover="this.style.background='#2a1a1a'" onmouseout="this.style.background='#1e2235'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          </div>
+          <span id="webhook-ativar-msg" style="font-size:0.78rem;display:none;margin-top:8px;display:block"></span>
+        </div>
+      </div>
+
+      <!-- Meus Canais -->
+      <div class="panel">
+        <div class="panel-header" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+            <span class="panel-title">Meus Canais</span>
+          </div>
+        </div>
+
+        <div id="canais-lista">
+          <div style="text-align:center;padding:32px 0;color:#3d4466">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;display:block;opacity:0.4"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+            <p style="font-size:0.8rem">Nenhum canal configurado ainda</p>
+            <p style="font-size:0.72rem;margin-top:4px">Adicione o bot como admin no seu canal e ative o webhook</p>
+          </div>
+        </div>
+
+        <!-- Adicionar canal manualmente -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2235">
+          <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Adicionar Canal</div>
+          <div style="display:flex;gap:8px;max-width:480px">
+            <input id="canal-nome" type="text" placeholder="Nome do canal (ex: Investidor de Elite)"
+              style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+            <input id="canal-username" type="text" placeholder="@username"
+              style="width:150px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+            <button onclick="adicionarCanal()"
+              style="background:#a855f7;color:white;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
+              onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
+              + Adicionar
+            </button>
+          </div>
+          <span id="canal-add-msg" style="font-size:0.78rem;display:none;margin-top:6px;display:block"></span>
+        </div>
+
+        <!-- Instrução -->
+        <div style="margin-top:16px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+          <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Como configurar</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:0.78rem;color:#6b7280;line-height:1.6">
+            <div>1. Crie um bot no Telegram via <span style="color:#4f6ef7">@BotFather</span> e copie o token</div>
+            <div>2. Adicione o bot como <span style="color:#c9d1e0">administrador</span> do seu canal com permissão de ver membros</div>
+            <div>3. Cole o token acima em "Meus Bots" e clique em <span style="color:#c9d1e0">Adicionar Bot</span></div>
+            <div>4. Clique em <span style="color:#4f6ef7">Ativar</span> para registrar o webhook no Telegram</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -879,7 +1008,7 @@
 
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
-    depositos: "Depósitos", utms: "UTMs", integracoes: "Integrações"
+    depositos: "Depósitos", utms: "UTMs", integracoes: "Pixels", canais: "Canais e Bots"
   };
 
   // ── Auth ──
@@ -1457,6 +1586,7 @@
     document.getElementById("titulo-pagina").textContent = titulos[id] || id;
     if (id === "utms") renderUTMBars();
     if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
+    if (id === "canais") { carregarCanais(); }
   }
 
   // ── Copiar ──
@@ -1476,6 +1606,171 @@
       btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
     });
+  }
+
+  // ── Canais / Bot ──
+  async function carregarCanais() {
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      if (cfg.token) {
+        document.getElementById("canal-bot-token").value = cfg.token;
+        document.getElementById("canal-bot-username").value = cfg.username || "";
+        mostrarBotConfigurado(cfg.username || "@bot");
+      } else {
+        document.getElementById("bot-nao-configurado").style.display = "block";
+        document.getElementById("bot-configurado").style.display = "none";
+      }
+      // canais salvos
+      if (cfg.canais && cfg.canais.length > 0) {
+        renderCanais(cfg.canais);
+        document.getElementById("bot-canais-count").textContent = cfg.canais.length + " canal(is) conectado(s)";
+      }
+    } catch(e) {}
+  }
+
+  function mostrarBotConfigurado(username) {
+    document.getElementById("bot-nao-configurado").style.display = "none";
+    document.getElementById("bot-configurado").style.display = "block";
+    document.getElementById("bot-display-username").textContent = username.startsWith("@") ? username : "@" + username;
+  }
+
+  async function salvarBot() {
+    const token = document.getElementById("canal-bot-token").value.trim();
+    const username = document.getElementById("canal-bot-username").value.trim();
+    const btn = document.getElementById("btn-salvar-bot");
+    const msg = document.getElementById("bot-save-msg");
+
+    if (!token) {
+      msg.textContent = "⚠ Cole o token do bot";
+      msg.style.color = "#f59e0b"; msg.style.display = "inline"; return;
+    }
+
+    btn.textContent = "Salvando..."; btn.style.opacity = "0.7";
+    try {
+      const r = await fetch("/config/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, username })
+      });
+      if (r.ok) {
+        msg.textContent = "✓ Bot salvo com sucesso";
+        msg.style.color = "#22c55e"; msg.style.display = "inline";
+        mostrarBotConfigurado(username || "bot");
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao salvar");
+      msg.style.color = "#ef4444"; msg.style.display = "inline";
+    }
+    btn.textContent = "Adicionar Bot"; btn.style.opacity = "1";
+  }
+
+  async function ativarWebhookBot() {
+    const msg = document.getElementById("webhook-ativar-msg");
+    msg.textContent = "Ativando webhook..."; msg.style.color = "#6b7280"; msg.style.display = "block";
+    try {
+      const r = await fetch("/telegram/setup");
+      const data = await r.json();
+      if (data.ok) {
+        msg.textContent = "✓ Webhook ativado com sucesso!";
+        msg.style.color = "#22c55e";
+      } else {
+        msg.textContent = "✗ " + (data.description || "Erro ao ativar webhook");
+        msg.style.color = "#ef4444";
+      }
+    } catch(e) {
+      msg.textContent = "✗ Erro ao conectar";
+      msg.style.color = "#ef4444";
+    }
+    setTimeout(() => { msg.style.display = "none"; }, 5000);
+  }
+
+  async function removerBot() {
+    if (!confirm("Remover bot?")) return;
+    try {
+      await fetch("/config/telegram", { method: "DELETE" });
+    } catch(e) {}
+    document.getElementById("bot-nao-configurado").style.display = "block";
+    document.getElementById("bot-configurado").style.display = "none";
+    document.getElementById("canal-bot-token").value = "";
+    document.getElementById("canal-bot-username").value = "";
+  }
+
+  function renderCanais(canais) {
+    const container = document.getElementById("canais-lista");
+    if (!canais.length) {
+      container.innerHTML = `<div style="text-align:center;padding:32px 0;color:#3d4466">
+        <p style="font-size:0.8rem">Nenhum canal configurado ainda</p>
+        <p style="font-size:0.72rem;margin-top:4px">Adicione o bot como admin no seu canal e ative o webhook</p>
+      </div>`;
+      return;
+    }
+    container.innerHTML = canais.map(c => `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;margin-bottom:8px">
+        <div style="width:40px;height:40px;background:#1a1040;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.85rem;font-weight:600;color:#e2e8f0">${c.nome}</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-top:2px">${c.username || ""}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            <span style="font-size:0.7rem;color:#22c55e;display:flex;align-items:center;gap:3px"><div style="width:5px;height:5px;border-radius:50%;background:#22c55e"></div> Bot Ativo</span>
+            <span style="font-size:0.7rem;color:#6b7280">• Privado</span>
+          </div>
+        </div>
+        <button onclick="removerCanal('${c.id}')"
+          style="background:#1e2235;border:none;color:#ef4444;width:32px;height:32px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center"
+          onmouseover="this.style.background='#2a1a1a'" onmouseout="this.style.background='#1e2235'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    `).join("");
+  }
+
+  async function adicionarCanal() {
+    const nome = document.getElementById("canal-nome").value.trim();
+    const username = document.getElementById("canal-username").value.trim();
+    const msg = document.getElementById("canal-add-msg");
+
+    if (!nome) {
+      msg.textContent = "⚠ Informe o nome do canal";
+      msg.style.color = "#f59e0b"; msg.style.display = "block"; return;
+    }
+
+    try {
+      const r = await fetch("/config/telegram/canal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, username })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        msg.textContent = "✓ Canal adicionado";
+        msg.style.color = "#22c55e"; msg.style.display = "block";
+        document.getElementById("canal-nome").value = "";
+        document.getElementById("canal-username").value = "";
+        carregarCanais();
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao adicionar canal");
+      msg.style.color = "#ef4444"; msg.style.display = "block";
+    }
+  }
+
+  async function removerCanal(id) {
+    if (!confirm("Remover canal?")) return;
+    try {
+      await fetch("/config/telegram/canal/" + id, { method: "DELETE" });
+      carregarCanais();
+    } catch(e) {}
   }
 </script>
 </body>
