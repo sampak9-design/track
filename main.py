@@ -534,6 +534,74 @@ async def tracker_entrada(request: Request):
         print(f"[ENTRADA ERRO] {e}")
     return {"ok": True}
 
+@app.get("/leads")
+def get_leads():
+    try:
+        # Todos os eventos do canal
+        all_events = db.table("telegram_members").select("*").order("created_at", ascending=True).execute().data or []
+
+        # Por user_id: primeira entrada (join) e status atual
+        first_join = {}
+        latest = {}
+        for ev in all_events:
+            uid = ev.get("user_id")
+            if not uid: continue
+            if ev.get("event") == "join" and uid not in first_join:
+                first_join[uid] = ev.get("created_at")
+            latest[uid] = ev  # última linha = status atual
+
+        # Cadastros indexados por primeiro nome
+        cads = db.table("cadastros").select("*").execute().data or []
+        cad_by_name = {}
+        for c in cads:
+            key = (c.get("nome") or "").split()[0].lower().strip()
+            if key: cad_by_name[key] = c
+
+        # Depósitos indexados por email
+        deps = db.table("depositos").select("*").order("created_at", ascending=True).execute().data or []
+        dep_by_email = {}
+        for d in deps:
+            email = d.get("email", "")
+            if not email: continue
+            if email not in dep_by_email:
+                dep_by_email[email] = {"ftd": d.get("created_at"), "count": 0, "ltv": 0.0}
+            dep_by_email[email]["count"] += 1
+            dep_by_email[email]["ltv"] += float(d.get("valor") or 0)
+
+        # Canal principal
+        canais = db.table("telegram_canais").select("nome").execute().data or []
+        canal_nome = canais[0]["nome"] if canais else "—"
+
+        leads = []
+        for uid, user in latest.items():
+            first = (user.get("first_name") or "").lower().strip()
+            cad = cad_by_name.get(first)
+            email = (cad or {}).get("email", "")
+            dep = dep_by_email.get(email, {})
+            entrada = first_join.get(uid)
+            saiu_em = user.get("created_at") if user.get("event") == "leave" else None
+            leads.append({
+                "user_id": uid,
+                "username": user.get("username") or "",
+                "first_name": user.get("first_name") or "",
+                "last_name": user.get("last_name") or "",
+                "canal": canal_nome,
+                "utm_source": (cad or {}).get("utm_source") or "",
+                "page_url": (cad or {}).get("utm_content") or "",
+                "entrada": entrada,
+                "registro": (cad or {}).get("created_at"),
+                "ftd": dep.get("ftd"),
+                "depositos": dep.get("count", 0),
+                "ltv": dep.get("ltv", 0.0),
+                "status": user.get("event", "join"),
+                "saiu_em": saiu_em,
+            })
+        leads.sort(key=lambda x: x.get("entrada") or "", reverse=True)
+        return {"leads": leads}
+    except Exception as e:
+        print(f"[LEADS ERRO] {e}")
+        return {"leads": []}
+
 @app.get("/telegram/members-status")
 def telegram_members_status():
     """Retorna o status atual (join/leave mais recente) por user_id."""
