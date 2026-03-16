@@ -172,24 +172,11 @@
     .panel-action:hover { text-decoration: underline; }
 
     /* ─── FUNIL ─── */
-    .funil { display: grid; grid-template-columns: repeat(4, 1fr); }
-    .funil-col {
-      padding: 16px 12px; border-right: 1px solid #1e2235; position: relative;
+    .funil-arrow-row {
+      display: flex; align-items: center; gap: 8px; padding: 2px 0 2px 90px;
     }
-    .funil-col:last-child { border-right: none; }
-    .funil-col-label { font-size: 0.72rem; color: #6b7280; font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .funil-pct-bar { height: 4px; background: #1e2235; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
-    .funil-pct-fill { height: 100%; background: #4f6ef7; border-radius: 2px; transition: width 0.6s ease; }
-    .funil-num { font-size: 1.4rem; font-weight: 700; color: #e2e8f0; line-height: 1; margin-bottom: 4px; }
-    .funil-pct-text { font-size: 0.72rem; color: #22c55e; font-weight: 600; }
-    .funil-pct-text.zero { color: #4a5568; }
-    .funil-arrow-badge {
-      position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
-      background: #1e2235; border: 1px solid #2d3148;
-      width: 22px; height: 22px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      color: #6b7280; font-size: 10px; z-index: 1;
-    }
+    .funil-arr-icon { font-size: 0.8rem; color: #4a5568; }
+    .funil-arr-pct { font-size: 0.75rem; font-weight: 600; }
 
     /* ─── GRID COLS ─── */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
@@ -486,70 +473,146 @@
 
       <!-- Funil + Tempo Médio -->
       <div style="display:flex;gap:14px;margin-bottom:16px">
-        <!-- Funil horizontal -->
+        <!-- Funil de Conversão estilo novo -->
         <div class="panel" style="flex:1;margin-bottom:0">
           <div class="panel-header">
             <div>
-              <div class="panel-title">Funil de Conversão</div>
-              <div class="panel-subtitle">Jornada do visitante até o depósito</div>
+              <div class="panel-title" style="display:flex;align-items:center;gap:7px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Funil de Conversão
+              </div>
+              <div class="panel-subtitle">Acompanhe a jornada completa dos seus leads desde a visualização até o primeiro depósito</div>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div id="funil-pageviews" style="display:flex;align-items:center;gap:10px">
-              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">PageViews</span>
-              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
-                <div class="funil-h-fill" style="height:100%;width:0%;background:#4f6ef7;border-radius:4px;transition:width 0.6s ease"></div>
+
+          <!-- Barras do funil -->
+          <div style="display:flex;flex-direction:column;gap:0;margin-bottom:18px">
+            <!-- PageViews -->
+            <div id="funil-pageviews" style="padding:10px 0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:90px;font-size:0.78rem;color:#4f6ef7;font-weight:600;flex-shrink:0">PageViews</span>
+                <div style="flex:1;height:28px;background:#1a1d2e;border-radius:6px;overflow:hidden">
+                  <div class="funil-h-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#4f6ef7,#7c94fa);border-radius:6px;transition:width 0.7s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px">
+                    <span class="funil-h-count" style="font-size:0.82rem;font-weight:700;color:#fff">0</span>
+                  </div>
+                </div>
               </div>
-              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
             </div>
-            <div id="funil-entradas" style="display:flex;align-items:center;gap:10px">
-              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">Entradas</span>
-              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
-                <div class="funil-h-fill" style="height:100%;width:0%;background:#22c55e;border-radius:4px;transition:width 0.6s ease"></div>
-              </div>
-              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
-              <span class="funil-h-pct" style="font-size:0.72rem;color:#22c55e;background:#14291e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
+            <!-- seta pageviews→entradas -->
+            <div class="funil-arrow-row" id="funil-arr-entradas">
+              <span class="funil-arr-icon">↓</span>
+              <span class="funil-arr-pct funil-h-pct" style="color:#22c55e"></span>
             </div>
-            <div id="funil-registros" style="display:flex;align-items:center;gap:10px">
-              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">Registros</span>
-              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
-                <div class="funil-h-fill" style="height:100%;width:0%;background:#a855f7;border-radius:4px;transition:width 0.6s ease"></div>
+            <!-- Entradas -->
+            <div id="funil-entradas" style="padding:10px 0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:90px;font-size:0.78rem;color:#22c55e;font-weight:600;flex-shrink:0">Entradas</span>
+                <div style="flex:1;height:28px;background:#1a1d2e;border-radius:6px;overflow:hidden">
+                  <div class="funil-h-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:6px;transition:width 0.7s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px">
+                    <span class="funil-h-count" style="font-size:0.82rem;font-weight:700;color:#fff">0</span>
+                  </div>
+                </div>
               </div>
-              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
-              <span class="funil-h-pct" style="font-size:0.72rem;color:#a855f7;background:#2a1a4e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
             </div>
-            <div id="funil-ftd" style="display:flex;align-items:center;gap:10px">
-              <span style="width:80px;font-size:0.75rem;color:#6b7280;flex-shrink:0">FTD</span>
-              <div style="flex:1;height:20px;background:#1e2235;border-radius:4px;overflow:hidden">
-                <div class="funil-h-fill" style="height:100%;width:0%;background:#f59e0b;border-radius:4px;transition:width 0.6s ease"></div>
+            <!-- seta entradas→registros -->
+            <div class="funil-arrow-row" id="funil-arr-registros">
+              <span class="funil-arr-icon">↓</span>
+              <span class="funil-arr-pct funil-h-pct" style="color:#a855f7"></span>
+            </div>
+            <!-- Registros -->
+            <div id="funil-registros" style="padding:10px 0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:90px;font-size:0.78rem;color:#a855f7;font-weight:600;flex-shrink:0">Registros</span>
+                <div style="flex:1;height:28px;background:#1a1d2e;border-radius:6px;overflow:hidden">
+                  <div class="funil-h-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:6px;transition:width 0.7s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px">
+                    <span class="funil-h-count" style="font-size:0.82rem;font-weight:700;color:#fff">0</span>
+                  </div>
+                </div>
               </div>
-              <span class="funil-h-count" style="font-size:0.8rem;font-weight:600;color:#e2e8f0;min-width:36px;text-align:right">0</span>
-              <span class="funil-h-pct" style="font-size:0.72rem;color:#f59e0b;background:#2a1f0e;padding:2px 7px;border-radius:10px;min-width:44px;text-align:center"></span>
+            </div>
+            <!-- seta registros→ftd -->
+            <div class="funil-arrow-row" id="funil-arr-ftd">
+              <span class="funil-arr-icon">↓</span>
+              <span class="funil-arr-pct funil-h-pct" style="color:#f59e0b"></span>
+            </div>
+            <!-- FTD -->
+            <div id="funil-ftd" style="padding:10px 0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:90px;font-size:0.78rem;color:#f59e0b;font-weight:600;flex-shrink:0">FTD</span>
+                <div style="flex:1;height:28px;background:#1a1d2e;border-radius:6px;overflow:hidden">
+                  <div class="funil-h-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#b45309,#f59e0b);border-radius:6px;transition:width 0.7s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px">
+                    <span class="funil-h-count" style="font-size:0.82rem;font-weight:700;color:#fff">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de taxa na base -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #1e2235;padding-top:14px">
+            <div style="background:#13151f;border-radius:8px;padding:10px 12px;text-align:center">
+              <div style="font-size:0.68rem;color:#6b7280;margin-bottom:4px">Conversão Total</div>
+              <div style="font-size:1.15rem;font-weight:700;color:#4f6ef7" id="fc-conv-total">0%</div>
+              <div style="font-size:0.65rem;color:#4a5568;margin-top:2px">PageViews → Entradas</div>
+            </div>
+            <div style="background:#13151f;border-radius:8px;padding:10px 12px;text-align:center">
+              <div style="font-size:0.68rem;color:#6b7280;margin-bottom:4px">Taxa de Registro</div>
+              <div style="font-size:1.15rem;font-weight:700;color:#a855f7" id="fc-taxa-reg">0%</div>
+              <div style="font-size:0.65rem;color:#4a5568;margin-top:2px">Entradas → Registros</div>
+            </div>
+            <div style="background:#13151f;border-radius:8px;padding:10px 12px;text-align:center">
+              <div style="font-size:0.68rem;color:#6b7280;margin-bottom:4px">Taxa de FTD</div>
+              <div style="font-size:1.15rem;font-weight:700;color:#f59e0b" id="fc-taxa-ftd">0%</div>
+              <div style="font-size:0.65rem;color:#4a5568;margin-top:2px">Registros → FTD</div>
+            </div>
+            <div style="background:#13151f;border-radius:8px;padding:10px 12px;text-align:center">
+              <div style="font-size:0.68rem;color:#6b7280;margin-bottom:4px">Taxa de Retenção</div>
+              <div style="font-size:1.15rem;font-weight:700;color:#22c55e" id="fc-retencao">0%</div>
+              <div style="font-size:0.65rem;color:#4a5568;margin-top:2px">Usuários que permaneceram</div>
             </div>
           </div>
         </div>
 
-        <!-- Tempo Médio -->
-        <div class="panel" style="width:200px;flex-shrink:0;margin-bottom:0">
-          <div class="panel-header" style="margin-bottom:12px">
-            <div class="panel-title">Tempo Médio</div>
+        <!-- Tempo Médio entre Etapas -->
+        <div class="panel" style="width:220px;flex-shrink:0;margin-bottom:0">
+          <div class="panel-header" style="margin-bottom:14px">
+            <div class="panel-title" style="display:flex;align-items:center;gap:7px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Tempo Médio entre Etapas
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → Saída</div>
-              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-saida">—</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="background:#1a1f3a;border-radius:9px;padding:12px 14px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="font-size:0.75rem;color:#7c94fa;font-weight:600">Entrada</span>
+                <span style="font-size:0.7rem;color:#4a5568">→</span>
+                <span style="font-size:0.75rem;color:#ef4444;font-weight:600">Saída</span>
+              </div>
+              <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-saida">—</div>
             </div>
-            <div>
-              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → Registro</div>
-              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-reg">—</div>
+            <div style="background:#1f1a3a;border-radius:9px;padding:12px 14px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="font-size:0.75rem;color:#7c94fa;font-weight:600">Entrada</span>
+                <span style="font-size:0.7rem;color:#4a5568">→</span>
+                <span style="font-size:0.75rem;color:#a855f7;font-weight:600">Registro</span>
+              </div>
+              <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-reg">—</div>
             </div>
-            <div>
-              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entrada → FTD</div>
-              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-ftd">—</div>
+            <div style="background:#1a2a1f;border-radius:9px;padding:12px 14px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="font-size:0.75rem;color:#7c94fa;font-weight:600">Entrada</span>
+                <span style="font-size:0.7rem;color:#4a5568">→</span>
+                <span style="font-size:0.75rem;color:#22c55e;font-weight:600">FTD</span>
+              </div>
+              <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0" id="tm-entrada-ftd">—</div>
             </div>
-            <div>
-              <div style="font-size:0.68rem;color:#4a5568;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Registro → FTD</div>
-              <div style="font-size:1rem;font-weight:700;color:#e2e8f0" id="tm-reg-ftd">—</div>
+            <div style="background:#2a1f0e;border-radius:9px;padding:12px 14px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="font-size:0.75rem;color:#a855f7;font-weight:600">Registro</span>
+                <span style="font-size:0.7rem;color:#4a5568">→</span>
+                <span style="font-size:0.75rem;color:#f59e0b;font-weight:600">FTD</span>
+              </div>
+              <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0" id="tm-reg-ftd">—</div>
             </div>
           </div>
         </div>
@@ -1178,22 +1241,35 @@
       document.getElementById("s-retencao").textContent = s.retencao + "%";
 
       // Funil bars
-      const maxVal = Math.max(s.pageviews, 1);
-      function setBar(id, val, max, pct) {
+      const maxVal = Math.max(s.pageviews, s.entradas, s.registros, s.ftd, 1);
+      function setBar(id, val, max) {
         const row = document.getElementById("funil-" + id);
         if (!row) return;
-        row.querySelector(".funil-h-fill").style.width = Math.round(val/max*100) + "%";
+        const pct = Math.max(Math.round(val / max * 100), val > 0 ? 4 : 0);
+        row.querySelector(".funil-h-fill").style.width = pct + "%";
         row.querySelector(".funil-h-count").textContent = val.toLocaleString("pt-BR");
-        const pctEl = row.querySelector(".funil-h-pct");
-        if (pctEl) pctEl.textContent = pct !== null ? pct + "%" : "";
       }
-      const pctEntradas  = s.pageviews > 0 ? Math.round(s.entradas  / s.pageviews * 100) : null;
-      const pctRegistros = s.entradas  > 0 ? Math.round(s.registros / s.entradas  * 100) : null;
-      const pctFtd       = s.registros > 0 ? Math.round(s.ftd       / s.registros * 100) : null;
-      setBar("pageviews",  s.pageviews, maxVal, null);
-      setBar("entradas",   s.entradas,  maxVal, pctEntradas);
-      setBar("registros",  s.registros, maxVal, pctRegistros);
-      setBar("ftd",        s.ftd,       maxVal, pctFtd);
+      function setArrow(id, pct) {
+        const arr = document.getElementById("funil-arr-" + id);
+        if (!arr) return;
+        const el = arr.querySelector(".funil-arr-pct");
+        if (el) el.textContent = pct !== null ? "↓ " + pct + "%" : "";
+      }
+      const pctEntradas  = s.pageviews > 0 ? +(s.entradas  / s.pageviews * 100).toFixed(1) : null;
+      const pctRegistros = s.entradas  > 0 ? +(s.registros / s.entradas  * 100).toFixed(1) : null;
+      const pctFtd       = s.registros > 0 ? +(s.ftd       / s.registros * 100).toFixed(1) : null;
+      setBar("pageviews",  s.pageviews, maxVal);
+      setBar("entradas",   s.entradas,  maxVal);
+      setBar("registros",  s.registros, maxVal);
+      setBar("ftd",        s.ftd,       maxVal);
+      setArrow("entradas",  pctEntradas);
+      setArrow("registros", pctRegistros);
+      setArrow("ftd",       pctFtd);
+      // Cards de taxa
+      setText("fc-conv-total", (pctEntradas  !== null ? pctEntradas  : 0) + "%");
+      setText("fc-taxa-reg",   (pctRegistros !== null ? pctRegistros : 0) + "%");
+      setText("fc-taxa-ftd",   (pctFtd       !== null ? pctFtd       : 0) + "%");
+      setText("fc-retencao",   s.retencao + "%");
 
       // Evolução chart
       renderEvolucao(s.evolucao || []);
