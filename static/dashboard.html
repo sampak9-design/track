@@ -295,6 +295,10 @@
       padding: 6px 10px; font-size: 0.72rem; color: #c9d1e0; white-space: nowrap;
       opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 200;
     }
+
+    /* ─── PIXEL TABS ─── */
+    .pixel-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 16px; color: #6b7280; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; margin-bottom: -1px; }
+    .pixel-tab.ativo { color: #e2e8f0; border-bottom-color: #4f6ef7; }
   </style>
 </head>
 <body>
@@ -684,51 +688,175 @@
         </div>
 
         <div class="integ-block">
-          <div class="integ-block-header">
-            <div class="integ-block-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              Meta Pixel — Conversions API
-            </div>
-            <div class="integ-status" id="meta-status-badge">
-              <div class="dot dot-gray"></div>
-              <span style="color:#6b7280;font-size:0.75rem;font-weight:600">Não configurado</span>
-            </div>
+          <!-- Tab buttons -->
+          <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid #1e2235">
+            <button class="pixel-tab ativo" onclick="mudarPixelTab('meta',this)" id="tab-meta" style="background:none;border:none;border-bottom:2px solid #4f6ef7;padding:8px 16px;color:#e2e8f0;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;margin-bottom:-1px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              Meta Ads
+            </button>
+            <button class="pixel-tab" onclick="mudarPixelTab('kwai',this)" id="tab-kwai" style="background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;margin-bottom:-1px">
+              <span style="width:14px;height:14px;background:#f97316;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:white;flex-shrink:0">K</span>
+              Kwai Ads
+            </button>
+            <button class="pixel-tab" onclick="mudarPixelTab('tiktok',this)" id="tab-tiktok" style="background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;margin-bottom:-1px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.75a4.85 4.85 0 0 1-1.02-.06z"/></svg>
+              TikTok Ads
+            </button>
           </div>
-          <p class="integ-desc">Eventos de Cadastro (Lead) e Depósito (Purchase) são enviados automaticamente ao Facebook via Conversions API com dados de email e telefone hasheados em SHA-256.</p>
 
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
-            <div>
-              <div class="webhook-label-row">Pixel ID</div>
-              <input id="meta-pixel-id" type="text" placeholder="Ex: 1187084585660332"
-                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+          <!-- Meta tab content -->
+          <div id="pixel-tab-meta">
+            <div id="meta-pixel-card" style="display:none;background:#0f1117;border:1px solid #1e2235;border-radius:8px;padding:14px 16px;margin-bottom:16px;display:none">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:34px;height:34px;background:#1a2a5e;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0">Meta Pixel</div>
+                    <div style="font-size:0.72rem;color:#6b7280" id="meta-card-pixel-id"></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-green"><div class="dot dot-green" style="width:5px;height:5px"></div> Ativo</span>
+                  <button onclick="document.getElementById('meta-pixel-card').style.display='none';document.getElementById('meta-pixel-form').style.display='block'" style="background:none;border:none;color:#6b7280;cursor:pointer;padding:4px" title="Editar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div>
-              <div class="webhook-label-row">Access Token</div>
-              <input id="meta-token" type="password" placeholder="EAALo2..."
-                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
-              <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="show-token" onchange="toggleToken()" style="cursor:pointer">
-                <label for="show-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+            <div id="meta-pixel-form">
+              <p class="integ-desc">Eventos de Cadastro e Depósito são enviados ao Facebook via Conversions API com dados hasheados em SHA-256.</p>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+                <div>
+                  <div class="webhook-label-row">Pixel ID</div>
+                  <input id="meta-pixel-id" type="text" placeholder="Ex: 1187084585660332"
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+                </div>
+                <div>
+                  <div class="webhook-label-row">Access Token</div>
+                  <input id="meta-token" type="password" placeholder="EAALo2..."
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+                  <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                    <input type="checkbox" id="show-token" onchange="toggleToken()" style="cursor:pointer">
+                    <label for="show-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onclick="salvarMeta()" id="btn-salvar-meta"
+                  style="background:#4f6ef7;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                  onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
+                  Salvar configuração
+                </button>
+                <span id="meta-save-msg" style="font-size:0.78rem;display:none"></span>
               </div>
             </div>
           </div>
 
-          <div style="display:flex;align-items:center;gap:10px">
-            <button onclick="salvarMeta()" id="btn-salvar-meta"
-              style="background:#4f6ef7;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-              onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
-              Salvar configuração
-            </button>
-            <span id="meta-save-msg" style="font-size:0.78rem;display:none"></span>
+          <!-- Kwai tab content -->
+          <div id="pixel-tab-kwai" style="display:none">
+            <div id="kwai-pixel-card" style="display:none;background:#0f1117;border:1px solid #1e2235;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:34px;height:34px;background:#3a1f0a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="font-size:14px;font-weight:900;color:#f97316">K</span>
+                  </div>
+                  <div>
+                    <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0">Kwai Pixel</div>
+                    <div style="font-size:0.72rem;color:#6b7280" id="kwai-card-pixel-id"></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-green"><div class="dot dot-green" style="width:5px;height:5px"></div> Ativo</span>
+                  <button onclick="document.getElementById('kwai-pixel-card').style.display='none';document.getElementById('kwai-pixel-form').style.display='block'" style="background:none;border:none;color:#6b7280;cursor:pointer;padding:4px" title="Editar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="kwai-pixel-form">
+              <p class="integ-desc">Eventos de Cadastro (Registration) e Depósito (Purchase) são enviados ao Kwai via CAPI com dados hasheados em SHA-256.</p>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+                <div>
+                  <div class="webhook-label-row">Pixel ID</div>
+                  <input id="kwai-pixel-id" type="text" placeholder="Ex: 123456789"
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#1e2235'">
+                </div>
+                <div>
+                  <div class="webhook-label-row">Access Token</div>
+                  <input id="kwai-token" type="password" placeholder="Token de acesso Kwai..."
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#1e2235'">
+                  <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                    <input type="checkbox" id="show-kwai-token" onchange="toggleKwaiToken()" style="cursor:pointer">
+                    <label for="show-kwai-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onclick="salvarKwai()" id="btn-salvar-kwai"
+                  style="background:#f97316;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                  onmouseover="this.style.background='#ea6c0f'" onmouseout="this.style.background='#f97316'">
+                  Salvar configuração
+                </button>
+                <span id="kwai-save-msg" style="font-size:0.78rem;display:none"></span>
+              </div>
+            </div>
           </div>
 
-          <div style="margin-top:16px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
-            <div style="font-size:0.7rem;color:#4a5568;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Eventos enviados</div>
-            <div style="display:flex;gap:10px">
-              <div><span class="badge badge-blue">Lead</span> <span style="font-size:0.72rem;color:#6b7280">— Cadastro</span></div>
-              <div><span class="badge badge-green">Purchase</span> <span style="font-size:0.72rem;color:#6b7280">— Depósito (BRL)</span></div>
+          <!-- TikTok tab content -->
+          <div id="pixel-tab-tiktok" style="display:none">
+            <div id="tiktok-pixel-card" style="display:none;background:#0f1117;border:1px solid #1e2235;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:34px;height:34px;background:#1a1a2e;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#e2e8f0" stroke="none"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.79 1.53V6.75a4.85 4.85 0 0 1-1.02-.06z"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0">TikTok Pixel</div>
+                    <div style="font-size:0.72rem;color:#6b7280" id="tiktok-card-pixel-code"></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-green"><div class="dot dot-green" style="width:5px;height:5px"></div> Ativo</span>
+                  <button onclick="document.getElementById('tiktok-pixel-card').style.display='none';document.getElementById('tiktok-pixel-form').style.display='block'" style="background:none;border:none;color:#6b7280;cursor:pointer;padding:4px" title="Editar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="tiktok-pixel-form">
+              <p class="integ-desc">Eventos de Cadastro (CompleteRegistration) e Depósito (PlaceAnOrder) são enviados ao TikTok via Events API com dados hasheados em SHA-256.</p>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+                <div>
+                  <div class="webhook-label-row">Pixel Code</div>
+                  <input id="tiktok-pixel-code" type="text" placeholder="Ex: CGABC1234567890"
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#e2e8f0'" onblur="this.style.borderColor='#1e2235'">
+                </div>
+                <div>
+                  <div class="webhook-label-row">Access Token</div>
+                  <input id="tiktok-token" type="password" placeholder="Token de acesso TikTok..."
+                    style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                    onfocus="this.style.borderColor='#e2e8f0'" onblur="this.style.borderColor='#1e2235'">
+                  <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                    <input type="checkbox" id="show-tiktok-token" onchange="toggleTiktokToken()" style="cursor:pointer">
+                    <label for="show-tiktok-token" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar token</label>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onclick="salvarTiktok()" id="btn-salvar-tiktok"
+                  style="background:#2d2d2d;color:white;border:1px solid #4a4a4a;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                  onmouseover="this.style.background='#3d3d3d'" onmouseout="this.style.background='#2d2d2d'">
+                  Salvar configuração
+                </button>
+                <span id="tiktok-save-msg" style="font-size:0.78rem;display:none"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -769,15 +897,7 @@
   }
 
   // ── Navegação ──
-  function mudarSecao(id, el) {
-    document.querySelectorAll(".secao").forEach(s => s.classList.remove("visivel"));
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("ativo"));
-    document.getElementById("sec-" + id).classList.add("visivel");
-    el.classList.add("ativo");
-    document.getElementById("titulo-pagina").textContent = titulos[id] || id;
-    if (id === "utms") renderUTMBars();
-    if (id === "integracoes") preencherWebhookURLs();
-  }
+  // (definida abaixo junto com a lógica de integrações)
 
   // ── Webhooks ──
   function preencherWebhookURLs() {
@@ -1106,6 +1226,21 @@
     );
   }
 
+  // ── Pixel Tab switching ──
+  function mudarPixelTab(id, el) {
+    ["meta","kwai","tiktok"].forEach(t => {
+      document.getElementById("pixel-tab-" + t).style.display = t === id ? "" : "none";
+    });
+    document.querySelectorAll(".pixel-tab").forEach(btn => {
+      btn.classList.remove("ativo");
+      btn.style.color = "#6b7280";
+      btn.style.borderBottomColor = "transparent";
+    });
+    el.classList.add("ativo");
+    el.style.color = "#e2e8f0";
+    el.style.borderBottomColor = "#4f6ef7";
+  }
+
   // ── Meta Config ──
   async function carregarConfigMeta() {
     try {
@@ -1113,18 +1248,17 @@
       const cfg = await r.json();
       if (cfg.pixel_id) document.getElementById("meta-pixel-id").value = cfg.pixel_id;
       if (cfg.token) document.getElementById("meta-token").value = cfg.token;
-      atualizarStatusMeta(cfg.configurado);
+      const card = document.getElementById("meta-pixel-card");
+      const form = document.getElementById("meta-pixel-form");
+      if (cfg.configurado) {
+        document.getElementById("meta-card-pixel-id").textContent = cfg.pixel_id;
+        card.style.display = "block";
+        form.style.display = "none";
+      } else {
+        card.style.display = "none";
+        form.style.display = "block";
+      }
     } catch(e) {}
-  }
-
-  function atualizarStatusMeta(configurado) {
-    const badge = document.getElementById("meta-status-badge");
-    if (!badge) return;
-    if (configurado) {
-      badge.innerHTML = '<div class="dot dot-green"></div><span style="color:#22c55e;font-size:0.75rem;font-weight:600">Conectado</span>';
-    } else {
-      badge.innerHTML = '<div class="dot dot-gray"></div><span style="color:#6b7280;font-size:0.75rem;font-weight:600">Não configurado</span>';
-    }
   }
 
   async function salvarMeta() {
@@ -1153,7 +1287,9 @@
         msg.textContent = "✓ Salvo com sucesso";
         msg.style.color = "#22c55e";
         msg.style.display = "inline";
-        atualizarStatusMeta(true);
+        document.getElementById("meta-card-pixel-id").textContent = pixel_id;
+        document.getElementById("meta-pixel-card").style.display = "block";
+        document.getElementById("meta-pixel-form").style.display = "none";
         setTimeout(() => { msg.style.display = "none"; }, 3000);
       } else {
         const err = await r.json().catch(() => ({}));
@@ -1174,8 +1310,145 @@
     input.type = document.getElementById("show-token").checked ? "text" : "password";
   }
 
+  // ── Kwai Config ──
+  async function carregarConfigKwai() {
+    try {
+      const r = await fetch("/config/kwai");
+      const cfg = await r.json();
+      if (cfg.pixel_id) document.getElementById("kwai-pixel-id").value = cfg.pixel_id;
+      if (cfg.token) document.getElementById("kwai-token").value = cfg.token;
+      const card = document.getElementById("kwai-pixel-card");
+      const form = document.getElementById("kwai-pixel-form");
+      if (cfg.configurado) {
+        document.getElementById("kwai-card-pixel-id").textContent = cfg.pixel_id;
+        card.style.display = "block";
+        form.style.display = "none";
+      } else {
+        card.style.display = "none";
+        form.style.display = "block";
+      }
+    } catch(e) {}
+  }
+
+  async function salvarKwai() {
+    const pixel_id = document.getElementById("kwai-pixel-id").value.trim();
+    const token = document.getElementById("kwai-token").value.trim();
+    const btn = document.getElementById("btn-salvar-kwai");
+    const msg = document.getElementById("kwai-save-msg");
+
+    if (!pixel_id || !token) {
+      msg.textContent = "⚠ Preencha Pixel ID e Token";
+      msg.style.color = "#f59e0b";
+      msg.style.display = "inline";
+      return;
+    }
+
+    btn.textContent = "Salvando...";
+    btn.style.opacity = "0.7";
+
+    try {
+      const r = await fetch("/config/kwai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pixel_id, token })
+      });
+      if (r.ok) {
+        msg.textContent = "✓ Salvo com sucesso";
+        msg.style.color = "#22c55e";
+        msg.style.display = "inline";
+        document.getElementById("kwai-card-pixel-id").textContent = pixel_id;
+        document.getElementById("kwai-pixel-card").style.display = "block";
+        document.getElementById("kwai-pixel-form").style.display = "none";
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao salvar");
+      msg.style.color = "#ef4444";
+      msg.style.display = "inline";
+    }
+
+    btn.textContent = "Salvar configuração";
+    btn.style.opacity = "1";
+  }
+
+  function toggleKwaiToken() {
+    const input = document.getElementById("kwai-token");
+    input.type = document.getElementById("show-kwai-token").checked ? "text" : "password";
+  }
+
+  // ── TikTok Config ──
+  async function carregarConfigTiktok() {
+    try {
+      const r = await fetch("/config/tiktok");
+      const cfg = await r.json();
+      if (cfg.pixel_code) document.getElementById("tiktok-pixel-code").value = cfg.pixel_code;
+      if (cfg.token) document.getElementById("tiktok-token").value = cfg.token;
+      const card = document.getElementById("tiktok-pixel-card");
+      const form = document.getElementById("tiktok-pixel-form");
+      if (cfg.configurado) {
+        document.getElementById("tiktok-card-pixel-code").textContent = cfg.pixel_code;
+        card.style.display = "block";
+        form.style.display = "none";
+      } else {
+        card.style.display = "none";
+        form.style.display = "block";
+      }
+    } catch(e) {}
+  }
+
+  async function salvarTiktok() {
+    const pixel_code = document.getElementById("tiktok-pixel-code").value.trim();
+    const token = document.getElementById("tiktok-token").value.trim();
+    const btn = document.getElementById("btn-salvar-tiktok");
+    const msg = document.getElementById("tiktok-save-msg");
+
+    if (!pixel_code || !token) {
+      msg.textContent = "⚠ Preencha Pixel Code e Token";
+      msg.style.color = "#f59e0b";
+      msg.style.display = "inline";
+      return;
+    }
+
+    btn.textContent = "Salvando...";
+    btn.style.opacity = "0.7";
+
+    try {
+      const r = await fetch("/config/tiktok", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pixel_code, token })
+      });
+      if (r.ok) {
+        msg.textContent = "✓ Salvo com sucesso";
+        msg.style.color = "#22c55e";
+        msg.style.display = "inline";
+        document.getElementById("tiktok-card-pixel-code").textContent = pixel_code;
+        document.getElementById("tiktok-pixel-card").style.display = "block";
+        document.getElementById("tiktok-pixel-form").style.display = "none";
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.status);
+      }
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro ao salvar");
+      msg.style.color = "#ef4444";
+      msg.style.display = "inline";
+    }
+
+    btn.textContent = "Salvar configuração";
+    btn.style.opacity = "1";
+  }
+
+  function toggleTiktokToken() {
+    const input = document.getElementById("tiktok-token");
+    input.type = document.getElementById("show-tiktok-token").checked ? "text" : "password";
+  }
+
   // Carregar config ao abrir integrações
-  const _origMudarSecao = window.mudarSecao;
   function mudarSecao(id, el) {
     document.querySelectorAll(".secao").forEach(s => s.classList.remove("visivel"));
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("ativo"));
@@ -1183,7 +1456,7 @@
     el.classList.add("ativo");
     document.getElementById("titulo-pagina").textContent = titulos[id] || id;
     if (id === "utms") renderUTMBars();
-    if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); }
+    if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
   }
 
   // ── Copiar ──

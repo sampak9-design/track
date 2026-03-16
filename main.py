@@ -85,6 +85,102 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
         print(f"[META ✗] {resp.status_code} — {resp.text}")
 
 
+def get_kwai_config():
+    """Lê kwai_pixel_id e kwai_token salvos no Supabase."""
+    try:
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["kwai_pixel_id", "kwai_token"]).execute()
+        cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
+        return cfg.get("kwai_pixel_id"), cfg.get("kwai_token")
+    except Exception as e:
+        print(f"[CFG KWAI] Erro ao ler config: {e}")
+        return None, None
+
+def get_tiktok_config():
+    """Lê tiktok_pixel_code e tiktok_token salvos no Supabase."""
+    try:
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["tiktok_pixel_code", "tiktok_token"]).execute()
+        cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
+        return cfg.get("tiktok_pixel_code"), cfg.get("tiktok_token")
+    except Exception as e:
+        print(f"[CFG TIKTOK] Erro ao ler config: {e}")
+        return None, None
+
+async def enviar_kwai(event_name: str, email: str = None, phone: str = None, value: float = None):
+    pixel_id, token = get_kwai_config()
+    if not pixel_id or not token:
+        print(f"[KWAI ✗] Pixel ID ou Token não configurado")
+        return
+
+    user_info = {}
+    if email:
+        user_info["email"] = sha256(email)
+    if phone:
+        user_info["phone"] = sha256(phone)
+
+    event = {
+        "event_type": event_name,
+        "event_time": int(time.time() * 1000),
+        "user_info": user_info,
+    }
+    if value is not None:
+        event["custom_info"] = {"value": value, "currency": "BRL"}
+    else:
+        event["custom_info"] = {}
+
+    body = {
+        "click_id": "",
+        "events": [event],
+        "pixel_id": pixel_id,
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://open.kwai.com/api/openapi/v1/conversion/event/batch",
+            headers={"access-token": token},
+            json=body,
+        )
+
+    if resp.status_code == 200:
+        print(f"[KWAI ✓] Evento '{event_name}' enviado")
+    else:
+        print(f"[KWAI ✗] {resp.status_code} — {resp.text}")
+
+async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, value: float = None):
+    pixel_code, token = get_tiktok_config()
+    if not pixel_code or not token:
+        print(f"[TIKTOK ✗] Pixel Code ou Token não configurado")
+        return
+
+    user = {}
+    if email:
+        user["email"] = sha256(email)
+    if phone:
+        user["phone_number"] = sha256(phone)
+
+    body = {
+        "pixel_code": pixel_code,
+        "event": event_name,
+        "timestamp": str(int(time.time())),
+        "context": {"user": user},
+    }
+    if value is not None:
+        body["properties"] = {"currency": "BRL", "value": str(value)}
+    else:
+        body["properties"] = {}
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://business-api.tiktok.com/open_api/v1.3/event/track/",
+            headers={"Access-Token": token},
+            json=body,
+        )
+
+    if resp.status_code == 200:
+        print(f"[TIKTOK ✓] Evento '{event_name}' enviado")
+    else:
+        print(f"[TIKTOK ✗] {resp.status_code} — {resp.text}")
+
+
 # ── Config ───────────────────────────────────────────────────────
 @app.get("/config/meta")
 def ler_config_meta():
@@ -116,6 +212,70 @@ async def salvar_config_meta(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
     print(f"[CONFIG] Meta Pixel atualizado: {pixel_id}")
+    return {"status": "ok"}
+
+@app.get("/config/kwai")
+def ler_config_kwai():
+    pixel_id, token = get_kwai_config()
+    return {
+        "pixel_id": pixel_id or "",
+        "token": token or "",
+        "configurado": bool(pixel_id and token),
+    }
+
+@app.post("/config/kwai")
+async def salvar_config_kwai(request: Request):
+    data = await request.json()
+    pixel_id = data.get("pixel_id", "").strip()
+    token = data.get("token", "").strip()
+
+    if not pixel_id or not token:
+        raise HTTPException(status_code=400, detail="pixel_id e token são obrigatórios")
+
+    try:
+        for chave, valor in [("kwai_pixel_id", pixel_id), ("kwai_token", token)]:
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            if existing.data:
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+            else:
+                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+    except Exception as e:
+        print(f"[CONFIG ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    print(f"[CONFIG] Kwai Pixel atualizado: {pixel_id}")
+    return {"status": "ok"}
+
+@app.get("/config/tiktok")
+def ler_config_tiktok():
+    pixel_code, token = get_tiktok_config()
+    return {
+        "pixel_code": pixel_code or "",
+        "token": token or "",
+        "configurado": bool(pixel_code and token),
+    }
+
+@app.post("/config/tiktok")
+async def salvar_config_tiktok(request: Request):
+    data = await request.json()
+    pixel_code = data.get("pixel_code", "").strip()
+    token = data.get("token", "").strip()
+
+    if not pixel_code or not token:
+        raise HTTPException(status_code=400, detail="pixel_code e token são obrigatórios")
+
+    try:
+        for chave, valor in [("tiktok_pixel_code", pixel_code), ("tiktok_token", token)]:
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            if existing.data:
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+            else:
+                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+    except Exception as e:
+        print(f"[CONFIG ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    print(f"[CONFIG] TikTok Pixel atualizado: {pixel_code}")
     return {"status": "ok"}
 
 
@@ -150,6 +310,8 @@ async def cadastro(request: Request):
         first_name=inner.get("firstName"),
         last_name=inner.get("lastName"),
     )
+    await enviar_kwai("Registration", email=registro["email"], phone=registro["telefone"])
+    await enviar_tiktok("CompleteRegistration", email=registro["email"], phone=registro["telefone"])
 
     print(f"[CADASTRO] {registro['email']} salvo")
     return {"status": "ok", "id": result.data[0]["id"]}
@@ -171,6 +333,8 @@ async def deposito(request: Request):
         raise HTTPException(status_code=500, detail="Erro ao salvar deposito")
 
     await enviar_meta("track_deposito", email=registro["email"], value=registro["valor"])
+    await enviar_kwai("Purchase", email=registro["email"], value=registro["valor"])
+    await enviar_tiktok("PlaceAnOrder", email=registro["email"], value=registro["valor"])
 
     print(f"[DEPOSITO] {registro['email']} - R$ {registro['valor']}")
     return {"status": "ok", "id": result.data[0]["id"]}
