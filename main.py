@@ -345,6 +345,49 @@ async def deposito(request: Request):
 async def telegram_webhook(request: Request):
     update = await request.json()
 
+    # ── Bot foi adicionado/removido como admin de um canal ──
+    my_chat_member = update.get("my_chat_member")
+    if my_chat_member:
+        chat       = my_chat_member.get("chat", {})
+        new_status = my_chat_member.get("new_chat_member", {}).get("status", "")
+        old_status = my_chat_member.get("old_chat_member", {}).get("status", "")
+
+        chat_type = chat.get("type", "")
+        if chat_type in ("channel", "supergroup"):
+            chat_id    = chat.get("id")
+            chat_title = chat.get("title", "")
+            chat_uname = ("@" + chat.get("username")) if chat.get("username") else ""
+
+            bot_added = new_status in ("administrator", "member") and old_status in ("left", "kicked", "")
+            bot_removed = new_status in ("left", "kicked") and old_status in ("administrator", "member")
+
+            if bot_added:
+                try:
+                    existing = db.table("telegram_canais").select("id").eq("telegram_id", str(chat_id)).execute()
+                    if not existing.data:
+                        db.table("telegram_canais").insert({
+                            "nome": chat_title,
+                            "username": chat_uname,
+                            "telegram_id": str(chat_id),
+                            "link": "",
+                        }).execute()
+                        print(f"[CANAL AUTO] Canal detectado e salvo: {chat_title} ({chat_uname}) id={chat_id}")
+                    else:
+                        db.table("telegram_canais").update({"nome": chat_title, "username": chat_uname}).eq("telegram_id", str(chat_id)).execute()
+                        print(f"[CANAL AUTO] Canal atualizado: {chat_title}")
+                except Exception as e:
+                    print(f"[CANAL AUTO ERRO] {e}")
+
+            elif bot_removed:
+                try:
+                    db.table("telegram_canais").delete().eq("telegram_id", str(chat_id)).execute()
+                    print(f"[CANAL AUTO] Canal removido: {chat_title}")
+                except Exception as e:
+                    print(f"[CANAL AUTO ERRO] {e}")
+
+        return {"ok": True}
+
+    # ── Usuário entrou/saiu do canal ──
     chat_member = update.get("chat_member")
     if not chat_member:
         return {"ok": True}
@@ -358,9 +401,8 @@ async def telegram_webhook(request: Request):
     first_name = user.get("first_name", "")
     last_name  = user.get("last_name", "")
 
-    # Determinar evento
-    joined  = old_status in ("left", "kicked") and new_status == "member"
-    left    = old_status == "member" and new_status in ("left", "kicked")
+    joined = old_status in ("left", "kicked") and new_status == "member"
+    left   = old_status == "member" and new_status in ("left", "kicked")
 
     if not joined and not left:
         return {"ok": True}
@@ -534,7 +576,7 @@ async def telegram_setup(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member"]},
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]},
         )
 
     result = resp.json()
