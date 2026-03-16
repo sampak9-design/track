@@ -37,7 +37,7 @@
   // Intercept clicks on Telegram links — attach UTMs to server
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[href*="t.me"]');
-    if (!link || !channelId) return;
+    if (!link) return;
 
     var savedUtms = {};
     try { savedUtms = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
