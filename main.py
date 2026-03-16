@@ -554,25 +554,26 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         r_pv = q_pv.execute()
         pageviews = r_pv.count or 0
 
-        # Entradas (cliques no link t.me)
+        # Cliques no link t.me (tracker.js)
         q_en = db.table("tracker_entradas").select("id,created_at", count="exact")
         if canal_id:
             q_en = q_en.eq("canal_id", canal_id)
         q_en = aplicar_datas(q_en, data_inicio, data_fim)
         r_en = q_en.execute()
-        entradas = r_en.count or 0
+        cliques = r_en.count or 0
 
-        # Saídas (telegram_members event=leave)
-        q_sa = db.table("telegram_members").select("id,created_at", count="exact").eq("event", "leave")
-        q_sa = aplicar_datas(q_sa, data_inicio, data_fim)
-        r_sa = q_sa.execute()
-        saidas = r_sa.count or 0
-
-        # Joins (telegram_members event=join)
-        q_jo = db.table("telegram_members").select("id,created_at", count="exact").eq("event", "join")
+        # Entradas = joins no canal Telegram (telegram_members event=join)
+        q_jo = db.table("telegram_members").select("created_at", count="exact").eq("event", "join")
         q_jo = aplicar_datas(q_jo, data_inicio, data_fim)
         r_jo = q_jo.execute()
         joins = r_jo.count or 0
+        entradas = joins
+
+        # Saídas (telegram_members event=leave)
+        q_sa = db.table("telegram_members").select("created_at", count="exact").eq("event", "leave")
+        q_sa = aplicar_datas(q_sa, data_inicio, data_fim)
+        r_sa = q_sa.execute()
+        saidas = r_sa.count or 0
 
         # Registros (cadastros)
         q_ca = db.table("cadastros").select("id,email,created_at", count="exact")
@@ -603,33 +604,34 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
                 redep_valor += valor
 
         # Rates
-        ctr = round(entradas / pageviews * 100, 2) if pageviews > 0 else 0
-        conv_telegram = round(joins / entradas * 100, 2) if entradas > 0 else 0
+        ctr = round(cliques / pageviews * 100, 2) if pageviews > 0 else 0
+        conv_telegram = round(joins / cliques * 100, 2) if cliques > 0 else 0
         conv_pagina = round(registros / pageviews * 100, 2) if pageviews > 0 else 0
         retencao = round((joins - saidas) / joins * 100, 2) if joins > 0 else 0
 
-        # Evolução diária (últimos 14 dias de pageviews e entradas)
+        # Evolução diária (últimos 14 dias de pageviews e joins)
         from collections import defaultdict
         import datetime
         pv_data = r_pv.data or []
-        en_data = r_en.data or []
+        jo_data = r_jo.data or []
         pv_por_dia = defaultdict(int)
-        en_por_dia = defaultdict(int)
+        jo_por_dia = defaultdict(int)
         for row in pv_data:
             dia = (row.get("created_at") or "")[:10]
             if dia: pv_por_dia[dia] += 1
-        for row in en_data:
+        for row in jo_data:
             dia = (row.get("created_at") or "")[:10]
-            if dia: en_por_dia[dia] += 1
+            if dia: jo_por_dia[dia] += 1
         hoje = datetime.date.today()
         dias = [(hoje - datetime.timedelta(days=i)).isoformat() for i in range(13, -1, -1)]
-        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": en_por_dia[d]} for d in dias]
+        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d]} for d in dias]
 
         return {
             "pageviews": pageviews,
             "entradas": entradas,
             "saidas": saidas,
             "joins": joins,
+            "cliques": cliques,
             "registros": registros,
             "ftd": ftd_count,
             "ftd_valor": ftd_valor,
