@@ -1039,40 +1039,18 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
             <span class="panel-title">Meus Canais</span>
           </div>
+          <button onclick="abrirWizardCanal()"
+            style="background:#4f6ef7;color:white;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:0.8rem;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px"
+            onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar Canal
+          </button>
         </div>
-
         <div id="canais-lista">
           <div style="text-align:center;padding:32px 0;color:#3d4466">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;display:block;opacity:0.4"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
             <p style="font-size:0.8rem">Nenhum canal configurado ainda</p>
-            <p style="font-size:0.72rem;margin-top:4px">Adicione o bot como admin no seu canal e ative o webhook</p>
-          </div>
-        </div>
-
-        <!-- Detectar canais automaticamente -->
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2235">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;max-width:560px">
-            <div>
-              <div style="font-size:0.8rem;font-weight:600;color:#c9d1e0">Detectar canais automaticamente</div>
-              <div style="font-size:0.72rem;color:#6b7280;margin-top:2px">Busca todos os canais onde o bot foi adicionado como admin</div>
-            </div>
-            <button onclick="detectarCanais()" id="btn-detectar-canais"
-              style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap"
-              onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              Detectar Canais
-            </button>
-          </div>
-          <span id="canal-add-msg" style="font-size:0.78rem;margin-top:8px;display:none"></span>
-
-          <div style="margin-top:12px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235;max-width:560px">
-            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Canal privado não apareceu?</div>
-            <div style="display:flex;flex-direction:column;gap:5px;font-size:0.78rem;color:#6b7280;line-height:1.6">
-              <div>1. Clique em <span style="color:#4f6ef7">Ativar</span> no bot acima</div>
-              <div>2. <span style="color:#ef4444">Remova</span> o bot do canal no Telegram</div>
-              <div>3. <span style="color:#22c55e">Adicione de volta</span> o bot como administrador</div>
-              <div>4. Clique em <span style="color:#a855f7">Detectar Canais</span> novamente</div>
-            </div>
+            <p style="font-size:0.72rem;margin-top:4px">Clique em "Adicionar Canal" para começar</p>
           </div>
         </div>
       </div>
@@ -1081,6 +1059,28 @@
 
   </div><!-- /content -->
 </div><!-- /main -->
+
+<!-- ═══ MODAL WIZARD ADICIONAR CANAL ═══ -->
+<div id="modal-canal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div style="background:#13151f;border:1px solid #1e2235;border-radius:14px;width:100%;max-width:520px;margin:16px;padding:28px;position:relative">
+
+    <!-- Fechar -->
+    <button onclick="fecharWizard()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#6b7280;cursor:pointer;font-size:18px;line-height:1;padding:4px">✕</button>
+
+    <h2 style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:22px">Adicionar Canal</h2>
+
+    <!-- Steps -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:28px" id="wizard-steps">
+      <!-- gerado pelo JS -->
+    </div>
+
+    <!-- Conteúdo do passo -->
+    <div id="wizard-body"></div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px" id="wizard-footer"></div>
+  </div>
+</div>
 
 <script>
   const SUPABASE_URL = "https://iimxiaeowdkruqvkmfhh.supabase.co";
@@ -1770,6 +1770,178 @@
       btn.textContent = "✓ Copiado";
       setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar'; }, 2000);
     });
+  }
+
+  // ── Wizard Adicionar Canal ──
+  let wizardStep = 1;
+  const wizardSteps = ["Bot", "Admin", "Canal", "Pixels"];
+
+  function abrirWizardCanal() {
+    wizardStep = 1;
+    document.getElementById("modal-canal").style.display = "flex";
+    renderWizard();
+  }
+
+  function fecharWizard() {
+    document.getElementById("modal-canal").style.display = "none";
+    carregarCanais();
+  }
+
+  function renderWizardSteps() {
+    const container = document.getElementById("wizard-steps");
+    container.innerHTML = wizardSteps.map((s, i) => {
+      const n = i + 1;
+      const done = n < wizardStep;
+      const active = n === wizardStep;
+      const dot = done
+        ? `<div style="width:28px;height:28px;border-radius:50%;background:#4f6ef7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:${active?'#4f6ef7':'#1e2235'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.78rem;font-weight:700;color:${active?'white':'#4a5568'}">${n}</div>`;
+      const label = `<span style="font-size:0.78rem;font-weight:600;color:${active?'#e2e8f0':done?'#6b7280':'#4a5568'};margin-left:6px">${s}</span>`;
+      const line = i < wizardSteps.length - 1
+        ? `<div style="flex:1;height:2px;background:${done?'#4f6ef7':'#1e2235'};margin:0 8px"></div>`
+        : '';
+      return `<div style="display:flex;align-items:center;${i<wizardSteps.length-1?'flex:1':''}">${dot}${label}</div>${line}`;
+    }).join("");
+  }
+
+  async function renderWizard() {
+    renderWizardSteps();
+    const body = document.getElementById("wizard-body");
+    const footer = document.getElementById("wizard-footer");
+
+    if (wizardStep === 1) {
+      // Verificar se bot já está configurado
+      let botOk = false;
+      let botUser = "";
+      try {
+        const r = await fetch("/config/telegram");
+        const cfg = await r.json();
+        botOk = cfg.configurado;
+        botUser = cfg.username || "";
+      } catch(e) {}
+
+      if (botOk) {
+        body.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;background:#0f1117;border:1px solid #22c55e33;border-radius:8px">
+            <div style="width:36px;height:36px;background:#1a2a5e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#4f6ef7"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;color:#e2e8f0">${botUser || "Bot configurado"}</div>
+              <div style="font-size:0.72rem;color:#22c55e;margin-top:2px">✓ Bot ativo</div>
+            </div>
+          </div>`;
+        footer.innerHTML = `<button onclick="wizardStep=2;renderWizard()" style="background:#4f6ef7;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Próximo →</button>`;
+      } else {
+        body.innerHTML = `
+          <p style="font-size:0.82rem;color:#6b7280;margin-bottom:14px">Configure seu bot do Telegram para começar.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div style="font-size:0.75rem;color:#6b7280;margin-bottom:5px">Bot Token</div>
+              <input id="wiz-bot-token" type="password" placeholder="123456789:AAFz..."
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+            </div>
+            <div>
+              <div style="font-size:0.75rem;color:#6b7280;margin-bottom:5px">Username do bot (ex: @meubot)</div>
+              <input id="wiz-bot-username" type="text" placeholder="@seubot"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;box-sizing:border-box"
+                onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+            </div>
+          </div>
+          <div id="wiz-bot-msg" style="font-size:0.78rem;margin-top:8px;display:none"></div>`;
+        footer.innerHTML = `<button onclick="wizSalvarBot()" id="wiz-btn-bot" style="background:#4f6ef7;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Salvar e Continuar →</button>`;
+      }
+
+    } else if (wizardStep === 2) {
+      body.innerHTML = `
+        <p style="font-size:0.85rem;color:#c9d1e0;font-weight:600;margin-bottom:8px">Adicione o bot como administrador do seu canal</p>
+        <p style="font-size:0.8rem;color:#6b7280;margin-bottom:16px">No Telegram: Configurações do canal → Administradores → Adicionar Administrador → busque o seu bot</p>
+        <div style="padding:14px;background:#0f1117;border-radius:8px;border:1px solid #1e2235;font-size:0.8rem;color:#6b7280;line-height:1.7">
+          <div>1. Abra seu canal no Telegram</div>
+          <div>2. Vá em <span style="color:#c9d1e0">Configurações → Administradores</span></div>
+          <div>3. Clique em <span style="color:#c9d1e0">Adicionar Administrador</span></div>
+          <div>4. Busque o username do seu bot e adicione</div>
+          <div>5. Marque a permissão <span style="color:#22c55e">Adicionar Assinantes</span></div>
+        </div>`;
+      footer.innerHTML = `
+        <button onclick="wizardStep=1;renderWizard()" style="background:#1e2235;color:#c9d1e0;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
+        <button onclick="wizardStep=3;renderWizard()" style="background:#4f6ef7;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Já adicionei →</button>`;
+
+    } else if (wizardStep === 3) {
+      body.innerHTML = `<div id="wiz-canal-body"><div style="text-align:center;padding:20px 0;color:#6b7280;font-size:0.82rem">Buscando canais...</div></div>`;
+      footer.innerHTML = `
+        <button onclick="wizardStep=2;renderWizard()" style="background:#1e2235;color:#c9d1e0;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
+        <button id="wiz-btn-proximo" onclick="wizardStep=4;renderWizard()" style="background:#4f6ef7;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;opacity:0.4;cursor:default" disabled>Próximo →</button>`;
+      await wizDetectarCanal();
+
+    } else if (wizardStep === 4) {
+      body.innerHTML = `
+        <p style="font-size:0.82rem;color:#6b7280;margin-bottom:16px">Canal conectado com sucesso! Agora configure os pixels de anúncio na seção <b style="color:#c9d1e0">Pixels</b> do menu.</p>
+        <div style="padding:14px;background:#0c1f0c;border:1px solid #22c55e44;border-radius:8px;display:flex;align-items:center;gap:12px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size:0.85rem;color:#22c55e;font-weight:600">Canal adicionado com sucesso!</span>
+        </div>`;
+      footer.innerHTML = `<button onclick="fecharWizard()" style="background:#22c55e;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Concluir ✓</button>`;
+    }
+  }
+
+  async function wizSalvarBot() {
+    const token = document.getElementById("wiz-bot-token").value.trim();
+    const username = document.getElementById("wiz-bot-username").value.trim();
+    const msg = document.getElementById("wiz-bot-msg");
+    const btn = document.getElementById("wiz-btn-bot");
+    if (!token) { msg.textContent = "⚠ Cole o token do bot"; msg.style.color="#f59e0b"; msg.style.display="block"; return; }
+    btn.textContent = "Salvando..."; btn.style.opacity = "0.7";
+    try {
+      const r = await fetch("/config/telegram", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({token, username}) });
+      if (r.ok) { wizardStep=2; renderWizard(); }
+      else { const e=await r.json().catch(()=>({})); throw new Error(e.detail||r.status); }
+    } catch(e) { msg.textContent="✗ "+e.message; msg.style.color="#ef4444"; msg.style.display="block"; }
+    btn.textContent = "Salvar e Continuar →"; btn.style.opacity = "1";
+  }
+
+  async function wizDetectarCanal() {
+    const body = document.getElementById("wiz-canal-body");
+    try {
+      const r = await fetch("/telegram/detectar-canais");
+      const data = await r.json();
+      if (data.salvos > 0) {
+        // Canal encontrado
+        const cfg = await (await fetch("/config/telegram")).json();
+        const canal = (cfg.canais||[])[0] || {};
+        body.innerHTML = `
+          <div style="padding:14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;background:#1a1040;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;color:#e2e8f0">${canal.nome||"Canal detectado"}</div>
+              <div style="font-size:0.72rem;color:#22c55e;margin-top:2px">✓ Conectado</div>
+            </div>
+          </div>`;
+        document.getElementById("wiz-btn-proximo").style.opacity = "1";
+        document.getElementById("wiz-btn-proximo").style.cursor = "pointer";
+        document.getElementById("wiz-btn-proximo").disabled = false;
+      } else {
+        // Nenhum canal encontrado
+        body.innerHTML = `
+          <div style="background:#2a1f06;border:1px solid #f59e0b44;border-radius:10px;padding:20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style="font-size:0.9rem;font-weight:700;color:#f59e0b">Nenhum canal encontrado</span>
+            </div>
+            <p style="font-size:0.82rem;color:#c9a84c;line-height:1.6">O bot precisa ser adicionado como Admin <b>depois</b> de salvar o token aqui. Remova o bot do canal e adicione-o novamente como administrador.</p>
+            <button onclick="wizDetectarCanal()" id="btn-wiz-retry"
+              style="width:100%;margin-top:14px;background:#f59e0b;color:#0f1117;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Já removi e adicionei novamente
+            </button>
+          </div>`;
+      }
+    } catch(e) {
+      body.innerHTML = `<div style="color:#ef4444;font-size:0.82rem">✗ ${e.message||"Erro ao detectar"}</div>`;
+    }
   }
 
   // ── Canais / Bot ──
