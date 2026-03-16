@@ -563,17 +563,52 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         cliques = r_en.count or 0
 
         # Entradas = joins no canal Telegram (telegram_members event=join)
-        q_jo = db.table("telegram_members").select("created_at", count="exact").eq("event", "join")
+        q_jo = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "join")
         q_jo = aplicar_datas(q_jo, data_inicio, data_fim)
         r_jo = q_jo.execute()
         joins = r_jo.count or 0
         entradas = joins
 
         # Saídas (telegram_members event=leave)
-        q_sa = db.table("telegram_members").select("created_at", count="exact").eq("event", "leave")
+        q_sa = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "leave")
         q_sa = aplicar_datas(q_sa, data_inicio, data_fim)
         r_sa = q_sa.execute()
         saidas = r_sa.count or 0
+
+        # Tempo médio Entrada → Saída (mesmo user_id)
+        import datetime as dt
+        tm_entrada_saida = None
+        try:
+            joins_data = r_jo.data or []
+            saidas_data = r_sa.data or []
+            # Mapeia user_id → join mais recente
+            join_por_user = {}
+            for row in joins_data:
+                uid = row.get("user_id")
+                ts = row.get("created_at","")
+                if uid and ts:
+                    if uid not in join_por_user or ts > join_por_user[uid]:
+                        join_por_user[uid] = ts
+            diffs = []
+            for row in saidas_data:
+                uid = row.get("user_id")
+                ts_leave = row.get("created_at","")
+                if uid and ts_leave and uid in join_por_user:
+                    ts_join = join_por_user[uid]
+                    if ts_leave > ts_join:
+                        t1 = dt.datetime.fromisoformat(ts_join.replace("Z","+00:00"))
+                        t2 = dt.datetime.fromisoformat(ts_leave.replace("Z","+00:00"))
+                        diffs.append((t2 - t1).total_seconds())
+            if diffs:
+                avg_sec = sum(diffs) / len(diffs)
+                if avg_sec < 3600:
+                    tm_entrada_saida = f"{int(avg_sec//60)} min"
+                elif avg_sec < 86400:
+                    tm_entrada_saida = f"{int(avg_sec//3600)} h"
+                else:
+                    tm_entrada_saida = f"{int(avg_sec//86400)} dias"
+        except Exception as ex:
+            print(f"[TM ERRO] {ex}")
 
         # Registros (cadastros)
         q_ca = db.table("cadastros").select("id,email,created_at", count="exact")
@@ -645,6 +680,7 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             "conv_telegram": conv_telegram,
             "conv_pagina": conv_pagina,
             "retencao": retencao,
+            "tm_entrada_saida": tm_entrada_saida,
             "evolucao": evolucao,
         }
     except Exception as e:

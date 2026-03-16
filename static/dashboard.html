@@ -1270,6 +1270,7 @@
       setText("fc-taxa-reg",   (pctRegistros !== null ? pctRegistros : 0) + "%");
       setText("fc-taxa-ftd",   (pctFtd       !== null ? pctFtd       : 0) + "%");
       setText("fc-retencao",   s.retencao + "%");
+      setText("tm-entrada-saida", s.tm_entrada_saida || "—");
 
       // Evolução chart
       renderEvolucao(s.evolucao || []);
