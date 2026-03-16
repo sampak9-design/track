@@ -340,6 +340,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
       Canais
     </div>
+    <div class="nav-item" onclick="mudarSecao('tracker',this)" id="nav-tracker">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Tracker
+    </div>
   </div>
 
   <div class="sidebar-bottom">
@@ -868,6 +872,91 @@
       </div>
     </div>
 
+    <!-- ════ TRACKER ════ -->
+    <div class="secao" id="sec-tracker">
+
+      <div style="margin-bottom:6px">
+        <h2 style="font-size:1.3rem;font-weight:700;color:#e2e8f0">Gerador de Tracker</h2>
+        <p style="font-size:0.8rem;color:#6b7280;margin-top:4px">Gere o código de rastreamento para suas Landing Pages</p>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="panel" style="margin-top:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span style="font-size:1rem;font-weight:700;color:#e2e8f0">1. Selecione o Canal</span>
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Escolha o canal do Telegram que receberá os usuários</p>
+
+        <select id="tracker-canal-select" onchange="atualizarTracker()"
+          style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:8px;padding:11px 14px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;cursor:pointer;max-width:600px;-webkit-appearance:none;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;"
+          onfocus="this.style.borderColor='#4f6ef7'" onblur="this.style.borderColor='#1e2235'">
+          <option value="">— Selecione um canal —</option>
+        </select>
+
+        <div id="tracker-canal-info" style="display:none;margin-top:12px;padding:12px 14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;max-width:600px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem">
+            <span style="color:#6b7280">Canal selecionado:</span>
+            <span id="tracker-canal-nome-badge" style="background:#1a2a5e;color:#4f6ef7;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;margin-top:8px">
+            <span style="color:#6b7280">ID do Canal:</span>
+            <span id="tracker-canal-id-badge" style="background:#1e2235;color:#c9d1e0;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span style="font-size:1rem;font-weight:700;color:#e2e8f0">2. Copie o Código</span>
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole este código no <code style="color:#4f6ef7;background:#1a2035;padding:1px 5px;border-radius:3px">&lt;head&gt;</code> da sua Landing Page de conversão para o Canal</p>
+
+        <div style="position:relative;background:#0c0e16;border:1px solid #1e2235;border-radius:8px;padding:16px;max-width:700px">
+          <button onclick="copiarTracker()" id="btn-copy-tracker"
+            style="position:absolute;top:10px;right:10px;background:#4f6ef7;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px"
+            onmouseover="this.style.background='#3d5ce5'" onmouseout="this.style.background='#4f6ef7'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <pre id="tracker-code-block" style="font-size:0.78rem;color:#c9d1e0;font-family:'Courier New',monospace;line-height:1.7;white-space:pre-wrap;padding-right:80px"><span style="color:#6b7280">&lt;!-- Selecione um canal acima --&gt;</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span style="font-size:1rem;font-weight:700;color:#e2e8f0">3. Use o Link do Canal nos Botões</span>
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Copie esse link de convite e coloque em todos os botões da sua LP</p>
+
+        <div style="font-size:0.75rem;color:#6b7280;margin-bottom:6px">Link do seu canal:</div>
+        <div style="display:flex;gap:8px;align-items:center;max-width:600px">
+          <div style="flex:1;background:#0c0e16;border:1px solid #1e2235;border-radius:8px;padding:11px 14px;font-size:0.82rem;color:#4f6ef7;font-family:'Courier New',monospace" id="tracker-link-canal">—</div>
+          <button onclick="copiarLinkCanal()" id="btn-copy-link"
+            style="background:#f59e0b;color:#0f1117;border:none;padding:10px 16px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap"
+            onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+        </div>
+
+        <div style="margin-top:14px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235;max-width:600px">
+          <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Como usar no Elementor / WordPress</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:0.78rem;color:#6b7280;line-height:1.6">
+            <div>1. Cole o <span style="color:#22c55e">código do passo 2</span> no &lt;head&gt; da sua página (Elementor → Configurações → Custom Code)</div>
+            <div>2. Nos botões "Entrar no Canal", coloque o <span style="color:#f59e0b">link do passo 3</span> como destino</div>
+            <div>3. Os UTMs (<span style="color:#4f6ef7">utm_source, utm_campaign</span>, etc.) serão capturados automaticamente da URL</div>
+            <div>4. Quando o usuário entrar no canal, o bot registra o evento com os dados de origem</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- ════ CANAIS ════ -->
     <div class="secao" id="sec-canais">
 
@@ -963,18 +1052,25 @@
         <!-- Adicionar canal manualmente -->
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2235">
           <div style="font-size:0.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Adicionar Canal</div>
-          <div style="display:flex;gap:8px;max-width:480px">
-            <input id="canal-nome" type="text" placeholder="Nome do canal (ex: Investidor de Elite)"
-              style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-            <input id="canal-username" type="text" placeholder="@username"
-              style="width:150px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
-              onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
-            <button onclick="adicionarCanal()"
-              style="background:#a855f7;color:white;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
-              onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
-              + Adicionar
-            </button>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:500px">
+            <div style="display:flex;gap:8px">
+              <input id="canal-nome" type="text" placeholder="Nome do canal (ex: Investidor de Elite)"
+                style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+              <input id="canal-username" type="text" placeholder="@username"
+                style="width:140px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+            </div>
+            <div style="display:flex;gap:8px">
+              <input id="canal-link" type="text" placeholder="Link de convite (https://t.me/+...)"
+                style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:8px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none;"
+                onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#1e2235'">
+              <button onclick="adicionarCanal()"
+                style="background:#a855f7;color:white;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap"
+                onmouseover="this.style.background='#9333ea'" onmouseout="this.style.background='#a855f7'">
+                + Adicionar
+              </button>
+            </div>
           </div>
           <span id="canal-add-msg" style="font-size:0.78rem;display:none;margin-top:6px;display:block"></span>
         </div>
@@ -1008,7 +1104,7 @@
 
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
-    depositos: "Depósitos", utms: "UTMs", integracoes: "Pixels", canais: "Canais e Bots"
+    depositos: "Depósitos", utms: "UTMs", integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
   };
 
   // ── Auth ──
@@ -1587,6 +1683,7 @@
     if (id === "utms") renderUTMBars();
     if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
     if (id === "canais") { carregarCanais(); }
+    if (id === "tracker") { carregarCanaisTracker(); }
   }
 
   // ── Copiar ──
@@ -1605,6 +1702,83 @@
       btn.textContent = "✓ Copiado";
       btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+
+  // ── Tracker Generator ──
+  let trackerCanais = [];
+
+  async function carregarCanaisTracker() {
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      trackerCanais = cfg.canais || [];
+      const sel = document.getElementById("tracker-canal-select");
+      sel.innerHTML = '<option value="">— Selecione um canal —</option>';
+      trackerCanais.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.nome + (c.username ? " (" + c.username + ")" : "");
+        sel.appendChild(opt);
+      });
+      // auto-selecionar se só tem um
+      if (trackerCanais.length === 1) { sel.value = trackerCanais[0].id; atualizarTracker(); }
+    } catch(e) {}
+  }
+
+  function atualizarTracker() {
+    const sel = document.getElementById("tracker-canal-select");
+    const id = sel.value;
+    const canal = trackerCanais.find(c => String(c.id) === String(id));
+    const infoBox = document.getElementById("tracker-canal-info");
+    const codeBlock = document.getElementById("tracker-code-block");
+    const linkEl = document.getElementById("tracker-link-canal");
+
+    if (!canal) {
+      infoBox.style.display = "none";
+      codeBlock.innerHTML = '<span style="color:#6b7280">&lt;!-- Selecione um canal acima --&gt;</span>';
+      linkEl.textContent = "—";
+      return;
+    }
+
+    // Info box
+    infoBox.style.display = "block";
+    document.getElementById("tracker-canal-nome-badge").textContent = canal.nome;
+    document.getElementById("tracker-canal-id-badge").textContent = canal.id;
+
+    // Code block
+    const appUrl = window.location.origin;
+    const username = canal.username ? canal.username.replace("@","") : "";
+    const code = `<script\n  src="${appUrl}/static/tracker.js"\n  data-channel-id="${canal.id}"\n  data-channel-username="${username}"\n><\/script>`;
+    codeBlock.innerHTML =
+      '<span style="color:#6b7280">&lt;script</span>\n' +
+      '  <span style="color:#a855f7">src</span>=<span style="color:#22c55e">"' + appUrl + '/static/tracker.js"</span>\n' +
+      '  <span style="color:#a855f7">data-channel-id</span>=<span style="color:#22c55e">"' + canal.id + '"</span>\n' +
+      '  <span style="color:#a855f7">data-channel-username</span>=<span style="color:#22c55e">"' + username + '"</span>\n' +
+      '<span style="color:#6b7280">&gt;&lt;/script&gt;</span>';
+    codeBlock._rawCode = code;
+
+    // Link
+    linkEl.textContent = canal.link || (canal.username ? "https://t.me/" + username : "—");
+  }
+
+  function copiarTracker() {
+    const code = document.getElementById("tracker-code-block")._rawCode;
+    if (!code) return;
+    const btn = document.getElementById("btn-copy-tracker");
+    navigator.clipboard.writeText(code).then(() => {
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copiado';
+      setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar'; }, 2000);
+    });
+  }
+
+  function copiarLinkCanal() {
+    const link = document.getElementById("tracker-link-canal").textContent.trim();
+    if (!link || link === "—") return;
+    const btn = document.getElementById("btn-copy-link");
+    navigator.clipboard.writeText(link).then(() => {
+      btn.textContent = "✓ Copiado";
+      setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar'; }, 2000);
     });
   }
 
@@ -1734,6 +1908,7 @@
   async function adicionarCanal() {
     const nome = document.getElementById("canal-nome").value.trim();
     const username = document.getElementById("canal-username").value.trim();
+    const link = document.getElementById("canal-link").value.trim();
     const msg = document.getElementById("canal-add-msg");
 
     if (!nome) {
@@ -1745,7 +1920,7 @@
       const r = await fetch("/config/telegram/canal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, username })
+        body: JSON.stringify({ nome, username, link })
       });
       if (r.ok) {
         const data = await r.json();
@@ -1753,6 +1928,7 @@
         msg.style.color = "#22c55e"; msg.style.display = "block";
         document.getElementById("canal-nome").value = "";
         document.getElementById("canal-username").value = "";
+        document.getElementById("canal-link").value = "";
         carregarCanais();
         setTimeout(() => { msg.style.display = "none"; }, 3000);
       } else {

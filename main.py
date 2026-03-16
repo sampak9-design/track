@@ -437,13 +437,26 @@ async def adicionar_canal_telegram(request: Request):
     data = await request.json()
     nome = data.get("nome", "").strip()
     username = data.get("username", "").strip()
+    link = data.get("link", "").strip()
     if not nome:
         raise HTTPException(status_code=400, detail="nome é obrigatório")
     try:
-        result = db.table("telegram_canais").insert({"nome": nome, "username": username}).execute()
+        result = db.table("telegram_canais").insert({"nome": nome, "username": username, "link": link}).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": result.data[0]["id"]}
+
+@app.post("/tracker/click")
+async def tracker_click(request: Request):
+    """Recebe clique em link do Telegram com UTMs capturados pelo tracker.js."""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+    channel_id = data.get("channel_id")
+    utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
+    print(f"[TRACKER CLICK] canal={channel_id} utms={utms}")
+    return {"ok": True}
 
 @app.delete("/config/telegram/canal/{canal_id}")
 async def remover_canal_telegram(canal_id: int):
