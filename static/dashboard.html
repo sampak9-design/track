@@ -633,68 +633,32 @@
 
     </div>
 
-    <!-- ════ CADASTROS / LEADS ════ -->
+    <!-- ════ CADASTROS ════ -->
     <div class="secao" id="sec-cadastros">
-      <!-- Header -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <div style="font-size:1.4rem;font-weight:800;color:#e2e8f0;line-height:1.2">Leads</div>
-          <div style="font-size:0.78rem;color:#4a5568;margin-top:3px">Rastreamento completo desde a entrada no canal até a conversão</div>
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="s-icon">🔍</span>
+          <input class="search-input" type="text" id="busca-cad" placeholder="Buscar por nome ou email..." oninput="filtrarCadastros()">
         </div>
-        <div style="display:flex;gap:10px">
-          <button onclick="exportarLeads()" style="display:flex;align-items:center;gap:7px;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;font-family:inherit">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar
-          </button>
-          <button onclick="carregarLeads()" style="display:flex;align-items:center;gap:7px;background:#4f6ef7;border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;font-family:inherit">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-            Atualizar
-          </button>
-        </div>
+        <span class="search-count" id="cad-count">0 registros</span>
       </div>
-
-      <!-- Filtros -->
-      <div class="panel" style="margin-bottom:12px;padding:16px 20px">
-        <div style="font-size:0.68rem;color:#4a5568;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Filtros</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
-          <div>
-            <div style="font-size:0.68rem;color:#4a5568;margin-bottom:5px">Evento</div>
-            <select id="leads-filtro-evento" onchange="filtrarLeadsTabela()" style="background:#0d0f1a;border:1px solid #1e2235;color:#c9d1e0;padding:7px 12px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:160px">
-              <option value="">Todos os leads</option>
-              <option value="join">Ativos no canal</option>
-              <option value="leave">Saíram do canal</option>
-              <option value="reg">Com registro</option>
-              <option value="ftd">Com FTD</option>
-            </select>
-          </div>
-          <div>
-            <div style="font-size:0.68rem;color:#4a5568;margin-bottom:5px">Buscar</div>
-            <input id="leads-busca" oninput="filtrarLeadsTabela()" placeholder="Nome ou @username..." style="background:#0d0f1a;border:1px solid #1e2235;color:#c9d1e0;padding:7px 12px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:220px">
-          </div>
-          <div style="margin-left:auto;font-size:0.78rem;color:#4a5568" id="leads-count">0 leads</div>
-        </div>
-      </div>
-
-      <!-- Tabela -->
       <div class="panel" style="padding:0;overflow:hidden">
         <div class="tabela-wrap">
           <table>
             <thead>
               <tr>
-                <th style="color:#4a5568;font-size:0.68rem">TELEGRAM ID</th>
-                <th style="color:#4a5568;font-size:0.68rem">USUÁRIO</th>
-                <th style="color:#4a5568;font-size:0.68rem">CANAL</th>
-                <th style="color:#4a5568;font-size:0.68rem">FONTE</th>
-                <th style="color:#4a5568;font-size:0.68rem">ENTRADA</th>
-                <th style="color:#4a5568;font-size:0.68rem">REGISTRO</th>
-                <th style="color:#4a5568;font-size:0.68rem">FTD</th>
-                <th style="color:#4a5568;font-size:0.68rem">DEPÓSITOS</th>
-                <th style="color:#4a5568;font-size:0.68rem">LTV</th>
-                <th style="color:#4a5568;font-size:0.68rem">STATUS</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Origem</th>
+                <th>Campanha</th>
+                <th>Conteúdo</th>
+                <th>Data</th>
+                <th style="text-align:center">Telegram</th>
               </tr>
             </thead>
-            <tbody id="t-leads">
-              <tr><td colspan="10"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
+            <tbody id="t-cadastros">
+              <tr><td colspan="8"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1365,7 +1329,6 @@
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
     carregar();
-    carregarLeads();
     popularCanalSelect();
     sincronizarDatasStats();
     carregarStats();
@@ -1660,91 +1623,67 @@
     return m;
   }
 
-  // ── Leads ──
-  let allLeads = [];
-
-  async function carregarLeads() {
-    try {
-      const r = await fetch("/leads");
-      const data = await r.json();
-      allLeads = data.leads || [];
-      filtrarLeadsTabela();
-    } catch(e) {
-      document.getElementById("t-leads").innerHTML = '<tr><td colspan="10"><div class="empty-state"><p>Erro ao carregar leads</p></div></td></tr>';
-    }
-  }
-
-  function filtrarLeadsTabela() {
-    const q = (document.getElementById("leads-busca")?.value || "").toLowerCase();
-    const ev = document.getElementById("leads-filtro-evento")?.value || "";
-    let lista = allLeads.filter(l => {
-      const nome = ((l.first_name || "") + " " + (l.last_name || "")).toLowerCase();
-      const user = (l.username || "").toLowerCase();
-      if (q && !nome.includes(q) && !user.includes(q)) return false;
-      if (ev === "join" && l.status !== "join") return false;
-      if (ev === "leave" && l.status !== "leave") return false;
-      if (ev === "reg" && !l.registro) return false;
-      if (ev === "ftd" && !l.ftd) return false;
-      return true;
+  // ── Cadastros ──
+  function buildTelegramStatusMap() {
+    const byUser = {};
+    allTelegramMembers.forEach(m => {
+      const uid = m.user_id;
+      if (!uid) return;
+      if (!byUser[uid] || m.created_at > byUser[uid].created_at) byUser[uid] = m;
     });
-    renderLeads(lista);
+    const byName = {};
+    Object.values(byUser).forEach(m => {
+      const key = (m.first_name || "").toLowerCase().trim();
+      if (key) byName[key] = m;
+    });
+    return byName;
   }
 
-  function fmtDt(iso) {
-    if (!iso) return '<span style="color:#3d4466">—</span>';
-    const d = new Date(iso);
-    return `<span style="color:#9ca3af;white-space:nowrap">${d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})} <span style="color:#4a5568">${d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span></span>`;
-  }
-
-  function renderLeads(lista) {
-    const tb = document.getElementById("t-leads");
-    const cnt = document.getElementById("leads-count");
-    if (cnt) cnt.textContent = lista.length + " leads";
-    if (!lista.length) {
-      tb.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum lead encontrado</p></div></td></tr>';
+  function renderTabelaCadastros(dados) {
+    const tb = document.getElementById("t-cadastros");
+    document.getElementById("cad-count").textContent = dados.length + " registros";
+    if (!dados.length) {
+      tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum cadastro no período</p></div></td></tr>';
       return;
     }
-    tb.innerHTML = lista.map(l => {
-      const nome = [l.first_name, l.last_name].filter(Boolean).join(" ") || "—";
-      const username = l.username ? `<div style="font-size:0.7rem;color:#4a5568">@${l.username}</div>` : "";
-      const status = l.status === "join"
-        ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#14291e;color:#22c55e;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%;display:inline-block"></span>Ativo</span>'
-        : l.status === "leave"
-          ? `<span style="display:inline-flex;align-items:center;gap:5px;background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px" title="Saiu em ${l.saiu_em ? new Date(l.saiu_em).toLocaleString('pt-BR') : ''}"><span style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block"></span>Saiu</span>`
-          : '<span style="color:#3d4466">—</span>';
-      const fonte = l.utm_source
-        ? `<span style="display:inline-flex;align-items:center;gap:5px;background:#1a1f3a;border:1px solid #2d3148;color:#7c94fa;font-size:0.72rem;padding:3px 9px;border-radius:6px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${l.utm_source}</span>`
-        : '<span style="color:#3d4466">—</span>';
-      const ltv = l.ltv > 0 ? `<span style="color:#22c55e;font-weight:600">R$ ${l.ltv.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span>` : '<span style="color:#3d4466">—</span>';
+    const tgMap = buildTelegramStatusMap();
+    tb.innerHTML = dados.map(r => {
+      const firstName = (r.nome || "").split(" ")[0].toLowerCase().trim();
+      const tg = tgMap[firstName];
+      let tgCell;
+      if (!tg) {
+        tgCell = '<span style="color:#3d4466;font-size:0.72rem">—</span>';
+      } else if (tg.event === "join") {
+        tgCell = '<span style="background:#14291e;color:#22c55e;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px">✓ Entrou</span>';
+      } else {
+        const dt = tg.created_at ? new Date(tg.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
+        tgCell = `<span style="background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px" title="Saiu em ${dt}">✗ Saiu</span>`;
+      }
       return `<tr>
-        <td style="color:#4a5568;font-size:0.75rem">${l.user_id || '<span style="color:#3d4466">—</span>'}</td>
-        <td><div style="font-size:0.82rem;font-weight:600;color:#c9d1e0">${nome}</div>${username}</td>
-        <td style="color:#9ca3af;font-size:0.78rem">${l.canal||"—"}</td>
-        <td>${fonte}</td>
-        <td>${fmtDt(l.entrada)}</td>
-        <td>${fmtDt(l.registro)}</td>
-        <td>${fmtDt(l.ftd)}</td>
-        <td style="color:#c9d1e0;text-align:center">${l.depositos > 0 ? l.depositos : '<span style="color:#3d4466">—</span>'}</td>
-        <td>${ltv}</td>
-        <td>${status}</td>
+        <td>${r.nome||"—"}</td>
+        <td style="color:#9ca3af">${r.email||"—"}</td>
+        <td style="color:#9ca3af">${r.telefone||"—"}</td>
+        <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td style="color:#9ca3af">${r.utm_content||"—"}</td>
+        <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
+        <td style="text-align:center">${tgCell}</td>
       </tr>`;
     }).join("");
   }
 
-  function exportarLeads() {
-    const rows = [["Telegram ID","Nome","Username","Canal","Fonte","Entrada","Registro","FTD","Depósitos","LTV","Status"]];
-    allLeads.forEach(l => rows.push([
-      l.user_id, [l.first_name,l.last_name].filter(Boolean).join(" "), l.username||"",
-      l.canal||"", l.utm_source||"", l.entrada||"", l.registro||"", l.ftd||"",
-      l.depositos, l.ltv, l.status==="join"?"Ativo":"Saiu"
-    ]));
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-    a.download = "leads.csv"; a.click();
+  function filtrarCadastros() {
+    const q = document.getElementById("busca-cad").value.toLowerCase();
+    const src = document.getElementById("filtro-source").value;
+    const camp = document.getElementById("filtro-campaign").value;
+    renderTabelaCadastros(
+      filtrarPeriodo(allCadastros).filter(r =>
+        (!src || r.utm_source === src) &&
+        (!camp || r.utm_campaign === camp) &&
+        ((r.nome||"").toLowerCase().includes(q) || (r.email||"").toLowerCase().includes(q))
+      )
+    );
   }
-
-  function filtrarCadastros() {} // deprecated
 
   function filtrarDepositos() {
     const q = document.getElementById("busca-dep").value.toLowerCase();
@@ -1992,7 +1931,7 @@
     if (id === "utms") renderUTMBars();
     if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
     if (id === "canais") { carregarCanais(); }
-    if (id === "cadastros") carregarLeads();
+    if (id === "cadastros") filtrarCadastros();
     if (id === "tracker") { carregarCanaisTracker(); }
   }
 
