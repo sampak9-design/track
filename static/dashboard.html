@@ -1347,11 +1347,21 @@
   }
 
   // ── Auth ──
+  function definirDatasPadraoMes() {
+    const hoje = new Date();
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const fmt = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    document.getElementById("stats-inicio").value = fmt(inicio);
+    document.getElementById("stats-fim").value = fmt(fim);
+  }
+
   sb.auth.getSession().then(({ data }) => {
     if (!data.session) { window.location.href = "index.html"; return; }
     const email = data.session.user.email || "";
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
+    definirDatasPadraoMes();
     carregar();
     popularCanalSelect();
     carregarStats();

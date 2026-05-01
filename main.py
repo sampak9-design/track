@@ -762,7 +762,7 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         conv_pagina = round(registros / pageviews * 100, 2) if pageviews > 0 else 0
         retencao = round((joins - saidas) / joins * 100, 2) if joins > 0 else 0
 
-        # Evolução diária (últimos 14 dias de pageviews, joins e saidas)
+        # Evolução diária — usa o range de datas selecionado (ou mês atual se não houver)
         from collections import defaultdict
         import datetime
         pv_data = r_pv.data or []
@@ -780,8 +780,37 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         for row in sa_data:
             dia = (row.get("created_at") or "")[:10]
             if dia: sa_por_dia[dia] += 1
+
         hoje = datetime.date.today()
-        dias = [(hoje - datetime.timedelta(days=i)).isoformat() for i in range(13, -1, -1)]
+        if data_inicio:
+            try:
+                d_ini = datetime.date.fromisoformat(data_inicio)
+            except Exception:
+                d_ini = hoje.replace(day=1)
+        else:
+            d_ini = hoje.replace(day=1)
+
+        if data_fim:
+            try:
+                d_fim = datetime.date.fromisoformat(data_fim)
+            except Exception:
+                d_fim = hoje
+        else:
+            # último dia do mês de d_ini
+            if d_ini.month == 12:
+                d_fim = datetime.date(d_ini.year + 1, 1, 1) - datetime.timedelta(days=1)
+            else:
+                d_fim = datetime.date(d_ini.year, d_ini.month + 1, 1) - datetime.timedelta(days=1)
+
+        # Limita range para no máximo 365 dias para evitar gráficos enormes
+        if (d_fim - d_ini).days > 365:
+            d_ini = d_fim - datetime.timedelta(days=365)
+
+        dias = []
+        cur = d_ini
+        while cur <= d_fim:
+            dias.append(cur.isoformat())
+            cur += datetime.timedelta(days=1)
         evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d], "saidas": sa_por_dia[d]} for d in dias]
 
         return {
