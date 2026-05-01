@@ -6,6 +6,7 @@ from supabase import create_client
 import uvicorn
 import httpx
 import hashlib
+import json
 import time
 import os
 from dotenv import load_dotenv
@@ -325,6 +326,152 @@ async def salvar_config_tiktok(request: Request):
 
     print(f"[CONFIG] TikTok Pixel atualizado: {pixel_code}")
     return {"status": "ok"}
+
+
+# ── Meta Ads (Marketing API) ──────────────────────────────────────
+def _set_cfg(chave: str, valor: str):
+    existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+    if existing.data:
+        db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+    else:
+        db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+
+def _get_cfg(chave: str) -> str:
+    r = db.table("configuracoes").select("valor").eq("chave", chave).execute()
+    return r.data[0]["valor"] if r.data else ""
+
+
+@app.get("/config/metaads")
+def get_metaads_config(request: Request):
+    redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
+    contas_raw = _get_cfg("metaads_contas") or "[]"
+    try:
+        contas = json.loads(contas_raw)
+    except Exception:
+        contas = []
+    return {
+        "app_id":       _get_cfg("metaads_app_id"),
+        "app_secret":   bool(_get_cfg("metaads_app_secret")),
+        "access_token": bool(_get_cfg("metaads_access_token")),
+        "contas":       contas,
+        "redirect_uri": redirect_uri,
+    }
+
+
+@app.post("/config/metaads")
+async def salvar_metaads_credenciais(request: Request):
+    data = await request.json()
+    app_id = (data.get("app_id") or "").strip()
+    app_secret = (data.get("app_secret") or "").strip()
+    if not app_id or not app_secret:
+        raise HTTPException(status_code=400, detail="app_id e app_secret obrigatórios")
+    try:
+        _set_cfg("metaads_app_id", app_id)
+        _set_cfg("metaads_app_secret", app_secret)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok"}
+
+
+@app.get("/metaads/connect")
+async def metaads_connect(request: Request):
+    """Redireciona pro OAuth do Facebook."""
+    app_id = _get_cfg("metaads_app_id")
+    if not app_id:
+        raise HTTPException(status_code=400, detail="App ID não configurado")
+    redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
+    scopes = "ads_read,ads_management,business_management,read_insights"
+    url = (
+        f"https://www.facebook.com/v19.0/dialog/oauth"
+        f"?client_id={app_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={scopes}"
+        f"&response_type=code"
+    )
+    return RedirectResponse(url=url)
+
+
+@app.get("/metaads/callback")
+async def metaads_callback(request: Request, code: str = None, error: str = None):
+    """Recebe o code do OAuth, troca por access_token de longa duração e busca contas."""
+    if error or not code:
+        return RedirectResponse(url="/static/dashboard.html?metaads_erro=" + (error or "sem-codigo"))
+
+    app_id = _get_cfg("metaads_app_id")
+    app_secret = _get_cfg("metaads_app_secret")
+    redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
+
+    async with httpx.AsyncClient(timeout=20) as client:
+        # 1) Trocar code por short-lived token
+        r = await client.get(
+            "https://graph.facebook.com/v19.0/oauth/access_token",
+            params={
+                "client_id": app_id,
+                "client_secret": app_secret,
+                "redirect_uri": redirect_uri,
+                "code": code,
+            },
+        )
+        d = r.json()
+        if "access_token" not in d:
+            return RedirectResponse(url=f"/static/dashboard.html?metaads_erro={d.get('error',{}).get('message','token-erro')}")
+        short_token = d["access_token"]
+
+        # 2) Trocar por long-lived token (60 dias)
+        r2 = await client.get(
+            "https://graph.facebook.com/v19.0/oauth/access_token",
+            params={
+                "grant_type":      "fb_exchange_token",
+                "client_id":       app_id,
+                "client_secret":   app_secret,
+                "fb_exchange_token": short_token,
+            },
+        )
+        d2 = r2.json()
+        long_token = d2.get("access_token", short_token)
+
+        # 3) Buscar contas de anúncio
+        r3 = await client.get(
+            "https://graph.facebook.com/v19.0/me/adaccounts",
+            params={"access_token": long_token, "fields": "id,name,account_status,currency,business_name"},
+        )
+        d3 = r3.json()
+        contas = d3.get("data", []) or []
+
+    _set_cfg("metaads_access_token", long_token)
+    _set_cfg("metaads_contas", json.dumps(contas, ensure_ascii=False))
+
+    return RedirectResponse(url="/static/dashboard.html?metaads_ok=1")
+
+
+@app.delete("/config/metaads")
+def desconectar_metaads():
+    try:
+        for chave in ["metaads_access_token", "metaads_contas"]:
+            db.table("configuracoes").delete().eq("chave", chave).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok"}
+
+
+@app.get("/metaads/insights")
+async def metaads_insights(account_id: str, since: str = None, until: str = None):
+    """Retorna insights de gasto de uma conta."""
+    token = _get_cfg("metaads_access_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Não conectado")
+    params = {
+        "access_token": token,
+        "fields": "spend,impressions,clicks,reach,ctr,cpc,cpm,actions,date_start,date_stop",
+        "level":  "account",
+    }
+    if since and until:
+        params["time_range"] = json.dumps({"since": since, "until": until})
+    else:
+        params["date_preset"] = "last_30d"
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.get(f"https://graph.facebook.com/v19.0/{account_id}/insights", params=params)
+        return r.json()
 
 
 # ── Endpoints ────────────────────────────────────────────────────

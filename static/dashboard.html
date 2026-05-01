@@ -1169,6 +1169,65 @@
           </div>
         </div>
 
+        <!-- ═══ META ADS — Marketing API ═══ -->
+        <div class="integ-block" style="margin-top:24px">
+          <div class="integ-block-header">
+            <div class="integ-block-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01z"/></svg>
+              Meta Ads — Marketing API
+            </div>
+          </div>
+          <p class="integ-desc">Conecte sua conta do Facebook Ads para puxar dados de gasto, impressões, cliques e conversões em tempo real. Suporta múltiplas contas de anúncio.</p>
+
+          <!-- Form para credenciais do app -->
+          <div id="meta-ads-form">
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+              <div>
+                <div class="webhook-label-row">App ID (Meta Developers)</div>
+                <input id="metaads-app-id" type="text" placeholder="Ex: 1234567890123456"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none"
+                  onfocus="this.style.borderColor='#1877f2'" onblur="this.style.borderColor='#1e2235'">
+              </div>
+              <div>
+                <div class="webhook-label-row">App Secret</div>
+                <input id="metaads-app-secret" type="password" placeholder="Secret do app..."
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none"
+                  onfocus="this.style.borderColor='#1877f2'" onblur="this.style.borderColor='#1e2235'">
+                <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                  <input type="checkbox" id="show-metaads-secret" onchange="document.getElementById('metaads-app-secret').type=this.checked?'text':'password'" style="cursor:pointer">
+                  <label for="show-metaads-secret" style="font-size:0.72rem;color:#6b7280;cursor:pointer">Mostrar secret</label>
+                </div>
+              </div>
+              <div style="padding:10px 12px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;font-size:0.74rem;color:#6b7280">
+                <strong style="color:#c9d1e0">Redirect URI</strong> (cadastre no Meta Developers):<br>
+                <code id="metaads-redirect-uri" style="color:#1877f2;font-family:monospace;font-size:0.72rem;word-break:break-all"></code>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <button onclick="salvarMetaAdsCredenciais()" id="btn-salvar-metaads"
+                style="background:#2d2d2d;color:white;border:1px solid #4a4a4a;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                onmouseover="this.style.background='#3d3d3d'" onmouseout="this.style.background='#2d2d2d'">
+                Salvar credenciais
+              </button>
+              <button onclick="conectarFacebook()" id="btn-conectar-facebook" style="display:none;background:#1877f2;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
+                onmouseover="this.style.background='#0d6efd'" onmouseout="this.style.background='#1877f2'">
+                Conectar com Facebook
+              </button>
+              <span id="metaads-msg" style="font-size:0.78rem;display:none"></span>
+            </div>
+          </div>
+
+          <!-- Lista de contas conectadas -->
+          <div id="metaads-contas-wrap" style="display:none;margin-top:18px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d2818;border:1px solid #1f6e3a;border-radius:8px;margin-bottom:12px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span style="font-size:0.82rem;color:#22c55e;font-weight:600">Conectado com <span id="metaads-contas-count">0</span> conta(s) de anúncio</span>
+              <button onclick="desconectarMetaAds()" style="margin-left:auto;background:none;border:1px solid #2d3a6e;color:#9ca3af;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:inherit">Desconectar</button>
+            </div>
+            <div id="metaads-contas-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2105,6 +2164,90 @@
     input.type = document.getElementById("show-tiktok-token").checked ? "text" : "password";
   }
 
+  // ── Meta Ads ──
+  async function carregarConfigMetaAds() {
+    try {
+      const r = await fetch("/config/metaads");
+      const cfg = await r.json();
+      document.getElementById("metaads-redirect-uri").textContent = cfg.redirect_uri || "";
+      if (cfg.app_id) document.getElementById("metaads-app-id").value = cfg.app_id;
+      // Se já tem credenciais, mostra botão Conectar
+      if (cfg.app_id && cfg.app_secret) {
+        document.getElementById("btn-conectar-facebook").style.display = "inline-block";
+      }
+      // Se já conectou e tem contas
+      if (cfg.access_token && (cfg.contas || []).length > 0) {
+        renderMetaAdsContas(cfg.contas);
+      }
+    } catch(e) {}
+  }
+
+  function renderMetaAdsContas(contas) {
+    document.getElementById("metaads-contas-wrap").style.display = "block";
+    document.getElementById("metaads-contas-count").textContent = contas.length;
+    document.getElementById("metaads-contas-lista").innerHTML = contas.map(c => `
+      <div style="padding:12px 14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;display:flex;align-items:center;gap:12px">
+        <div style="width:32px;height:32px;background:#1a2440;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2" stroke="none"><path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.84rem;font-weight:600;color:#e2e8f0">${c.name || c.business_name || "Conta sem nome"}</div>
+          <div style="font-size:0.72rem;color:#6b7280;font-family:monospace">${c.id} · ${c.currency || ""}</div>
+        </div>
+        <span style="background:${c.account_status === 1 ? "#14291e" : "#2a1f06"};color:${c.account_status === 1 ? "#22c55e" : "#f59e0b"};font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px">
+          ${c.account_status === 1 ? "✓ Ativa" : "Inativa"}
+        </span>
+      </div>
+    `).join("");
+  }
+
+  async function salvarMetaAdsCredenciais() {
+    const app_id = document.getElementById("metaads-app-id").value.trim();
+    const app_secret = document.getElementById("metaads-app-secret").value.trim();
+    const btn = document.getElementById("btn-salvar-metaads");
+    const msg = document.getElementById("metaads-msg");
+    if (!app_id || !app_secret) {
+      msg.textContent = "⚠ Preencha App ID e App Secret"; msg.style.color = "#f59e0b"; msg.style.display = "inline"; return;
+    }
+    btn.textContent = "Salvando..."; btn.style.opacity = "0.7";
+    try {
+      const r = await fetch("/config/metaads", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({app_id, app_secret}) });
+      if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail || r.status); }
+      msg.textContent = "✓ Credenciais salvas. Clique em Conectar com Facebook."; msg.style.color = "#22c55e"; msg.style.display = "inline";
+      document.getElementById("btn-conectar-facebook").style.display = "inline-block";
+      setTimeout(() => { msg.style.display = "none"; }, 4000);
+    } catch(e) {
+      msg.textContent = "✗ " + (e.message || "Erro"); msg.style.color = "#ef4444"; msg.style.display = "inline";
+    }
+    btn.textContent = "Salvar credenciais"; btn.style.opacity = "1";
+  }
+
+  function conectarFacebook() {
+    window.location.href = "/metaads/connect";
+  }
+
+  async function desconectarMetaAds() {
+    if (!confirm("Desconectar todas as contas Meta Ads?")) return;
+    try {
+      await fetch("/config/metaads", { method: "DELETE" });
+      document.getElementById("metaads-contas-wrap").style.display = "none";
+    } catch(e) { alert("Erro ao desconectar"); }
+  }
+
+  // Detectar callback OAuth
+  (function checkMetaAdsCallback() {
+    const params = new URLSearchParams(location.search);
+    if (params.get("metaads_ok")) {
+      setTimeout(() => alert("✓ Meta Ads conectado! Indo para Pixels..."), 100);
+      history.replaceState({}, "", location.pathname);
+      const navInteg = document.getElementById("nav-integracoes");
+      if (navInteg) setTimeout(() => navInteg.click(), 500);
+    } else if (params.get("metaads_erro")) {
+      alert("Erro Meta Ads: " + params.get("metaads_erro"));
+      history.replaceState({}, "", location.pathname);
+    }
+  })();
+
   // Carregar config ao abrir integrações
   let secaoAtiva = "resumo";
 
@@ -2125,7 +2268,7 @@
   function refreshSecao(id) {
     if (id === "resumo") carregarStats();
     if (id === "utms") renderUTMBars();
-    if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
+    if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); carregarConfigMetaAds(); }
     if (id === "canais") { carregarCanais(); }
     if (id === "cadastros") filtrarCadastros();
     if (id === "depositos") filtrarDepositos();
