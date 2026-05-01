@@ -30,7 +30,7 @@
   try { savedUtmsForPageview = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
   var pageviewPayload = Object.assign({ channel_id: channelId, page_url: location.href }, savedUtmsForPageview);
   try {
-    var pageviewBlob = new Blob([JSON.stringify(pageviewPayload)], { type: 'application/json' });
+    var pageviewBlob = new Blob([JSON.stringify(pageviewPayload)], { type: 'text/plain' });
     navigator.sendBeacon(script.src.replace('/static/tracker.js', '/tracker/pageview'), pageviewBlob);
   } catch (ex) {}
 
@@ -46,7 +46,7 @@
     try { savedUtms = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
     var payload = Object.assign({ channel_id: channelId, page_url: location.href }, savedUtms);
     try {
-      var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      var blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
       navigator.sendBeacon(beaconBase + '/tracker/entrada', blob);
     } catch (ex) {}
   }
