@@ -364,13 +364,6 @@
     </div>
   </div>
 
-  <!-- Atualizar abaixo do cabeçalho -->
-  <div style="padding:14px 24px 0;display:flex;justify-content:flex-end">
-    <button class="btn-atualizar" id="btn-att" onclick="carregar()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-      Atualizar
-    </button>
-  </div>
 
 
   <div class="content">
@@ -404,6 +397,13 @@
             <button class="preset-btn" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
           </div>
         </div>
+        <div style="margin-left:auto">
+          <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
+          <button class="btn-refresh" id="btn-att" onclick="carregar()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Atualizar</span>
+          </button>
+        </div>
       </div>
 
       <style>
@@ -421,6 +421,27 @@
         }
         .preset-btn:hover { color: #c9d1e0; border-color: #2d3a6e; }
         .preset-btn.ativo { background: #1e2235; color: #fff; border-color: #4f6ef7; }
+
+        .btn-refresh {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: linear-gradient(135deg, #4f6ef7 0%, #6c4ff7 100%);
+          border: none;
+          color: #fff;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 0.82rem;
+          font-family: inherit;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s;
+          box-shadow: 0 1px 4px rgba(79,110,247,0.3);
+        }
+        .btn-refresh:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,110,247,0.45); }
+        .btn-refresh:active { transform: translateY(0); }
+        .btn-refresh.loading { opacity: 0.7; cursor: default; pointer-events: none; }
+        .btn-refresh.loading svg { animation: spin 0.8s linear infinite; }
       </style>
 
       <!-- 6 metric cards -->
