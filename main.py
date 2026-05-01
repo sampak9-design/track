@@ -468,6 +468,19 @@ async def salvar_config_telegram(request: Request):
         TELEGRAM_BOT_TOKEN = token
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Configurar webhook AUTOMATICAMENTE para capturar my_chat_member quando o bot for adicionado
+    try:
+        webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+        async with httpx.AsyncClient(timeout=15) as client:
+            wh_resp = await client.post(
+                f"https://api.telegram.org/bot{token}/setWebhook",
+                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]}
+            )
+            print(f"[CONFIG] Webhook setup: {wh_resp.json()}")
+    except Exception as e:
+        print(f"[CONFIG] Webhook setup falhou: {e}")
+
     print(f"[CONFIG] Telegram Bot atualizado: {username}")
     return {"status": "ok"}
 
@@ -850,16 +863,18 @@ async def detectar_canais(request: Request):
 
     webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
 
-    async with httpx.AsyncClient() as client:
-        # 1. Deletar webhook temporariamente
+    async with httpx.AsyncClient(timeout=15) as client:
+        # 1. Deletar webhook temporariamente (sem drop_pending para preservar updates)
         await client.post(f"https://api.telegram.org/bot{bot_token}/deleteWebhook")
 
-        # 2. Buscar updates pendentes
+        # 2. Buscar TODOS os updates pendentes (não só my_chat_member)
+        #    com allowed_updates explícito incluindo my_chat_member e chat_member
         resp = await client.get(
             f"https://api.telegram.org/bot{bot_token}/getUpdates",
-            params={"allowed_updates": ["my_chat_member"], "limit": 100}
+            params={"allowed_updates": '["my_chat_member","chat_member","message"]', "limit": 100, "timeout": 5}
         )
         data = resp.json()
+        print(f"[DETECTAR] getUpdates retornou {len(data.get('result', []))} updates")
 
         # 3. Reativar webhook imediatamente
         await client.post(
@@ -871,18 +886,37 @@ async def detectar_canais(request: Request):
         raise HTTPException(status_code=400, detail=data.get("description", "Erro ao buscar updates"))
 
     salvos = 0
+    chats_vistos = {}  # chat_id -> chat info
+
+    # Extrair chats de qualquer tipo de update
     for update in data.get("result", []):
+        chat = None
+        # my_chat_member: bot adicionado/removido
         mcm = update.get("my_chat_member")
-        if not mcm:
+        if mcm:
+            new_status = mcm.get("new_chat_member", {}).get("status", "")
+            if new_status in ("administrator", "member"):
+                chat = mcm.get("chat", {})
+        # mensagens em canal/grupo
+        if not chat:
+            for key in ("channel_post", "message", "edited_channel_post", "edited_message"):
+                msg = update.get(key)
+                if msg:
+                    chat = msg.get("chat", {})
+                    break
+
+        if not chat:
             continue
-        chat = mcm.get("chat", {})
-        new_status = mcm.get("new_chat_member", {}).get("status", "")
-        if chat.get("type") not in ("channel", "supergroup"):
-            continue
-        if new_status not in ("administrator", "member"):
+        if chat.get("type") not in ("channel", "supergroup", "group"):
             continue
 
-        chat_id    = chat.get("id")
+        chat_id = chat.get("id")
+        if not chat_id or chat_id in chats_vistos:
+            continue
+        chats_vistos[chat_id] = chat
+
+    # Salvar todos os chats descobertos
+    for chat_id, chat in chats_vistos.items():
         chat_title = chat.get("title", "")
         chat_uname = ("@" + chat.get("username")) if chat.get("username") else ""
 
