@@ -21,9 +21,10 @@ db  = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=".*",
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 
