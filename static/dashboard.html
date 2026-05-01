@@ -400,10 +400,10 @@
         <div>
           <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período Rápido</div>
           <div id="preset-grid" style="display:flex;gap:4px;flex-wrap:wrap">
-            <button class="preset-btn" data-preset="hoje" onclick="aplicarPreset('hoje',this)">Hoje</button>
+            <button class="preset-btn ativo" data-preset="hoje" onclick="aplicarPreset('hoje',this)">Hoje</button>
             <button class="preset-btn" data-preset="7d" onclick="aplicarPreset('7d',this)">7 dias</button>
             <button class="preset-btn" data-preset="semana" onclick="aplicarPreset('semana',this)">Semana</button>
-            <button class="preset-btn ativo" data-preset="mes" onclick="aplicarPreset('mes',this)">Mês</button>
+            <button class="preset-btn" data-preset="mes" onclick="aplicarPreset('mes',this)">Mês</button>
             <button class="preset-btn" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
           </div>
         </div>
@@ -1521,10 +1521,8 @@
 
   function definirDatasPadraoMes() {
     const hoje = new Date();
-    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    document.getElementById("stats-inicio").value = fmtData(inicio);
-    document.getElementById("stats-fim").value = fmtData(fim);
+    document.getElementById("stats-inicio").value = fmtData(hoje);
+    document.getElementById("stats-fim").value = fmtData(hoje);
   }
 
   function aplicarPreset(preset, btn) {
