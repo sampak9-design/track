@@ -361,6 +361,10 @@
     </div>
     <div class="topbar-actions">
       <span class="update-info" id="update-time"></span>
+      <button class="btn-refresh" id="btn-att" onclick="carregar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <span>Atualizar</span>
+      </button>
     </div>
   </div>
 
@@ -396,13 +400,6 @@
             <button class="preset-btn ativo" data-preset="mes" onclick="aplicarPreset('mes',this)">Mês</button>
             <button class="preset-btn" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
           </div>
-        </div>
-        <div style="margin-left:auto">
-          <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
-          <button class="btn-refresh" id="btn-att" onclick="carregar()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            <span>Atualizar</span>
-          </button>
         </div>
       </div>
 
@@ -1479,8 +1476,7 @@
   // ── Carregar ──
   async function carregar() {
     const btn = document.getElementById("btn-att");
-    btn.classList.add("loading");
-    btn.disabled = true;
+    if (btn) { btn.classList.add("loading"); btn.disabled = true; }
 
     try {
       const [cRes, dRes, tmRes] = await Promise.all([
@@ -1494,7 +1490,9 @@
       allTelegramMembers = tmRes.members || [];
 
       aplicarFiltros();
-      carregarStats();
+      // Atualiza tudo da seção que o usuário está vendo
+      if (typeof secaoAtiva !== "undefined") refreshSecao(secaoAtiva);
+      else carregarStats();
 
       const agora = new Date();
       document.getElementById("update-time").textContent =
@@ -1502,8 +1500,7 @@
     } catch (e) {
       console.error("Erro ao carregar dados:", e);
     } finally {
-      btn.classList.remove("loading");
-      btn.disabled = false;
+      if (btn) { btn.classList.remove("loading"); btn.disabled = false; }
     }
   }
 
@@ -1972,17 +1969,25 @@
   }
 
   // Carregar config ao abrir integrações
+  let secaoAtiva = "resumo";
+
   function mudarSecao(id, el) {
+    secaoAtiva = id;
     document.querySelectorAll(".secao").forEach(s => s.classList.remove("visivel"));
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("ativo"));
     document.getElementById("sec-" + id).classList.add("visivel");
     el.classList.add("ativo");
     document.getElementById("titulo-pagina").textContent = titulos[id] || id;
+    refreshSecao(id);
+  }
+
+  function refreshSecao(id) {
     if (id === "resumo") carregarStats();
     if (id === "utms") renderUTMBars();
     if (id === "integracoes") { preencherWebhookURLs(); carregarConfigMeta(); carregarConfigKwai(); carregarConfigTiktok(); }
     if (id === "canais") { carregarCanais(); }
     if (id === "cadastros") filtrarCadastros();
+    if (id === "depositos") filtrarDepositos();
     if (id === "tracker") { carregarCanaisTracker(); }
     if (id === "membros") { carregarMembros(); }
   }
