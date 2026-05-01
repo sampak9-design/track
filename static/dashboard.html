@@ -1749,6 +1749,26 @@
     );
   }
 
+  function renderTabelaDepositos(dados) {
+    const tb = document.getElementById("t-depositos");
+    document.getElementById("dep-count").textContent = dados.length + " registros";
+    if (!dados.length) {
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💰</div><p>Nenhum depósito encontrado</p></div></td></tr>';
+      return;
+    }
+    tb.innerHTML = dados.map(r => {
+      const valor = Number(r.valor) || 0;
+      return `<tr>
+        <td style="color:#e2e8f0">${r.email||"—"}</td>
+        <td style="color:#22c55e;font-weight:600">R$ ${valor.toLocaleString("pt-BR",{minimumFractionDigits:2})}</td>
+        <td>${r.tipo ? `<span class="badge badge-gray">${r.tipo}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td>${r.utm_source ? `<span class="badge badge-blue">${r.utm_source}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td>${r.utm_campaign ? `<span class="badge badge-gray">${r.utm_campaign}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td style="color:#6b7280;white-space:nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "—"}</td>
+      </tr>`;
+    }).join("");
+  }
+
   // ── Pixel Tab switching ──
   function mudarPixelTab(id, el) {
     ["meta","kwai","tiktok"].forEach(t => {
