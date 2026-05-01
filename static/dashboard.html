@@ -361,11 +361,15 @@
     </div>
     <div class="topbar-actions">
       <span class="update-info" id="update-time"></span>
-      <button class="btn-atualizar" id="btn-att" onclick="carregar()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-        Atualizar
-      </button>
     </div>
+  </div>
+
+  <!-- Atualizar abaixo do cabeçalho -->
+  <div style="padding:14px 24px 0;display:flex;justify-content:flex-end">
+    <button class="btn-atualizar" id="btn-att" onclick="carregar()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Atualizar
+    </button>
   </div>
 
 
@@ -1457,25 +1461,29 @@
     btn.classList.add("loading");
     btn.disabled = true;
 
-    const [{ data: c }, { data: d }, tmRes] = await Promise.all([
-      sb.from("cadastros").select("*").order("created_at", { ascending: false }),
-      sb.from("depositos").select("*").order("created_at", { ascending: false }),
-      fetch("/telegram/members-status").then(r => r.json()).catch(() => ({ members: [] })),
-    ]);
+    try {
+      const [cRes, dRes, tmRes] = await Promise.all([
+        sb.from("cadastros").select("*").order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
+        sb.from("depositos").select("*").order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
+        fetch("/telegram/members-status").then(r => r.json()).catch(() => ({ members: [] })),
+      ]);
 
-    allCadastros = c || [];
-    allDepositos = d || [];
-    allTelegramMembers = tmRes.members || [];
+      allCadastros = cRes.data || [];
+      allDepositos = dRes.data || [];
+      allTelegramMembers = tmRes.members || [];
 
-    aplicarFiltros();
-    carregarStats();
+      aplicarFiltros();
+      carregarStats();
 
-    const agora = new Date();
-    document.getElementById("update-time").textContent =
-      "Atualizado " + agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-    btn.classList.remove("loading");
-    btn.disabled = false;
+      const agora = new Date();
+      document.getElementById("update-time").textContent =
+        "Atualizado " + agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      console.error("Erro ao carregar dados:", e);
+    } finally {
+      btn.classList.remove("loading");
+      btn.disabled = false;
+    }
   }
 
   // ── Render Resumo ──
