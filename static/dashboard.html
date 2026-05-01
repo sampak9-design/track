@@ -330,6 +330,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Logs
     </div>
+    <div class="nav-item" onclick="mudarSecao('trafego',this)" id="nav-trafego">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Tráfego Meta
+    </div>
   </div>
 
   <div class="nav-section">
@@ -812,6 +816,122 @@
           </thead>
           <tbody id="t-sairam"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ════ TRÁFEGO META ════ -->
+    <div class="secao" id="sec-trafego">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#1877f2;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#1877f2"><path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01z"/></svg>
+          Tráfego Meta Ads
+        </h2>
+        <p style="font-size:0.82rem;color:#6b7280">Acompanhe gastos, lucro e custos de campanhas do Facebook/Instagram</p>
+      </div>
+
+      <!-- Filtros -->
+      <div class="panel" style="margin-bottom:14px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Conta de Anúncio</div>
+            <select id="trafego-conta" onchange="carregarTrafego()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;min-width:240px">
+              <option value="">Selecione uma conta</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Inicial</div>
+            <input id="trafego-data-inicio" onchange="carregarTrafego()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Final</div>
+            <input id="trafego-data-fim" onchange="carregarTrafego()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
+            <div style="display:flex;gap:4px">
+              <button class="preset-btn" onclick="trafegoPreset('hoje',this)">Hoje</button>
+              <button class="preset-btn" onclick="trafegoPreset('7d',this)">7 dias</button>
+              <button class="preset-btn ativo" onclick="trafegoPreset('30d',this)">30 dias</button>
+              <button class="preset-btn" onclick="trafegoPreset('mes',this)">Mês</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards principais -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Investimento</span></div>
+          <div class="metric-value" style="color:#1877f2" id="t-spend">R$ 0,00</div>
+          <div class="metric-sub">total gasto Meta Ads</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Receita (Depósitos)</span></div>
+          <div class="metric-value" style="color:#22c55e" id="t-receita">R$ 0,00</div>
+          <div class="metric-sub">depósitos recebidos</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Lucro</span></div>
+          <div class="metric-value" id="t-lucro">R$ 0,00</div>
+          <div class="metric-sub">receita − investimento</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">ROAS</span></div>
+          <div class="metric-value c-white" id="t-roas">0x</div>
+          <div class="metric-sub">retorno do anúncio</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CPL (Custo por Lead)</span></div>
+          <div class="metric-value c-white" id="t-cpl">R$ 0,00</div>
+          <div class="metric-sub" id="t-cpl-sub">— leads</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CPA (FTD)</span></div>
+          <div class="metric-value c-white" id="t-cpa">R$ 0,00</div>
+          <div class="metric-sub" id="t-cpa-sub">— FTDs</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CPC</span></div>
+          <div class="metric-value c-white" id="t-cpc">R$ 0,00</div>
+          <div class="metric-sub">custo por clique</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CPM</span></div>
+          <div class="metric-value c-white" id="t-cpm">R$ 0,00</div>
+          <div class="metric-sub">custo por mil imp.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Impressões</span></div>
+          <div class="metric-value c-white" id="t-impressions">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Alcance</span></div>
+          <div class="metric-value c-white" id="t-reach">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Cliques</span></div>
+          <div class="metric-value c-white" id="t-clicks">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">CTR</span></div>
+          <div class="metric-value c-white" id="t-ctr">0%</div>
+        </div>
+      </div>
+
+      <!-- Estado vazio -->
+      <div id="trafego-vazio" class="panel" style="display:none;text-align:center;padding:40px 20px">
+        <div style="font-size:2.5rem;margin-bottom:10px">📊</div>
+        <div style="font-size:1rem;color:#e2e8f0;font-weight:600;margin-bottom:6px">Nenhuma conta Meta Ads conectada</div>
+        <p style="font-size:0.82rem;color:#6b7280;margin-bottom:14px">Conecte sua conta na aba Pixels → Meta Ads</p>
+        <button onclick="document.getElementById('nav-integracoes').click()" style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit">
+          Ir para Integrações
+        </button>
       </div>
     </div>
 
@@ -1454,7 +1574,7 @@
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
-    integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
+    trafego: "Tráfego Meta", integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
   };
 
   // ── Stats / Resumo ──
@@ -2275,6 +2395,7 @@
     if (id === "tracker") { carregarCanaisTracker(); }
     if (id === "membros") { carregarMembros(); }
     if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
+    if (id === "trafego") { carregarTrafegoInit(); }
   }
 
   // ── Membros (entraram/saíram) ──
@@ -2323,6 +2444,121 @@
       String(m.user_id || "").includes(q)
     );
     renderMembros(tipo, filtrados);
+  }
+
+  // ── Tráfego Meta ──
+  async function carregarTrafegoInit() {
+    try {
+      const r = await fetch("/config/metaads");
+      const cfg = await r.json();
+      const contas = cfg.contas || [];
+      const sel = document.getElementById("trafego-conta");
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Selecione uma conta</option>';
+      contas.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = (c.name || c.business_name || c.id) + " (" + (c.currency||"") + ")";
+        sel.appendChild(opt);
+      });
+      if (!contas.length || !cfg.access_token) {
+        document.getElementById("trafego-vazio").style.display = "block";
+        return;
+      }
+      document.getElementById("trafego-vazio").style.display = "none";
+      // default: 30 dias
+      if (!cur) {
+        sel.value = contas[0].id;
+        trafegoPreset("30d", document.querySelector('#sec-trafego .preset-btn.ativo'));
+      } else {
+        sel.value = cur;
+        carregarTrafego();
+      }
+    } catch(e) {
+      console.error("Erro init trafego:", e);
+    }
+  }
+
+  function trafegoPreset(preset, btn) {
+    document.querySelectorAll("#sec-trafego .preset-btn").forEach(b => b.classList.remove("ativo"));
+    if (btn) btn.classList.add("ativo");
+    const hoje = new Date();
+    let inicio, fim = hoje;
+    if (preset === "hoje") { inicio = hoje; }
+    else if (preset === "7d") { inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 6); }
+    else if (preset === "30d") { inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 29); }
+    else if (preset === "mes") {
+      inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    }
+    document.getElementById("trafego-data-inicio").value = fmtData(inicio);
+    document.getElementById("trafego-data-fim").value = fmtData(fim);
+    carregarTrafego();
+  }
+
+  async function carregarTrafego() {
+    const conta = document.getElementById("trafego-conta").value;
+    const di = document.getElementById("trafego-data-inicio").value;
+    const df = document.getElementById("trafego-data-fim").value;
+    if (!conta) return;
+
+    try {
+      // 1. Insights da Meta
+      const params = new URLSearchParams();
+      params.set("account_id", conta);
+      if (di) params.set("since", di);
+      if (df) params.set("until", df);
+      const insights = await (await fetch("/metaads/insights?" + params.toString())).json();
+      const dataPoints = (insights.data && insights.data[0]) || {};
+
+      const spend = parseFloat(dataPoints.spend || 0);
+      const impressions = parseInt(dataPoints.impressions || 0);
+      const reach = parseInt(dataPoints.reach || 0);
+      const clicks = parseInt(dataPoints.clicks || 0);
+      const ctr = parseFloat(dataPoints.ctr || 0);
+      const cpc = parseFloat(dataPoints.cpc || 0);
+      const cpm = parseFloat(dataPoints.cpm || 0);
+
+      // 2. Stats internas (cadastros + ftd) no mesmo período
+      const sParams = new URLSearchParams();
+      if (di) sParams.set("data_inicio", di);
+      if (df) sParams.set("data_fim", df);
+      const stats = await (await fetch("/tracker/stats?" + sParams.toString())).json();
+      const leads = stats.registros || 0;
+      const ftd = stats.ftd || 0;
+      const ftdValor = stats.ftd_valor || 0;
+      const redepValor = stats.redep_valor || 0;
+      const receita = ftdValor + redepValor;
+
+      // 3. Cálculos
+      const lucro = receita - spend;
+      const roas = spend > 0 ? (receita / spend) : 0;
+      const cpl = leads > 0 ? (spend / leads) : 0;
+      const cpa = ftd > 0 ? (spend / ftd) : 0;
+
+      const fmtBRL = v => "R$ " + v.toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+      document.getElementById("t-spend").textContent = fmtBRL(spend);
+      document.getElementById("t-receita").textContent = fmtBRL(receita);
+      const elLucro = document.getElementById("t-lucro");
+      elLucro.textContent = fmtBRL(lucro);
+      elLucro.style.color = lucro >= 0 ? "#22c55e" : "#ef4444";
+      document.getElementById("t-roas").textContent = roas.toFixed(2) + "x";
+
+      document.getElementById("t-cpl").textContent = fmtBRL(cpl);
+      document.getElementById("t-cpl-sub").textContent = leads + " leads";
+      document.getElementById("t-cpa").textContent = fmtBRL(cpa);
+      document.getElementById("t-cpa-sub").textContent = ftd + " FTDs";
+      document.getElementById("t-cpc").textContent = fmtBRL(cpc);
+      document.getElementById("t-cpm").textContent = fmtBRL(cpm);
+
+      document.getElementById("t-impressions").textContent = impressions.toLocaleString("pt-BR");
+      document.getElementById("t-reach").textContent = reach.toLocaleString("pt-BR");
+      document.getElementById("t-clicks").textContent = clicks.toLocaleString("pt-BR");
+      document.getElementById("t-ctr").textContent = ctr.toFixed(2) + "%";
+    } catch(e) {
+      console.error("Erro trafego:", e);
+    }
   }
 
   // ── Logs de Conversão ──
