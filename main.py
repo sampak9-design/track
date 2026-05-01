@@ -442,16 +442,6 @@ async def telegram_webhook(request: Request):
 
     chat_evento = chat_member.get("chat", {})
     canal_nome = chat_evento.get("title", "")
-    chat_id_evento = chat_evento.get("id")
-
-    # Filtra: só processa se o canal estiver cadastrado em telegram_canais
-    try:
-        canais_ok = db.table("telegram_canais").select("telegram_id").eq("telegram_id", str(chat_id_evento)).execute()
-        if not canais_ok.data:
-            print(f"[TELEGRAM IGNORADO] Canal {canal_nome} (id={chat_id_evento}) não cadastrado")
-            return {"ok": True}
-    except Exception as e:
-        print(f"[TELEGRAM CHECK ERRO] {e}")
 
     user        = chat_member.get("new_chat_member", {}).get("user", {})
     new_status  = chat_member.get("new_chat_member", {}).get("status", "")
