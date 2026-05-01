@@ -2066,10 +2066,9 @@
     try {
       const r = await fetch("/telegram/detectar-canais");
       const data = await r.json();
-      if (data.salvos > 0) {
-        // Canal encontrado
-        const cfg = await (await fetch("/config/telegram")).json();
-        const canal = (cfg.canais||[])[0] || {};
+      // Considera detectado se: novos foram salvos OU já existem canais cadastrados (salvos pelo webhook)
+      if (data.salvos > 0 || (data.total && data.total > 0)) {
+        const canal = (data.canais||[])[0] || {};
         body.innerHTML = `
           <div style="padding:14px;background:#0f1117;border:1px solid #1e2235;border-radius:8px;display:flex;align-items:center;gap:12px">
             <div style="width:36px;height:36px;background:#1a1040;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">

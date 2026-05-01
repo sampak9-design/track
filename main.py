@@ -900,7 +900,15 @@ async def detectar_canais(request: Request):
         except Exception as e:
             print(f"[DETECTAR ERRO] {e}")
 
-    return {"ok": True, "salvos": salvos}
+    # Retornar todos os canais já cadastrados (inclusive os salvos pelo webhook)
+    canais_total = []
+    try:
+        canais_res = db.table("telegram_canais").select("*").execute()
+        canais_total = canais_res.data or []
+    except Exception:
+        pass
+
+    return {"ok": True, "salvos": salvos, "canais": canais_total, "total": len(canais_total)}
 
 
 @app.get("/telegram/setup")
