@@ -384,13 +384,40 @@
         </div>
         <div>
           <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Inicial</div>
-          <input type="date" id="stats-inicio" onchange="carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
+          <input type="date" id="stats-inicio" onchange="onDataChangeManual();carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
         </div>
         <div>
           <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Final</div>
-          <input type="date" id="stats-fim" onchange="carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
+          <input type="date" id="stats-fim" onchange="onDataChangeManual();carregarStats()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período Rápido</div>
+          <div id="preset-grid" style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="preset-btn" data-preset="hoje" onclick="aplicarPreset('hoje',this)">Hoje</button>
+            <button class="preset-btn" data-preset="7d" onclick="aplicarPreset('7d',this)">7 dias</button>
+            <button class="preset-btn" data-preset="semana" onclick="aplicarPreset('semana',this)">Semana</button>
+            <button class="preset-btn ativo" data-preset="mes" onclick="aplicarPreset('mes',this)">Mês</button>
+            <button class="preset-btn" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
+          </div>
         </div>
       </div>
+
+      <style>
+        .preset-btn {
+          background: #13151f;
+          border: 1px solid #1e2235;
+          color: #9ca3af;
+          padding: 7px 12px;
+          border-radius: 7px;
+          font-size: 0.78rem;
+          font-family: inherit;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .preset-btn:hover { color: #c9d1e0; border-color: #2d3a6e; }
+        .preset-btn.ativo { background: #1e2235; color: #fff; border-color: #4f6ef7; }
+      </style>
 
       <!-- 6 metric cards -->
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px">
@@ -1347,13 +1374,48 @@
   }
 
   // ── Auth ──
+  function fmtData(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
   function definirDatasPadraoMes() {
     const hoje = new Date();
     const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    const fmt = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    document.getElementById("stats-inicio").value = fmt(inicio);
-    document.getElementById("stats-fim").value = fmt(fim);
+    document.getElementById("stats-inicio").value = fmtData(inicio);
+    document.getElementById("stats-fim").value = fmtData(fim);
+  }
+
+  function aplicarPreset(preset, btn) {
+    document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("ativo"));
+    if (btn) btn.classList.add("ativo");
+    const hoje = new Date();
+    let inicio, fim = hoje;
+    if (preset === "hoje") {
+      inicio = hoje;
+    } else if (preset === "7d") {
+      inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 6);
+    } else if (preset === "semana") {
+      // Semana atual: Domingo até Sábado
+      inicio = new Date(hoje); inicio.setDate(hoje.getDate() - hoje.getDay());
+      fim = new Date(inicio); fim.setDate(inicio.getDate() + 6);
+    } else if (preset === "mes") {
+      inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    } else if (preset === "tudo") {
+      document.getElementById("stats-inicio").value = "";
+      document.getElementById("stats-fim").value = "";
+      carregarStats();
+      return;
+    }
+    document.getElementById("stats-inicio").value = fmtData(inicio);
+    document.getElementById("stats-fim").value = fmtData(fim);
+    carregarStats();
+  }
+
+  function onDataChangeManual() {
+    // Usuário mudou data manualmente — desativa todos os presets
+    document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("ativo"));
   }
 
   sb.auth.getSession().then(({ data }) => {
