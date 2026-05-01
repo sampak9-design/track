@@ -1378,8 +1378,12 @@
       type: "line",
       data: {
         labels: dados.map(d => {
-          const [,m,dia] = d.data.split("-");
-          return dia + "/" + m;
+          // Se já vier no formato HH:00 (granularidade por hora), retorna direto
+          if (d.data && d.data.includes(":")) return d.data;
+          // Senão, formato YYYY-MM-DD vira DD/MM
+          const partes = (d.data || "").split("-");
+          if (partes.length === 3) return partes[2] + "/" + partes[1];
+          return d.data;
         }),
         datasets: [
           { label: "PageViews", data: dados.map(d=>d.pageviews), borderColor: "#4f6ef7", backgroundColor: "#4f6ef722", fill: true, tension: 0.4, pointRadius: 3 },

@@ -762,24 +762,12 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         conv_pagina = round(registros / pageviews * 100, 2) if pageviews > 0 else 0
         retencao = round((joins - saidas) / joins * 100, 2) if joins > 0 else 0
 
-        # Evolução diária — usa o range de datas selecionado (ou mês atual se não houver)
+        # Evolução temporal — agrupa por hora se range for 1 dia, senão por dia
         from collections import defaultdict
         import datetime
         pv_data = r_pv.data or []
         jo_data = r_jo.data or []
         sa_data = r_sa.data or []
-        pv_por_dia = defaultdict(int)
-        jo_por_dia = defaultdict(int)
-        sa_por_dia = defaultdict(int)
-        for row in pv_data:
-            dia = (row.get("created_at") or "")[:10]
-            if dia: pv_por_dia[dia] += 1
-        for row in jo_data:
-            dia = (row.get("created_at") or "")[:10]
-            if dia: jo_por_dia[dia] += 1
-        for row in sa_data:
-            dia = (row.get("created_at") or "")[:10]
-            if dia: sa_por_dia[dia] += 1
 
         hoje = datetime.date.today()
         if data_inicio:
@@ -796,22 +784,61 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             except Exception:
                 d_fim = hoje
         else:
-            # último dia do mês de d_ini
             if d_ini.month == 12:
                 d_fim = datetime.date(d_ini.year + 1, 1, 1) - datetime.timedelta(days=1)
             else:
                 d_fim = datetime.date(d_ini.year, d_ini.month + 1, 1) - datetime.timedelta(days=1)
 
-        # Limita range para no máximo 365 dias para evitar gráficos enormes
-        if (d_fim - d_ini).days > 365:
-            d_ini = d_fim - datetime.timedelta(days=365)
+        agrupar_por_hora = (d_ini == d_fim)
 
-        dias = []
-        cur = d_ini
-        while cur <= d_fim:
-            dias.append(cur.isoformat())
-            cur += datetime.timedelta(days=1)
-        evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d], "saidas": sa_por_dia[d]} for d in dias]
+        if agrupar_por_hora:
+            # Granularidade por hora (range = 1 dia)
+            pv_por = defaultdict(int)
+            jo_por = defaultdict(int)
+            sa_por = defaultdict(int)
+            for row in pv_data:
+                ca = (row.get("created_at") or "")[:13]  # YYYY-MM-DDTHH
+                if ca: pv_por[ca] += 1
+            for row in jo_data:
+                ca = (row.get("created_at") or "")[:13]
+                if ca: jo_por[ca] += 1
+            for row in sa_data:
+                ca = (row.get("created_at") or "")[:13]
+                if ca: sa_por[ca] += 1
+
+            evolucao = []
+            for h in range(24):
+                key = f"{d_ini.isoformat()}T{h:02d}"
+                evolucao.append({
+                    "data": f"{h:02d}:00",
+                    "pageviews": pv_por[key],
+                    "entradas": jo_por[key],
+                    "saidas": sa_por[key],
+                })
+        else:
+            # Granularidade por dia
+            pv_por_dia = defaultdict(int)
+            jo_por_dia = defaultdict(int)
+            sa_por_dia = defaultdict(int)
+            for row in pv_data:
+                dia = (row.get("created_at") or "")[:10]
+                if dia: pv_por_dia[dia] += 1
+            for row in jo_data:
+                dia = (row.get("created_at") or "")[:10]
+                if dia: jo_por_dia[dia] += 1
+            for row in sa_data:
+                dia = (row.get("created_at") or "")[:10]
+                if dia: sa_por_dia[dia] += 1
+
+            if (d_fim - d_ini).days > 365:
+                d_ini = d_fim - datetime.timedelta(days=365)
+
+            dias = []
+            cur = d_ini
+            while cur <= d_fim:
+                dias.append(cur.isoformat())
+                cur += datetime.timedelta(days=1)
+            evolucao = [{"data": d, "pageviews": pv_por_dia[d], "entradas": jo_por_dia[d], "saidas": sa_por_dia[d]} for d in dias]
 
         return {
             "pageviews": pageviews,
