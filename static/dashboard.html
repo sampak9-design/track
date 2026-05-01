@@ -316,6 +316,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       UTMs
     </div>
+    <div class="nav-item" onclick="mudarSecao('membros',this)" id="nav-membros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+      Membros
+    </div>
   </div>
 
   <div class="nav-section">
@@ -701,6 +705,51 @@
           <div class="panel-header"><div class="panel-title">Gráfico — Depósitos por Fonte</div></div>
           <canvas id="g-utms-dep-source"></canvas>
         </div>
+      </div>
+    </div>
+
+    <!-- ════ MEMBROS TELEGRAM ════ -->
+    <div class="secao" id="sec-membros">
+      <!-- Tabs Entraram / Saíram -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #1e2235;margin-bottom:16px">
+        <button class="tab-membro ativo" onclick="mudarTabMembros('entraram', this)"
+          style="padding:10px 20px;background:none;border:none;border-bottom:2px solid #22c55e;color:#22c55e;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-1px">
+          ✓ Entraram <span id="cnt-entraram" style="background:#14291e;padding:2px 8px;border-radius:10px;margin-left:6px;font-size:0.72rem">0</span>
+        </button>
+        <button class="tab-membro" onclick="mudarTabMembros('sairam', this)"
+          style="padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-1px">
+          ✗ Saíram <span id="cnt-sairam" style="background:#1e2235;padding:2px 8px;border-radius:10px;margin-left:6px;font-size:0.72rem">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Entraram -->
+      <div id="tab-entraram" class="panel" style="margin-bottom:0">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div class="panel-title" style="color:#22c55e">Membros que entraram</div>
+          <input id="busca-entraram" type="text" placeholder="Buscar nome ou usuário..." oninput="filtrarMembros('entraram')"
+            style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:240px">
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Nome</th><th>Sobrenome</th><th>Usuário</th><th>User ID</th><th>Data/Hora</th></tr>
+          </thead>
+          <tbody id="t-entraram"></tbody>
+        </table>
+      </div>
+
+      <!-- Tab Sairam -->
+      <div id="tab-sairam" class="panel" style="display:none;margin-bottom:0">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div class="panel-title" style="color:#ef4444">Membros que saíram</div>
+          <input id="busca-sairam" type="text" placeholder="Buscar nome ou usuário..." oninput="filtrarMembros('sairam')"
+            style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:240px">
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Nome</th><th>Sobrenome</th><th>Usuário</th><th>User ID</th><th>Data/Hora</th></tr>
+          </thead>
+          <tbody id="t-sairam"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1834,6 +1883,75 @@
     if (id === "canais") { carregarCanais(); }
     if (id === "cadastros") filtrarCadastros();
     if (id === "tracker") { carregarCanaisTracker(); }
+    if (id === "membros") { carregarMembros(); }
+  }
+
+  // ── Membros (entraram/saíram) ──
+  let allEntradas = [];
+  let allSaidas = [];
+
+  async function carregarMembros() {
+    try {
+      const r = await fetch("/telegram/members-historico");
+      const d = await r.json();
+      allEntradas = d.entradas || [];
+      allSaidas = d.saidas || [];
+      document.getElementById("cnt-entraram").textContent = allEntradas.length;
+      document.getElementById("cnt-sairam").textContent = allSaidas.length;
+      renderMembros("entraram", allEntradas);
+      renderMembros("sairam", allSaidas);
+    } catch(e) {
+      console.error("Erro ao carregar membros:", e);
+    }
+  }
+
+  function renderMembros(tipo, dados) {
+    const tb = document.getElementById(tipo === "entraram" ? "t-entraram" : "t-sairam");
+    if (!dados.length) {
+      tb.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">${tipo === "entraram" ? "👥" : "👋"}</div><p>Nenhum registro</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = dados.map(m => `
+      <tr>
+        <td>${m.first_name || "—"}</td>
+        <td style="color:#9ca3af">${m.last_name || "—"}</td>
+        <td>${m.username ? `<span class="badge badge-blue">@${m.username}</span>` : '<span style="color:#3d4466">—</span>'}</td>
+        <td style="color:#6b7280;font-family:monospace;font-size:0.78rem">${m.user_id || "—"}</td>
+        <td style="color:#6b7280;white-space:nowrap">${m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "—"}</td>
+      </tr>
+    `).join("");
+  }
+
+  function filtrarMembros(tipo) {
+    const q = document.getElementById(tipo === "entraram" ? "busca-entraram" : "busca-sairam").value.toLowerCase();
+    const fonte = tipo === "entraram" ? allEntradas : allSaidas;
+    const filtrados = fonte.filter(m =>
+      (m.first_name || "").toLowerCase().includes(q) ||
+      (m.last_name || "").toLowerCase().includes(q) ||
+      (m.username || "").toLowerCase().includes(q) ||
+      String(m.user_id || "").includes(q)
+    );
+    renderMembros(tipo, filtrados);
+  }
+
+  function mudarTabMembros(tab, btn) {
+    document.querySelectorAll(".tab-membro").forEach(b => {
+      b.classList.remove("ativo");
+      b.style.color = "#6b7280";
+      b.style.borderBottomColor = "transparent";
+    });
+    btn.classList.add("ativo");
+    if (tab === "entraram") {
+      btn.style.color = "#22c55e";
+      btn.style.borderBottomColor = "#22c55e";
+      document.getElementById("tab-entraram").style.display = "";
+      document.getElementById("tab-sairam").style.display = "none";
+    } else {
+      btn.style.color = "#ef4444";
+      btn.style.borderBottomColor = "#ef4444";
+      document.getElementById("tab-entraram").style.display = "none";
+      document.getElementById("tab-sairam").style.display = "";
+    }
   }
 
   // ── Copiar ──

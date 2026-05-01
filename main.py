@@ -638,6 +638,19 @@ def telegram_members_status():
     except Exception as e:
         return {"members": []}
 
+@app.get("/telegram/members-historico")
+def telegram_members_historico():
+    """Retorna todos os eventos de entrada/saída com data, separados."""
+    try:
+        r = db.table("telegram_members").select("*").order("created_at", desc=True).execute()
+        rows = r.data or []
+        entradas = [x for x in rows if x.get("event") == "join"]
+        saidas   = [x for x in rows if x.get("event") == "leave"]
+        return {"entradas": entradas, "saidas": saidas, "total_entradas": len(entradas), "total_saidas": len(saidas)}
+    except Exception as e:
+        print(f"[MEMBROS HIST ERRO] {e}")
+        return {"entradas": [], "saidas": [], "total_entradas": 0, "total_saidas": 0}
+
 @app.get("/tracker/stats")
 async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim: str = None):
     """Retorna métricas do dashboard para o canal e período selecionados."""
