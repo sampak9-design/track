@@ -884,9 +884,9 @@
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
         <div class="metric-card">
-          <div class="metric-header"><span class="metric-label">CPL (Custo por Lead)</span></div>
+          <div class="metric-header"><span class="metric-label">CPL (Custo por Entrada)</span></div>
           <div class="metric-value c-white" id="t-cpl">R$ 0,00</div>
-          <div class="metric-sub" id="t-cpl-sub">— leads</div>
+          <div class="metric-sub" id="t-cpl-sub">— entradas Telegram</div>
         </div>
         <div class="metric-card">
           <div class="metric-header"><span class="metric-label">CPA (FTD)</span></div>
@@ -2524,7 +2524,7 @@
       if (di) sParams.set("data_inicio", di);
       if (df) sParams.set("data_fim", df);
       const stats = await (await fetch("/tracker/stats?" + sParams.toString())).json();
-      const leads = stats.registros || 0;
+      const leads = stats.entradas || 0;  // entradas no Telegram (joins)
       const ftd = stats.ftd || 0;
       const ftdValor = stats.ftd_valor || 0;
       const redepValor = stats.redep_valor || 0;
@@ -2546,7 +2546,7 @@
       document.getElementById("t-roas").textContent = roas.toFixed(2) + "x";
 
       document.getElementById("t-cpl").textContent = fmtBRL(cpl);
-      document.getElementById("t-cpl-sub").textContent = leads + " leads";
+      document.getElementById("t-cpl-sub").textContent = leads + " entradas Telegram";
       document.getElementById("t-cpa").textContent = fmtBRL(cpa);
       document.getElementById("t-cpa-sub").textContent = ftd + " FTDs";
       document.getElementById("t-cpc").textContent = fmtBRL(cpc);
