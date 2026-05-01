@@ -58,10 +58,33 @@ def get_meta_config():
         print(f"[CFG] Erro ao ler config: {e}")
         return None, None
 
-async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None, first_name: str = None, last_name: str = None):
+def salvar_log_conversao(plataforma: str, event_name: str, status: str, code: int, response: str,
+                          email: str = None, phone: str = None, value: float = None,
+                          telegram_user_id: str = None, canal_nome: str = None, direcao: str = "enviado"):
+    try:
+        db.table("conversion_logs").insert({
+            "plataforma":       plataforma,
+            "event_name":       event_name,
+            "status":           status,
+            "response_code":    code,
+            "response_body":    (response or "")[:500],
+            "email":            email,
+            "phone":            phone,
+            "value":            value,
+            "telegram_user_id": telegram_user_id,
+            "canal_nome":       canal_nome,
+            "direcao":          direcao,
+        }).execute()
+    except Exception as e:
+        print(f"[LOG ERRO] {e}")
+
+
+async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None, first_name: str = None, last_name: str = None, telegram_user_id: str = None, canal_nome: str = None):
     pixel_id, token = get_meta_config()
     if not pixel_id or not token:
         print(f"[META ✗] Pixel ID ou Token não configurado")
+        salvar_log_conversao("meta", event_name, "erro", 0, "Pixel/Token não configurado",
+                             email, phone, value, telegram_user_id, canal_nome)
         return
 
     user_data = {}
@@ -87,6 +110,10 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(url, params={"access_token": token}, json={"data": [evento]})
+
+    status = "sucesso" if resp.status_code == 200 else "erro"
+    salvar_log_conversao("meta", event_name, status, resp.status_code, resp.text,
+                         email, phone, value, telegram_user_id, canal_nome)
 
     if resp.status_code == 200:
         print(f"[META ✓] Evento '{event_name}' enviado")
@@ -114,10 +141,12 @@ def get_tiktok_config():
         print(f"[CFG TIKTOK] Erro ao ler config: {e}")
         return None, None
 
-async def enviar_kwai(event_name: str, email: str = None, phone: str = None, value: float = None):
+async def enviar_kwai(event_name: str, email: str = None, phone: str = None, value: float = None, telegram_user_id: str = None, canal_nome: str = None):
     pixel_id, token = get_kwai_config()
     if not pixel_id or not token:
         print(f"[KWAI ✗] Pixel ID ou Token não configurado")
+        salvar_log_conversao("kwai", event_name, "erro", 0, "Pixel/Token não configurado",
+                             email, phone, value, telegram_user_id, canal_nome)
         return
 
     user_info = {}
@@ -149,15 +178,21 @@ async def enviar_kwai(event_name: str, email: str = None, phone: str = None, val
             json=body,
         )
 
+    status = "sucesso" if resp.status_code == 200 else "erro"
+    salvar_log_conversao("kwai", event_name, status, resp.status_code, resp.text,
+                         email, phone, value, telegram_user_id, canal_nome)
+
     if resp.status_code == 200:
         print(f"[KWAI ✓] Evento '{event_name}' enviado")
     else:
         print(f"[KWAI ✗] {resp.status_code} — {resp.text}")
 
-async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, value: float = None):
+async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, value: float = None, telegram_user_id: str = None, canal_nome: str = None):
     pixel_code, token = get_tiktok_config()
     if not pixel_code or not token:
         print(f"[TIKTOK ✗] Pixel Code ou Token não configurado")
+        salvar_log_conversao("tiktok", event_name, "erro", 0, "Pixel/Token não configurado",
+                             email, phone, value, telegram_user_id, canal_nome)
         return
 
     user = {}
@@ -183,6 +218,10 @@ async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, v
             headers={"Access-Token": token},
             json=body,
         )
+
+    status = "sucesso" if resp.status_code == 200 else "erro"
+    salvar_log_conversao("tiktok", event_name, status, resp.status_code, resp.text,
+                         email, phone, value, telegram_user_id, canal_nome)
 
     if resp.status_code == 200:
         print(f"[TIKTOK ✓] Evento '{event_name}' enviado")
@@ -401,6 +440,9 @@ async def telegram_webhook(request: Request):
     if not chat_member:
         return {"ok": True}
 
+    chat_evento = chat_member.get("chat", {})
+    canal_nome = chat_evento.get("title", "")
+
     user        = chat_member.get("new_chat_member", {}).get("user", {})
     new_status  = chat_member.get("new_chat_member", {}).get("status", "")
     old_status  = chat_member.get("old_chat_member", {}).get("status", "")
@@ -432,7 +474,8 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         print(f"[TELEGRAM ERRO] {e}")
 
-    await enviar_meta(event_name_meta, first_name=first_name, last_name=last_name)
+    await enviar_meta(event_name_meta, first_name=first_name, last_name=last_name,
+                      telegram_user_id=str(user_id) if user_id else None, canal_nome=canal_nome)
 
     print(f"[TELEGRAM] {event.upper()} — @{username or user_id} ({first_name} {last_name})")
     return {"ok": True}
@@ -638,6 +681,36 @@ def telegram_members_status():
         return {"members": list(by_user.values())}
     except Exception as e:
         return {"members": []}
+
+@app.get("/conversion-logs")
+def conversion_logs(
+    plataforma: str = None,
+    event_name: str = None,
+    status: str = None,
+    canal_nome: str = None,
+    telegram_user_id: str = None,
+    direcao: str = "enviado",
+    data_inicio: str = None,
+    data_fim: str = None,
+    limit: int = 200,
+):
+    """Lista logs de conversão com filtros."""
+    try:
+        q = db.table("conversion_logs").select("*").order("created_at", desc=True).limit(limit)
+        if plataforma:    q = q.eq("plataforma", plataforma)
+        if event_name:    q = q.eq("event_name", event_name)
+        if status:        q = q.eq("status", status)
+        if canal_nome:    q = q.eq("canal_nome", canal_nome)
+        if telegram_user_id: q = q.ilike("telegram_user_id", f"%{telegram_user_id}%")
+        if direcao:       q = q.eq("direcao", direcao)
+        if data_inicio:   q = q.gte("created_at", data_inicio + "T00:00:00")
+        if data_fim:      q = q.lte("created_at", data_fim + "T23:59:59")
+        r = q.execute()
+        return {"logs": r.data or [], "total": len(r.data or [])}
+    except Exception as e:
+        print(f"[LOGS ERRO] {e}")
+        return {"logs": [], "total": 0, "erro": str(e)}
+
 
 @app.get("/telegram/members-historico")
 def telegram_members_historico():

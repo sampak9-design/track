@@ -326,6 +326,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
       Membros
     </div>
+    <div class="nav-item" onclick="mudarSecao('logs',this)" id="nav-logs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Logs
+    </div>
   </div>
 
   <div class="nav-section">
@@ -811,6 +815,107 @@
       </div>
     </div>
 
+    <!-- ════ LOGS DE CONVERSÃO ════ -->
+    <div class="secao" id="sec-logs">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#4f6ef7;margin-bottom:4px">Logs de Conversão</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Acompanhe todas as conversões enviadas para Meta / Kwai / TikTok</p>
+      </div>
+
+      <!-- Tabs Enviados/Recebidos -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #1e2235;margin-bottom:16px">
+        <button class="tab-log ativo" onclick="mudarTabLogs('enviado',this)"
+          style="padding:8px 18px;background:#1e2235;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          Enviados
+        </button>
+        <button class="tab-log" onclick="mudarTabLogs('recebido',this)"
+          style="padding:8px 18px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit">
+          Recebidos
+        </button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="panel" style="margin-bottom:14px">
+        <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:12px">Filtros</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Status</div>
+            <select id="logs-status" onchange="carregarLogs()" style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+              <option value="">Todos os status</option>
+              <option value="sucesso">Sucesso</option>
+              <option value="erro">Erro</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Canal</div>
+            <select id="logs-canal" onchange="carregarLogs()" style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+              <option value="">Todos os canais</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Tipo de Evento</div>
+            <select id="logs-evento" onchange="carregarLogs()" style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+              <option value="">Todos os eventos</option>
+              <option value="JoinChannel">JoinChannel</option>
+              <option value="LeaveChannel">LeaveChannel</option>
+              <option value="track_cadastro">track_cadastro</option>
+              <option value="track_deposito">track_deposito</option>
+              <option value="Registration">Registration</option>
+              <option value="CompleteRegistration">CompleteRegistration</option>
+              <option value="Purchase">Purchase</option>
+              <option value="PlaceAnOrder">PlaceAnOrder</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Fonte</div>
+            <select id="logs-plataforma" onchange="carregarLogs()" style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+              <option value="">Todas as fontes</option>
+              <option value="meta">Meta</option>
+              <option value="kwai">Kwai</option>
+              <option value="tiktok">TikTok</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Telegram ID</div>
+            <input id="logs-telegram-id" oninput="carregarLogs()" type="text" placeholder="ID do usuário"
+              style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Inicial</div>
+            <input id="logs-data-inicio" onchange="carregarLogs()" type="date"
+              style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Final</div>
+            <input id="logs-data-fim" onchange="carregarLogs()" type="date"
+              style="width:100%;background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista -->
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #1e2235;font-size:0.85rem;color:#4f6ef7;font-weight:600">
+          <span id="logs-count">0</span> eventos encontrados com os filtros aplicados
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Evento</th>
+              <th>Canal</th>
+              <th>Fonte</th>
+              <th>Status</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="t-logs">
+            <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ════ INTEGRAÇÕES ════ -->
     <div class="secao" id="sec-integracoes">
       <div class="integ-section">
@@ -1289,7 +1394,8 @@
 
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
-    depositos: "Depósitos", utms: "UTMs", integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
+    depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
+    integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
   };
 
   // ── Stats / Resumo ──
@@ -2027,6 +2133,7 @@
     if (id === "depositos") filtrarDepositos();
     if (id === "tracker") { carregarCanaisTracker(); }
     if (id === "membros") { carregarMembros(); }
+    if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
   }
 
   // ── Membros (entraram/saíram) ──
@@ -2075,6 +2182,82 @@
       String(m.user_id || "").includes(q)
     );
     renderMembros(tipo, filtrados);
+  }
+
+  // ── Logs de Conversão ──
+  let logsDirecaoAtual = "enviado";
+
+  async function popularCanaisLogs() {
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      const sel = document.getElementById("logs-canal");
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Todos os canais</option>';
+      (cfg.canais || []).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.nome;
+        opt.textContent = c.nome;
+        sel.appendChild(opt);
+      });
+      sel.value = cur;
+    } catch(e) {}
+  }
+
+  async function carregarLogs() {
+    const params = new URLSearchParams();
+    params.set("direcao", logsDirecaoAtual);
+    const status = document.getElementById("logs-status").value; if (status) params.set("status", status);
+    const canal = document.getElementById("logs-canal").value; if (canal) params.set("canal_nome", canal);
+    const evento = document.getElementById("logs-evento").value; if (evento) params.set("event_name", evento);
+    const plat = document.getElementById("logs-plataforma").value; if (plat) params.set("plataforma", plat);
+    const tgid = document.getElementById("logs-telegram-id").value; if (tgid) params.set("telegram_user_id", tgid);
+    const di = document.getElementById("logs-data-inicio").value; if (di) params.set("data_inicio", di);
+    const df = document.getElementById("logs-data-fim").value; if (df) params.set("data_fim", df);
+
+    const tb = document.getElementById("t-logs");
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>';
+    try {
+      const r = await fetch("/conversion-logs?" + params.toString());
+      const d = await r.json();
+      const logs = d.logs || [];
+      document.getElementById("logs-count").textContent = logs.length;
+      if (!logs.length) {
+        tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><p>Nenhum log encontrado</p></div></td></tr>';
+        return;
+      }
+      const platformaLabel = { meta: "Meta", kwai: "Kwai", tiktok: "TikTok" };
+      tb.innerHTML = logs.map(l => `
+        <tr>
+          <td style="white-space:nowrap;color:#9ca3af;font-family:monospace;font-size:0.78rem">${l.created_at ? new Date(l.created_at).toLocaleString("pt-BR") : "—"}</td>
+          <td>${l.event_name ? `<span class="badge badge-blue">${l.event_name}</span>` : "—"}</td>
+          <td style="color:#c9d1e0">${l.canal_nome || "—"}</td>
+          <td>
+            ${l.plataforma ? `<span class="badge badge-gray">${platformaLabel[l.plataforma] || l.plataforma}</span>` : "—"}
+            ${l.telegram_user_id ? `<div style="color:#6b7280;font-family:monospace;font-size:0.72rem;margin-top:2px">${l.telegram_user_id}</div>` : ""}
+          </td>
+          <td>${l.status === "sucesso"
+              ? '<span style="background:#14291e;color:#22c55e;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px">✓ Sucesso</span>'
+              : '<span style="background:#2a0e0e;color:#ef4444;font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:20px">✗ Erro</span>'}</td>
+          <td><button onclick='alert(${JSON.stringify(JSON.stringify(l, null, 2))})' style="background:none;border:none;color:#4f6ef7;font-size:0.78rem;cursor:pointer;font-family:inherit">👁 Ver mais</button></td>
+        </tr>
+      `).join("");
+    } catch(e) {
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✗</div><p>Erro ao carregar logs</p></div></td></tr>';
+    }
+  }
+
+  function mudarTabLogs(direcao, btn) {
+    logsDirecaoAtual = direcao;
+    document.querySelectorAll(".tab-log").forEach(b => {
+      b.classList.remove("ativo");
+      b.style.background = "none";
+      b.style.color = "#6b7280";
+    });
+    btn.classList.add("ativo");
+    btn.style.background = "#1e2235";
+    btn.style.color = "#fff";
+    carregarLogs();
   }
 
   function mudarTabMembros(tab, btn) {
