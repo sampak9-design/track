@@ -454,6 +454,70 @@ def desconectar_metaads():
     return {"status": "ok"}
 
 
+@app.get("/metaads/campaigns")
+async def metaads_campaigns(account_id: str, since: str = None, until: str = None):
+    """Lista campanhas da conta com insights (gasto, cliques, etc)."""
+    token = _get_cfg("metaads_access_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Não conectado")
+    async with httpx.AsyncClient(timeout=30) as client:
+        # Lista campanhas
+        r = await client.get(
+            f"https://graph.facebook.com/v19.0/{account_id}/campaigns",
+            params={
+                "access_token": token,
+                "fields": "id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time",
+                "limit": 200,
+            },
+        )
+        camps = r.json().get("data", []) or []
+
+        # Pega insights por campanha
+        time_range = None
+        if since and until:
+            time_range = json.dumps({"since": since, "until": until})
+
+        for c in camps:
+            try:
+                params = {
+                    "access_token": token,
+                    "fields": "spend,impressions,clicks,ctr,cpc,cpm,reach",
+                }
+                if time_range:
+                    params["time_range"] = time_range
+                else:
+                    params["date_preset"] = "last_30d"
+                ri = await client.get(f"https://graph.facebook.com/v19.0/{c['id']}/insights", params=params)
+                d = ri.json().get("data", [])
+                if d:
+                    c["insights"] = d[0]
+            except Exception as e:
+                c["insights"] = {}
+
+    return {"campaigns": camps}
+
+
+@app.post("/metaads/campaigns/{campaign_id}/toggle")
+async def metaads_toggle_campaign(campaign_id: str, request: Request):
+    """Alterna o status de uma campanha (ACTIVE / PAUSED)."""
+    token = _get_cfg("metaads_access_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Não conectado")
+    body = await request.json()
+    novo_status = body.get("status", "").upper()
+    if novo_status not in ("ACTIVE", "PAUSED"):
+        raise HTTPException(status_code=400, detail="status deve ser ACTIVE ou PAUSED")
+    async with httpx.AsyncClient(timeout=20) as client:
+        r = await client.post(
+            f"https://graph.facebook.com/v19.0/{campaign_id}",
+            data={"access_token": token, "status": novo_status},
+        )
+        d = r.json()
+    if r.status_code != 200 or not d.get("success", True):
+        raise HTTPException(status_code=400, detail=d.get("error", {}).get("message", "Erro ao alterar status"))
+    return {"ok": True, "status": novo_status}
+
+
 @app.get("/metaads/insights")
 async def metaads_insights(account_id: str, since: str = None, until: str = None):
     """Retorna insights de gasto de uma conta."""

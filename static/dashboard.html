@@ -829,22 +829,34 @@
         <p style="font-size:0.82rem;color:#6b7280">Acompanhe gastos, lucro e custos de campanhas do Facebook/Instagram</p>
       </div>
 
+      <!-- Tabs internas -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #1e2235;margin-bottom:16px">
+        <button class="tab-trafego ativo" onclick="mudarTabTrafego('resumo',this)"
+          style="padding:9px 18px;background:#1e2235;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          📊 Resumo
+        </button>
+        <button class="tab-trafego" onclick="mudarTabTrafego('campanhas',this)"
+          style="padding:9px 18px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit">
+          🎯 Campanhas
+        </button>
+      </div>
+
       <!-- Filtros -->
       <div class="panel" style="margin-bottom:14px">
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
           <div>
             <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Conta de Anúncio</div>
-            <select id="trafego-conta" onchange="carregarTrafego()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;min-width:240px">
+            <select id="trafego-conta" onchange="carregarTrafego();carregarCampanhas()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;min-width:240px">
               <option value="">Selecione uma conta</option>
             </select>
           </div>
           <div>
             <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Inicial</div>
-            <input id="trafego-data-inicio" onchange="carregarTrafego()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+            <input id="trafego-data-inicio" onchange="carregarTrafego();carregarCampanhas()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
           </div>
           <div>
             <div style="font-size:0.68rem;color:#4a5568;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Final</div>
-            <input id="trafego-data-fim" onchange="carregarTrafego()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+            <input id="trafego-data-fim" onchange="carregarTrafego();carregarCampanhas()" type="date" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
           </div>
           <div>
             <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
@@ -858,7 +870,8 @@
         </div>
       </div>
 
-      <!-- Cards principais -->
+      <!-- Cards principais (Resumo) -->
+      <div id="trafego-tab-resumo">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
         <div class="metric-card">
           <div class="metric-header"><span class="metric-label">Investimento</span></div>
@@ -923,6 +936,57 @@
           <div class="metric-value c-white" id="t-ctr">0%</div>
         </div>
       </div>
+      </div><!-- fim trafego-tab-resumo -->
+
+      <!-- Tab Campanhas -->
+      <div id="trafego-tab-campanhas" style="display:none">
+        <div class="panel" style="padding:0;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid #1e2235;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Campanhas</div>
+              <div style="font-size:0.74rem;color:#6b7280;margin-top:2px"><span id="camp-count">0</span> campanhas encontradas</div>
+            </div>
+            <input id="camp-busca" oninput="filtrarCampanhas()" type="text" placeholder="Buscar campanha..."
+              style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:240px">
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr style="background:#0f1117">
+                  <th style="text-align:left;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Status</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Campanha</th>
+                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Gasto</th>
+                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Impressões</th>
+                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Cliques</th>
+                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">CTR</th>
+                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">CPC</th>
+                </tr>
+              </thead>
+              <tbody id="t-campanhas">
+                <tr><td colspan="7"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">⏳</div><p>Carregando campanhas...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        .toggle-camp {
+          position: relative; display: inline-block; width: 38px; height: 22px;
+        }
+        .toggle-camp input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+          position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #2d3148; border-radius: 22px; transition: .25s;
+        }
+        .toggle-slider:before {
+          position: absolute; content: ""; height: 16px; width: 16px;
+          left: 3px; bottom: 3px; background-color: #6b7280; border-radius: 50%; transition: .25s;
+        }
+        .toggle-camp input:checked + .toggle-slider { background-color: #1877f2; }
+        .toggle-camp input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #fff; }
+        .toggle-camp.loading .toggle-slider { opacity: 0.5; pointer-events: none; }
+      </style>
 
       <!-- Estado vazio -->
       <div id="trafego-vazio" class="panel" style="display:none;text-align:center;padding:40px 20px">
@@ -2561,6 +2625,107 @@
     } catch(e) {
       console.error("Erro trafego:", e);
     }
+  }
+
+  // ── Campanhas Meta Ads ──
+  let allCampanhas = [];
+
+  function mudarTabTrafego(tab, btn) {
+    document.querySelectorAll(".tab-trafego").forEach(b => {
+      b.classList.remove("ativo");
+      b.style.background = "none";
+      b.style.color = "#6b7280";
+    });
+    btn.classList.add("ativo");
+    btn.style.background = "#1e2235";
+    btn.style.color = "#fff";
+    document.getElementById("trafego-tab-resumo").style.display = tab === "resumo" ? "" : "none";
+    document.getElementById("trafego-tab-campanhas").style.display = tab === "campanhas" ? "" : "none";
+    if (tab === "campanhas") carregarCampanhas();
+  }
+
+  async function carregarCampanhas() {
+    const conta = document.getElementById("trafego-conta").value;
+    if (!conta) return;
+    const di = document.getElementById("trafego-data-inicio").value;
+    const df = document.getElementById("trafego-data-fim").value;
+    const tb = document.getElementById("t-campanhas");
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">⏳</div><p>Carregando campanhas...</p></div></td></tr>';
+
+    const params = new URLSearchParams();
+    params.set("account_id", conta);
+    if (di) params.set("since", di);
+    if (df) params.set("until", df);
+    try {
+      const r = await fetch("/metaads/campaigns?" + params.toString());
+      const d = await r.json();
+      allCampanhas = d.campaigns || [];
+      renderCampanhas(allCampanhas);
+    } catch(e) {
+      tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">✗</div><p>Erro ao carregar campanhas</p></div></td></tr>';
+    }
+  }
+
+  function renderCampanhas(camps) {
+    const tb = document.getElementById("t-campanhas");
+    document.getElementById("camp-count").textContent = camps.length;
+    if (!camps.length) {
+      tb.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">🎯</div><p>Nenhuma campanha encontrada</p></div></td></tr>';
+      return;
+    }
+    const fmtBRL = v => "R$ " + (parseFloat(v) || 0).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+    const fmtNum = v => (parseInt(v) || 0).toLocaleString("pt-BR");
+    tb.innerHTML = camps.map(c => {
+      const ins = c.insights || {};
+      const isActive = c.status === "ACTIVE";
+      const checked = isActive ? "checked" : "";
+      const effLabel = c.effective_status || c.status;
+      return `<tr style="border-bottom:1px solid #1a1d2e">
+        <td style="padding:12px 14px">
+          <label class="toggle-camp" id="toggle-${c.id}">
+            <input type="checkbox" ${checked} onchange="toggleCampanha('${c.id}', this)">
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td style="padding:12px 14px">
+          <div style="font-size:0.85rem;color:#e2e8f0;font-weight:500">${c.name || "—"}</div>
+          <div style="font-size:0.7rem;color:#6b7280;margin-top:2px">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div>
+        </td>
+        <td style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>
+        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>
+        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.clicks)}</td>
+        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${(parseFloat(ins.ctr)||0).toFixed(2)}%</td>
+        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpc)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function filtrarCampanhas() {
+    const q = document.getElementById("camp-busca").value.toLowerCase();
+    renderCampanhas(allCampanhas.filter(c => (c.name||"").toLowerCase().includes(q)));
+  }
+
+  async function toggleCampanha(id, checkbox) {
+    const novoStatus = checkbox.checked ? "ACTIVE" : "PAUSED";
+    const wrap = document.getElementById("toggle-" + id);
+    wrap.classList.add("loading");
+    try {
+      const r = await fetch(`/metaads/campaigns/${id}/toggle`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({status: novoStatus})
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(()=>({}));
+        throw new Error(e.detail || "Erro");
+      }
+      // Atualiza em memória
+      const c = allCampanhas.find(x => x.id === id);
+      if (c) { c.status = novoStatus; c.effective_status = novoStatus; }
+    } catch(e) {
+      alert("Erro: " + (e.message || "Falha ao alterar status"));
+      checkbox.checked = !checkbox.checked;
+    }
+    wrap.classList.remove("loading");
   }
 
   // ── Logs de Conversão ──
