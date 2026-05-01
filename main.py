@@ -380,7 +380,7 @@ async def metaads_connect(request: Request):
     if not app_id:
         raise HTTPException(status_code=400, detail="App ID não configurado")
     redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
-    scopes = "ads_read,ads_management,business_management,read_insights"
+    scopes = "ads_read,ads_management,business_management"
     url = (
         f"https://www.facebook.com/v19.0/dialog/oauth"
         f"?client_id={app_id}"
