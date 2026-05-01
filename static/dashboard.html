@@ -364,30 +364,6 @@
     </div>
   </div>
 
-  <!-- FILTER BAR -->
-  <div class="filter-bar">
-    <div class="filter-group">
-      <span class="filter-label">Período de Visualização</span>
-      <select class="filter-select" id="periodo" onchange="sincronizarDatasStats();carregar()">
-        <option value="hoje">Hoje</option>
-        <option value="7d">Últimos 7 dias</option>
-        <option value="30d" selected>Últimos 30 dias</option>
-        <option value="tudo">Todo o período</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Fonte de Tráfego</span>
-      <select class="filter-select" id="filtro-source" onchange="aplicarFiltros()">
-        <option value="">Qualquer</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Campanha</span>
-      <select class="filter-select" id="filtro-campaign" onchange="aplicarFiltros()">
-        <option value="">Qualquer</option>
-      </select>
-    </div>
-  </div>
 
   <div class="content">
 
@@ -1329,7 +1305,6 @@
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
     carregar();
     popularCanalSelect();
-    sincronizarDatasStats();
     carregarStats();
   });
 
@@ -1348,70 +1323,11 @@
     document.getElementById("url-deposito").textContent = base + "/deposito";
   }
 
-  // ── Período ──
-  function periodoParaDatas() {
-    const p = document.getElementById("periodo").value;
-    const hoje = new Date();
-    const fim = hoje.toISOString().split("T")[0];
-    let inicio;
-    if (p === "hoje") {
-      inicio = fim;
-    } else if (p === "7d") {
-      const d = new Date(hoje); d.setDate(d.getDate() - 7);
-      inicio = d.toISOString().split("T")[0];
-    } else if (p === "30d") {
-      const d = new Date(hoje); d.setDate(d.getDate() - 30);
-      inicio = d.toISOString().split("T")[0];
-    } else {
-      inicio = ""; // tudo
-    }
-    return { inicio, fim: p === "tudo" ? "" : fim };
-  }
-
-  function sincronizarDatasStats() {
-    const { inicio, fim } = periodoParaDatas();
-    document.getElementById("stats-inicio").value = inicio;
-    document.getElementById("stats-fim").value = fim;
-  }
-
-  function filtrarPeriodo(arr) {
-    const p = document.getElementById("periodo").value;
-    if (p === "tudo") return arr;
-    const dias = p === "hoje" ? 0 : p === "7d" ? 7 : 30;
-    const inicio = new Date();
-    if (p === "hoje") inicio.setHours(0,0,0,0);
-    else inicio.setTime(inicio.getTime() - dias * 86400000);
-    return arr.filter(r => new Date(r.created_at) >= inicio);
-  }
-
-  // ── Filtros de UTM ──
+  // ── Aplicar filtros (sem barra global - cada aba tem suas próprias datas) ──
   function aplicarFiltros() {
-    const src = document.getElementById("filtro-source").value;
-    const camp = document.getElementById("filtro-campaign").value;
-    const c = filtrarPeriodo(allCadastros).filter(r =>
-      (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp)
-    );
-    const d = filtrarPeriodo(allDepositos).filter(r =>
-      (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp)
-    );
-    renderResumoData(c, d);
-    renderTabelaCadastros(c);
-    renderTabelaDepositos(d);
-  }
-
-  function popularFiltros(c, d) {
-    const sources = [...new Set([...c, ...d].map(r => r.utm_source).filter(Boolean))].sort();
-    const camps = [...new Set([...c, ...d].map(r => r.utm_campaign).filter(Boolean))].sort();
-
-    const selSrc = document.getElementById("filtro-source");
-    const selCamp = document.getElementById("filtro-campaign");
-    const curSrc = selSrc.value, curCamp = selCamp.value;
-
-    selSrc.innerHTML = '<option value="">Qualquer</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join("");
-    selCamp.innerHTML = '<option value="">Qualquer</option>' + camps.map(s => `<option value="${s}">${s}</option>`).join("");
-
-    if (sources.includes(curSrc)) selSrc.value = curSrc;
-    if (camps.includes(curCamp)) selCamp.value = curCamp;
+    renderResumoData(allCadastros, allDepositos);
+    renderTabelaCadastros(allCadastros);
+    renderTabelaDepositos(allDepositos);
   }
 
   // ── Carregar ──
@@ -1430,9 +1346,7 @@
     allDepositos = d || [];
     allTelegramMembers = tmRes.members || [];
 
-    popularFiltros(allCadastros, allDepositos);
     aplicarFiltros();
-    sincronizarDatasStats();
     carregarStats();
 
     const agora = new Date();
@@ -1578,10 +1492,8 @@
 
   // ── UTM Bars ──
   function renderUTMBars() {
-    const src = document.getElementById("filtro-source").value;
-    const camp = document.getElementById("filtro-campaign").value;
-    const c = filtrarPeriodo(allCadastros).filter(r => (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp));
-    const d = filtrarPeriodo(allDepositos).filter(r => (!src || r.utm_source === src) && (!camp || r.utm_campaign === camp));
+    const c = allCadastros;
+    const d = allDepositos;
 
     renderStatBars("utm-cad-source-bars", contarPor(c, "utm_source"), "#4f6ef7");
     renderStatBars("utm-dep-source-bars", contarPor(d, "utm_source"), "#22c55e");
@@ -1673,27 +1585,17 @@
 
   function filtrarCadastros() {
     const q = document.getElementById("busca-cad").value.toLowerCase();
-    const src = document.getElementById("filtro-source").value;
-    const camp = document.getElementById("filtro-campaign").value;
     renderTabelaCadastros(
-      filtrarPeriodo(allCadastros).filter(r =>
-        (!src || r.utm_source === src) &&
-        (!camp || r.utm_campaign === camp) &&
-        ((r.nome||"").toLowerCase().includes(q) || (r.email||"").toLowerCase().includes(q))
+      allCadastros.filter(r =>
+        (r.nome||"").toLowerCase().includes(q) || (r.email||"").toLowerCase().includes(q)
       )
     );
   }
 
   function filtrarDepositos() {
     const q = document.getElementById("busca-dep").value.toLowerCase();
-    const src = document.getElementById("filtro-source").value;
-    const camp = document.getElementById("filtro-campaign").value;
     renderTabelaDepositos(
-      filtrarPeriodo(allDepositos).filter(r =>
-        (!src || r.utm_source === src) &&
-        (!camp || r.utm_campaign === camp) &&
-        (r.email||"").toLowerCase().includes(q)
-      )
+      allDepositos.filter(r => (r.email||"").toLowerCase().includes(q))
     );
   }
 
