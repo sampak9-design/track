@@ -81,6 +81,32 @@ def salvar_log_conversao(plataforma: str, event_name: str, status: str, code: in
         print(f"[LOG ERRO] {e}")
 
 
+_geo_cache = {}
+
+async def _geo_lookup(ip: str) -> dict:
+    """Reverse geo do IP (cidade, estado, país). Cache em memória."""
+    if not ip:
+        return {}
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(f"http://ip-api.com/json/{ip}", params={"fields": "status,city,regionName,countryCode"})
+            d = r.json()
+            if d.get("status") == "success":
+                geo = {
+                    "city":    (d.get("city") or "").lower().strip(),
+                    "state":   (d.get("regionName") or "").lower().strip(),
+                    "country": (d.get("countryCode") or "").lower().strip(),
+                }
+                _geo_cache[ip] = geo
+                return geo
+    except Exception as e:
+        print(f"[GEO ERRO] {e}")
+    _geo_cache[ip] = {}
+    return {}
+
+
 async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None,
                       first_name: str = None, last_name: str = None,
                       telegram_user_id: str = None, canal_nome: str = None,
@@ -113,16 +139,35 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
     external_id = external_id or snap.get("external_id") or telegram_user_id
     event_source_url = event_source_url or snap.get("page_url")
 
+    # Geolocalização do IP (city/state/country) — boost match quality
+    geo = await _geo_lookup(client_ip) if client_ip else {}
+
     user_data = {}
     if email:       user_data["em"] = [sha256(email)]
     if phone:       user_data["ph"] = [sha256(phone)]
     if first_name:  user_data["fn"] = [sha256(first_name)]
     if last_name:   user_data["ln"] = [sha256(last_name)]
     if external_id: user_data["external_id"] = [sha256(external_id)]
+    if geo.get("city"):    user_data["ct"]      = [sha256(geo["city"])]
+    if geo.get("state"):   user_data["st"]      = [sha256(geo["state"])]
+    if geo.get("country"): user_data["country"] = [sha256(geo["country"])]
     if fbc:         user_data["fbc"] = fbc
     if fbp:         user_data["fbp"] = fbp
     if client_ip:   user_data["client_ip_address"] = client_ip
     if user_agent:  user_data["client_user_agent"] = user_agent
+
+    # custom_data: UTMs + value + tracking interno
+    custom_data = {}
+    for k in ("utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"):
+        v = snap.get(k)
+        if v: custom_data[k] = v
+    if value is not None:
+        custom_data["currency"] = "BRL"
+        custom_data["value"]    = value
+    if canal_nome:
+        custom_data["canal"] = canal_nome
+    if telegram_user_id:
+        custom_data["telegram_user_id"] = str(telegram_user_id)
 
     evento = {
         "event_name":    event_name,
@@ -133,8 +178,8 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
     }
     if event_source_url:
         evento["event_source_url"] = event_source_url
-    if value is not None:
-        evento["custom_data"] = {"currency": "BRL", "value": value}
+    if custom_data:
+        evento["custom_data"] = custom_data
 
     url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
 
@@ -902,11 +947,11 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         print(f"[TELEGRAM ERRO] {e}")
 
-    # Para JoinChannel/LeaveChannel: a chamada vem do Telegram (não do browser do user),
-    # então fbc/fbp/IP/UA serão preenchidos do snapshot da última /tracker/entrada
+    # Para JoinChannel/LeaveChannel: usa snapshot da última /tracker/entrada
+    # action_source=website (igual ao funil do Pixel JS, melhor atribuição)
     await enviar_meta(event_name_meta, first_name=first_name, last_name=last_name,
                       telegram_user_id=str(user_id) if user_id else None, canal_nome=canal_nome,
-                      action_source="system_generated")
+                      action_source="website")
 
     print(f"[TELEGRAM] {event.upper()} — @{username or user_id} ({first_name} {last_name})")
     return {"ok": True}
