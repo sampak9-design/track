@@ -800,8 +800,25 @@ async def deposito(request: Request):
 
 
 # ── Telegram ─────────────────────────────────────────────────────
+def _get_telegram_secret_token() -> str:
+    """Gera (se não existir) e retorna o secret_token do webhook Telegram."""
+    secret = _get_cfg("telegram_webhook_secret")
+    if not secret:
+        import secrets as _secrets
+        secret = _secrets.token_urlsafe(32)
+        _set_cfg("telegram_webhook_secret", secret)
+    return secret
+
+
 @app.post("/telegram/webhook")
 async def telegram_webhook(request: Request):
+    # Validação: só aceita POSTs do Telegram com o secret_token correto
+    secret_esperado = _get_cfg("telegram_webhook_secret")
+    if secret_esperado:
+        secret_recebido = request.headers.get("x-telegram-bot-api-secret-token", "")
+        if secret_recebido != secret_esperado:
+            print(f"[WEBHOOK BLOQUEADO] secret incorreto/ausente — IP={_client_ip(request)}")
+            raise HTTPException(status_code=401, detail="invalid secret token")
     update = await request.json()
 
     # ── Bot foi adicionado/removido como admin de um canal ──
@@ -930,10 +947,12 @@ async def salvar_config_telegram(request: Request):
     # Configurar webhook AUTOMATICAMENTE para capturar my_chat_member quando o bot for adicionado
     try:
         webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+        secret_token = _get_telegram_secret_token()
         async with httpx.AsyncClient(timeout=15) as client:
             wh_resp = await client.post(
                 f"https://api.telegram.org/bot{token}/setWebhook",
-                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]}
+                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+                      "secret_token": secret_token}
             )
             print(f"[CONFIG] Webhook setup: {wh_resp.json()}")
     except Exception as e:
@@ -1486,7 +1505,8 @@ async def detectar_canais(request: Request):
         # 3. Reativar webhook imediatamente
         await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]}
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+                  "secret_token": _get_telegram_secret_token()}
         )
 
     if not data.get("ok"):
@@ -1572,7 +1592,8 @@ async def telegram_setup(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"]},
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+                  "secret_token": _get_telegram_secret_token()},
         )
 
     result = resp.json()
