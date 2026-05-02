@@ -11,7 +11,8 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; font-size: 13px; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; font-size: 13px; overscroll-behavior-x: none; }
+    html { overscroll-behavior-x: none; }
 
     /* ─── SCROLLBAR ─── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -259,6 +260,37 @@
       /* IA chat */
       .ia-msg-user, .ia-msg-bot { max-width: 92%; }
       .ia-sugestao { font-size: 0.74rem; padding: 7px 12px; }
+    }
+
+    /* Tabela de campanhas vira CARDS verticais no mobile (sem scroll lateral) */
+    @media (max-width: 900px) {
+      #t-campanhas tr {
+        display: block;
+        background: #0f1117;
+        border: 1px solid #1e2235;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        padding: 12px;
+      }
+      #t-campanhas td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0 !important;
+        text-align: left !important;
+        border: none !important;
+        white-space: normal !important;
+      }
+      #t-campanhas td:before {
+        content: attr(data-label);
+        color: #6b7280;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-right: 12px;
+      }
+      #camp-header { display: none; }
+      .panel table#wrap-campanhas-table { min-width: 0; }
     }
 
     /* Smartphone pequeno (≤500px): 1 ou 2 cards por linha conforme tamanho */
@@ -3501,27 +3533,29 @@
       const res = extrairResultado(c);
       const spendNum = parseFloat(ins.spend || 0);
       const custoResultado = res.value > 0 ? (spendNum / res.value) : 0;
+      const colObj = COLUNAS_CAMPANHAS.find(x => x.key === key);
+      const dl = colObj && colObj.label ? `data-label="${colObj.label}"` : 'data-label=""';
       switch (key) {
         case "selecionar":
-          return `<td style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></td>`;
+          return `<td ${dl} style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></td>`;
         case "status":
-          return `<td style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
+          return `<td ${dl} style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
         case "nome":
-          return `<td style="padding:12px 14px"><div style="font-size:0.85rem;color:#e2e8f0;font-weight:500">${c.name || "—"}</div><div style="font-size:0.7rem;color:#6b7280;margin-top:2px">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div></td>`;
+          return `<td ${dl} style="padding:12px 14px"><div style="font-size:0.85rem;color:#e2e8f0;font-weight:500;text-align:right">${c.name || "—"}</div><div style="font-size:0.7rem;color:#6b7280;margin-top:2px;text-align:right">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div></td>`;
         case "resultados":
-          return `<td style="padding:12px 14px"><div style="font-size:0.95rem;color:#e2e8f0;font-weight:600">${res.value > 0 ? res.value.toLocaleString("pt-BR") : "—"}</div></td>`;
+          return `<td ${dl} style="padding:12px 14px"><div style="font-size:0.95rem;color:#e2e8f0;font-weight:600">${res.value > 0 ? res.value.toLocaleString("pt-BR") : "—"}</div></td>`;
         case "tipo_resultado":
-          return `<td style="padding:12px 14px;color:#9ca3af;font-size:0.78rem">${res.tipo}</td>`;
+          return `<td ${dl} style="padding:12px 14px;color:#9ca3af;font-size:0.78rem">${res.tipo}</td>`;
         case "custo_resultado":
-          return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${res.value > 0 ? fmtBRL(custoResultado) : "—"}</td>`;
-        case "spend":       return `<td style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
-        case "impressions": return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>`;
-        case "reach":       return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.reach)}</td>`;
-        case "clicks":      return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.clicks)}</td>`;
-        case "ctr":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.ctr)}%</td>`;
-        case "cpc":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpc)}</td>`;
-        case "cpm":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpm)}</td>`;
-        case "frequency":   return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.frequency)}</td>`;
+          return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${res.value > 0 ? fmtBRL(custoResultado) : "—"}</td>`;
+        case "spend":       return `<td ${dl} style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
+        case "impressions": return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>`;
+        case "reach":       return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.reach)}</td>`;
+        case "clicks":      return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.clicks)}</td>`;
+        case "ctr":         return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.ctr)}%</td>`;
+        case "cpc":         return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpc)}</td>`;
+        case "cpm":         return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpm)}</td>`;
+        case "frequency":   return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.frequency)}</td>`;
         default: return "<td></td>";
       }
     }
