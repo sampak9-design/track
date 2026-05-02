@@ -941,31 +941,45 @@
       <!-- Tab Campanhas -->
       <div id="trafego-tab-campanhas" style="display:none">
         <div class="panel" style="padding:0;overflow:hidden">
-          <div style="padding:14px 18px;border-bottom:1px solid #1e2235;display:flex;justify-content:space-between;align-items:center">
+          <div style="padding:14px 18px;border-bottom:1px solid #1e2235;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
             <div>
               <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Campanhas</div>
               <div style="font-size:0.74rem;color:#6b7280;margin-top:2px"><span id="camp-count">0</span> campanhas encontradas</div>
             </div>
-            <input id="camp-busca" oninput="filtrarCampanhas()" type="text" placeholder="Buscar campanha..."
-              style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:240px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="camp-busca" oninput="filtrarCampanhas()" type="text" placeholder="Buscar campanha..."
+                style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:200px">
+              <button onclick="abrirSeletorColunas()" style="background:#13151f;border:1px solid #1e2235;color:#c9d1e0;padding:7px 12px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                Colunas
+              </button>
+            </div>
           </div>
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse">
-              <thead>
-                <tr style="background:#0f1117">
-                  <th style="text-align:left;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Status</th>
-                  <th style="text-align:left;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Campanha</th>
-                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Gasto</th>
-                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Impressões</th>
-                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Cliques</th>
-                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">CTR</th>
-                  <th style="text-align:right;padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">CPC</th>
-                </tr>
-              </thead>
+              <thead><tr id="camp-header" style="background:#0f1117"></tr></thead>
               <tbody id="t-campanhas">
                 <tr><td colspan="7"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">⏳</div><p>Carregando campanhas...</p></div></td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal seletor de colunas -->
+      <div id="modal-colunas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)fecharSeletorColunas()">
+        <div style="background:#13151f;border:1px solid #1e2235;border-radius:12px;padding:20px;width:100%;max-width:400px;max-height:80vh;display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0">Personalizar Colunas</div>
+              <div style="font-size:0.72rem;color:#6b7280;margin-top:2px">Arraste para reordenar · Marque para exibir</div>
+            </div>
+            <button onclick="fecharSeletorColunas()" style="background:none;border:none;color:#6b7280;cursor:pointer;font-size:1.2rem">×</button>
+          </div>
+          <div id="colunas-lista" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button onclick="resetarColunas()" style="flex:1;background:none;border:1px solid #2d3148;color:#9ca3af;padding:9px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Resetar</button>
+            <button onclick="fecharSeletorColunas()" style="flex:1;background:#1877f2;border:none;color:white;padding:9px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Aplicar</button>
           </div>
         </div>
       </div>
@@ -2666,38 +2680,155 @@
     }
   }
 
+  // Definição de todas as colunas disponíveis
+  const COLUNAS_CAMPANHAS = [
+    { key: "status",      label: "Status",      align: "left",  obrigatoria: true },
+    { key: "nome",        label: "Campanha",    align: "left",  obrigatoria: true },
+    { key: "spend",       label: "Gasto",       align: "right" },
+    { key: "impressions", label: "Impressões",  align: "right" },
+    { key: "reach",       label: "Alcance",     align: "right" },
+    { key: "clicks",      label: "Cliques",     align: "right" },
+    { key: "ctr",         label: "CTR",         align: "right" },
+    { key: "cpc",         label: "CPC",         align: "right" },
+    { key: "cpm",         label: "CPM",         align: "right" },
+    { key: "frequency",   label: "Frequência",  align: "right" },
+  ];
+
+  function getColunasAtivas() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("camp_colunas") || "null");
+      if (saved && Array.isArray(saved)) return saved;
+    } catch(e) {}
+    return ["status", "nome", "spend", "impressions", "clicks", "ctr", "cpc"];
+  }
+
+  function salvarColunas(arr) {
+    localStorage.setItem("camp_colunas", JSON.stringify(arr));
+  }
+
   function renderCampanhas(camps) {
     const tb = document.getElementById("t-campanhas");
+    const head = document.getElementById("camp-header");
+    const cols = getColunasAtivas();
+    const colObjs = cols.map(k => COLUNAS_CAMPANHAS.find(c => c.key === k)).filter(Boolean);
+
+    // Header dinâmico
+    head.innerHTML = colObjs.map(c =>
+      `<th style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">${c.label}</th>`
+    ).join("");
+
     document.getElementById("camp-count").textContent = camps.length;
     if (!camps.length) {
-      tb.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">🎯</div><p>Nenhuma campanha encontrada</p></div></td></tr>';
+      tb.innerHTML = `<tr><td colspan="${colObjs.length}"><div class="empty-state" style="padding:40px 20px"><div class="empty-icon">🎯</div><p>Nenhuma campanha encontrada</p></div></td></tr>`;
       return;
     }
     const fmtBRL = v => "R$ " + (parseFloat(v) || 0).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
     const fmtNum = v => (parseInt(v) || 0).toLocaleString("pt-BR");
-    tb.innerHTML = camps.map(c => {
+    const fmtDec = v => (parseFloat(v) || 0).toFixed(2);
+
+    function celula(c, key) {
       const ins = c.insights || {};
       const isActive = c.status === "ACTIVE";
-      const checked = isActive ? "checked" : "";
       const effLabel = c.effective_status || c.status;
-      return `<tr style="border-bottom:1px solid #1a1d2e">
-        <td style="padding:12px 14px">
-          <label class="toggle-camp" id="toggle-${c.id}">
-            <input type="checkbox" ${checked} onchange="toggleCampanha('${c.id}', this)">
-            <span class="toggle-slider"></span>
-          </label>
-        </td>
-        <td style="padding:12px 14px">
-          <div style="font-size:0.85rem;color:#e2e8f0;font-weight:500">${c.name || "—"}</div>
-          <div style="font-size:0.7rem;color:#6b7280;margin-top:2px">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div>
-        </td>
-        <td style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>
-        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>
-        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.clicks)}</td>
-        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${(parseFloat(ins.ctr)||0).toFixed(2)}%</td>
-        <td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpc)}</td>
-      </tr>`;
+      switch (key) {
+        case "status":
+          return `<td style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
+        case "nome":
+          return `<td style="padding:12px 14px"><div style="font-size:0.85rem;color:#e2e8f0;font-weight:500">${c.name || "—"}</div><div style="font-size:0.7rem;color:#6b7280;margin-top:2px">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div></td>`;
+        case "spend":       return `<td style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
+        case "impressions": return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>`;
+        case "reach":       return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.reach)}</td>`;
+        case "clicks":      return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.clicks)}</td>`;
+        case "ctr":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.ctr)}%</td>`;
+        case "cpc":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpc)}</td>`;
+        case "cpm":         return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtBRL(ins.cpm)}</td>`;
+        case "frequency":   return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtDec(ins.frequency)}</td>`;
+        default: return "<td></td>";
+      }
+    }
+
+    tb.innerHTML = camps.map(c =>
+      `<tr style="border-bottom:1px solid #1a1d2e">${cols.map(k => celula(c, k)).join("")}</tr>`
+    ).join("");
+  }
+
+  // ── Seletor de colunas ──
+  function abrirSeletorColunas() {
+    const lista = document.getElementById("colunas-lista");
+    const ativas = getColunasAtivas();
+    // Itens ordenados: ativas primeiro (na ordem), depois inativas
+    const ordenadas = [...ativas, ...COLUNAS_CAMPANHAS.filter(c => !ativas.includes(c.key)).map(c => c.key)];
+
+    lista.innerHTML = ordenadas.map(key => {
+      const col = COLUNAS_CAMPANHAS.find(c => c.key === key);
+      if (!col) return "";
+      const checked = ativas.includes(key) ? "checked" : "";
+      const lock = col.obrigatoria ? "disabled" : "";
+      return `<div class="col-item" draggable="${col.obrigatoria ? 'false' : 'true'}" data-key="${key}"
+        style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;cursor:${col.obrigatoria?'default':'grab'};user-select:none">
+        <span style="color:#4a5568;font-size:0.9rem;${col.obrigatoria?'opacity:0.3':''}">≡</span>
+        <input type="checkbox" ${checked} ${lock} onchange="toggleColuna('${key}', this.checked)" style="cursor:${col.obrigatoria?'default':'pointer'}">
+        <span style="font-size:0.85rem;color:#e2e8f0;flex:1">${col.label}</span>
+        ${col.obrigatoria ? '<span style="font-size:0.68rem;color:#4a5568">fixa</span>' : ''}
+      </div>`;
     }).join("");
+
+    // Drag & drop
+    const items = lista.querySelectorAll(".col-item");
+    let dragSrc = null;
+    items.forEach(item => {
+      item.addEventListener("dragstart", e => {
+        if (item.getAttribute("draggable") === "false") { e.preventDefault(); return; }
+        dragSrc = item;
+        item.style.opacity = "0.4";
+      });
+      item.addEventListener("dragend", () => { item.style.opacity = "1"; });
+      item.addEventListener("dragover", e => { e.preventDefault(); });
+      item.addEventListener("drop", e => {
+        e.preventDefault();
+        if (dragSrc && dragSrc !== item && item.getAttribute("draggable") !== "false") {
+          const rect = item.getBoundingClientRect();
+          const after = (e.clientY - rect.top) > rect.height / 2;
+          item.parentNode.insertBefore(dragSrc, after ? item.nextSibling : item);
+          atualizarOrdemColunas();
+        }
+      });
+    });
+
+    document.getElementById("modal-colunas").style.display = "flex";
+  }
+
+  function atualizarOrdemColunas() {
+    const items = document.querySelectorAll("#colunas-lista .col-item");
+    const novas = [];
+    items.forEach(it => {
+      const key = it.dataset.key;
+      const checkbox = it.querySelector("input[type=checkbox]");
+      if (checkbox && checkbox.checked) novas.push(key);
+    });
+    salvarColunas(novas);
+    if (allCampanhas.length) renderCampanhas(allCampanhas);
+  }
+
+  function toggleColuna(key, checked) {
+    let ativas = getColunasAtivas();
+    if (checked && !ativas.includes(key)) {
+      ativas.push(key);
+    } else if (!checked) {
+      ativas = ativas.filter(k => k !== key);
+    }
+    salvarColunas(ativas);
+    if (allCampanhas.length) renderCampanhas(allCampanhas);
+  }
+
+  function fecharSeletorColunas() {
+    document.getElementById("modal-colunas").style.display = "none";
+  }
+
+  function resetarColunas() {
+    localStorage.removeItem("camp_colunas");
+    if (allCampanhas.length) renderCampanhas(allCampanhas);
+    abrirSeletorColunas();
   }
 
   function filtrarCampanhas() {

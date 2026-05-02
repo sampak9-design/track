@@ -8,6 +8,7 @@ import httpx
 import hashlib
 import json
 import time
+import asyncio
 import os
 from dotenv import load_dotenv
 
@@ -456,43 +457,44 @@ def desconectar_metaads():
 
 @app.get("/metaads/campaigns")
 async def metaads_campaigns(account_id: str, since: str = None, until: str = None):
-    """Lista campanhas da conta com insights (gasto, cliques, etc)."""
+    """Lista campanhas + insights em paralelo (rápido)."""
     token = _get_cfg("metaads_access_token")
     if not token:
         raise HTTPException(status_code=400, detail="Não conectado")
-    async with httpx.AsyncClient(timeout=30) as client:
-        # Lista campanhas
-        r = await client.get(
+
+    insights_params = {
+        "access_token": token,
+        "fields": "campaign_id,spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,actions",
+        "level": "campaign",
+        "limit": 500,
+    }
+    if since and until:
+        insights_params["time_range"] = json.dumps({"since": since, "until": until})
+    else:
+        insights_params["date_preset"] = "last_30d"
+
+    async with httpx.AsyncClient(timeout=45) as client:
+        # Em paralelo: lista campanhas + insights agregados de todas
+        camps_task = client.get(
             f"https://graph.facebook.com/v19.0/{account_id}/campaigns",
             params={
                 "access_token": token,
                 "fields": "id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time",
-                "limit": 200,
+                "limit": 500,
             },
         )
-        camps = r.json().get("data", []) or []
+        ins_task = client.get(
+            f"https://graph.facebook.com/v19.0/{account_id}/insights",
+            params=insights_params,
+        )
+        r_camps, r_ins = await asyncio.gather(camps_task, ins_task)
 
-        # Pega insights por campanha
-        time_range = None
-        if since and until:
-            time_range = json.dumps({"since": since, "until": until})
+    camps = r_camps.json().get("data", []) or []
+    ins_data = r_ins.json().get("data", []) or []
+    ins_por_campanha = {x.get("campaign_id"): x for x in ins_data}
 
-        for c in camps:
-            try:
-                params = {
-                    "access_token": token,
-                    "fields": "spend,impressions,clicks,ctr,cpc,cpm,reach",
-                }
-                if time_range:
-                    params["time_range"] = time_range
-                else:
-                    params["date_preset"] = "last_30d"
-                ri = await client.get(f"https://graph.facebook.com/v19.0/{c['id']}/insights", params=params)
-                d = ri.json().get("data", [])
-                if d:
-                    c["insights"] = d[0]
-            except Exception as e:
-                c["insights"] = {}
+    for c in camps:
+        c["insights"] = ins_por_campanha.get(c["id"], {})
 
     return {"campaigns": camps}
 
