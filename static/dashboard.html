@@ -191,6 +191,56 @@
     @media (max-width: 1100px) { .grid-2, .grid-60-40, .grid-3, .cards-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 700px) { .grid-2, .grid-60-40, .grid-3, .cards-grid { grid-template-columns: 1fr; } }
 
+    /* ─── HAMBURGER & SIDEBAR MOBILE ─── */
+    .hamburger-btn { display: none; background: none; border: none; color: #c9d1e0; cursor: pointer; padding: 6px; margin-right: 8px; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 198; }
+
+    @media (max-width: 900px) {
+      body { font-size: 12px; }
+      .hamburger-btn { display: inline-flex; align-items: center; }
+      .sidebar {
+        position: fixed; top: 0; bottom: 0; left: 0;
+        width: 240px; min-width: 240px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 200;
+        box-shadow: 0 0 24px rgba(0,0,0,0.5);
+      }
+      .sidebar.aberta { transform: translateX(0); }
+      .sidebar-backdrop.aberta { display: block; }
+      .topbar { padding: 0 14px; height: 48px; }
+      .topbar-breadcrumb { display: none; }
+      .topbar-sep { display: none; }
+      .topbar-title { font-size: 0.85rem; }
+      .content { padding: 12px !important; }
+      .panel { padding: 12px !important; }
+      .metric-card { padding: 10px !important; }
+      .metric-value { font-size: 1.3rem !important; }
+      .panel-title { font-size: 0.78rem; }
+      h2 { font-size: 1.1rem !important; }
+      .filter-group { width: 100%; }
+      .integ-section { padding: 0 !important; }
+      .integ-block { padding: 12px !important; }
+      .nav-item { padding: 10px 14px; font-size: 0.85rem; }
+      .nav-item svg { width: 17px; height: 17px; }
+      table { font-size: 0.74rem; }
+      th, td { padding: 8px 10px !important; }
+      input, select, textarea, button { font-size: 0.82rem !important; }
+      /* Modais responsivos */
+      #modal-colunas > div { max-width: 92vw !important; }
+      /* IA chat */
+      .ia-msg-user, .ia-msg-bot { max-width: 92% !important; }
+    }
+
+    @media (max-width: 600px) {
+      /* Esconder colunas menos importantes em tabelas */
+      .hide-mobile { display: none; }
+      .ia-sugestao { font-size: 0.72rem; padding: 6px 10px; }
+      .preset-btn { padding: 6px 8px; font-size: 0.72rem; }
+      .topbar { padding: 0 10px; }
+      .filter-group { flex-direction: column; align-items: stretch; }
+    }
+
     canvas { max-height: 200px; }
 
     /* ─── TABELA ─── */
@@ -374,9 +424,15 @@
 <!-- ═══ MAIN ═══ -->
 <div class="main">
 
+  <!-- BACKDROP -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="fecharSidebar()"></div>
+
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
+      <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <span class="topbar-breadcrumb">Dashboard</span>
       <span class="topbar-sep">—</span>
       <span class="topbar-title" id="titulo-pagina">Principal</span>
@@ -2820,6 +2876,24 @@
     el.classList.add("ativo");
     document.getElementById("titulo-pagina").textContent = titulos[id] || id;
     refreshSecao(id);
+    fecharSidebar();
+  }
+
+  function toggleSidebar() {
+    const sb = document.querySelector(".sidebar");
+    const bd = document.getElementById("sidebar-backdrop");
+    if (sb.classList.contains("aberta")) {
+      sb.classList.remove("aberta");
+      bd.classList.remove("aberta");
+    } else {
+      sb.classList.add("aberta");
+      bd.classList.add("aberta");
+    }
+  }
+  function fecharSidebar() {
+    if (window.innerWidth > 900) return;
+    document.querySelector(".sidebar").classList.remove("aberta");
+    document.getElementById("sidebar-backdrop").classList.remove("aberta");
   }
 
   function refreshSecao(id) {
