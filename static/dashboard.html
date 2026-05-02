@@ -350,6 +350,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Tracker
     </div>
+    <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configurações
+    </div>
   </div>
 
   <div class="sidebar-bottom">
@@ -1448,6 +1452,46 @@
     </div>
 
     <!-- ════ TRACKER ════ -->
+    <!-- ════ CONFIGURAÇÕES ════ -->
+    <div class="secao" id="sec-configuracoes">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Configurações Gerais</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Ajustes do dashboard e do tracker</p>
+      </div>
+
+      <div class="panel">
+        <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1877f2" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Fuso Horário
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Define o fuso usado nos filtros de data (Hoje, Mês, etc.)</p>
+
+        <div style="display:flex;flex-direction:column;gap:6px;max-width:400px">
+          <label style="font-size:0.74rem;color:#9ca3af;font-weight:500">Selecione seu fuso horário</label>
+          <select id="cfg-tz" style="background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:10px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none;cursor:pointer">
+            <option value="-3">🇧🇷 Brasília (GMT-3) — São Paulo, Rio</option>
+            <option value="-4">🇧🇷 Manaus / 🇨🇱 Santiago (GMT-4)</option>
+            <option value="-5">🇨🇴 Bogotá / 🇲🇽 Cidade do México (GMT-5)</option>
+            <option value="-6">🇲🇽 México (GMT-6)</option>
+            <option value="-7">🇺🇸 Denver (GMT-7)</option>
+            <option value="-8">🇺🇸 Los Angeles (GMT-8)</option>
+            <option value="0">🇬🇧 Londres (GMT+0)</option>
+            <option value="1">🇪🇸 Madri / 🇫🇷 Paris (GMT+1)</option>
+            <option value="2">🇪🇬 Cairo (GMT+2)</option>
+            <option value="3">🇷🇺 Moscou (GMT+3)</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <button onclick="salvarConfigGeral()" id="btn-salvar-cfg" style="background:#1877f2;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+            <span id="cfg-msg" style="font-size:0.78rem;display:none"></span>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;padding:12px;background:#0f1117;border:1px solid #1e2235;border-radius:7px;font-size:0.74rem;color:#6b7280;line-height:1.6">
+          ℹ️ <strong style="color:#c9d1e0">Por que isso importa:</strong> os dados são salvos em UTC no banco. O fuso configurado aqui faz o filtro "Hoje" considerar 00:00–23:59 da sua hora local em vez de UTC.
+        </div>
+      </div>
+    </div>
+
     <div class="secao" id="sec-tracker">
 
       <div style="margin-bottom:6px">
@@ -1670,7 +1714,8 @@
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
-    trafego: "Tráfego Meta", integracoes: "Pixels", canais: "Canais e Bots", tracker: "Gerador de Tracker"
+    trafego: "Tráfego Meta", integracoes: "Pixels", canais: "Canais e Bots",
+    tracker: "Gerador de Tracker", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2492,6 +2537,36 @@
     if (id === "membros") { carregarMembros(); }
     if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
     if (id === "trafego") { carregarTrafegoInit(); }
+    if (id === "configuracoes") { carregarConfigGeral(); }
+  }
+
+  // ── Configurações Gerais ──
+  async function carregarConfigGeral() {
+    try {
+      const r = await fetch("/config/geral");
+      const cfg = await r.json();
+      document.getElementById("cfg-tz").value = cfg.timezone_offset || "-3";
+    } catch(e) {}
+  }
+
+  async function salvarConfigGeral() {
+    const tz = document.getElementById("cfg-tz").value;
+    const btn = document.getElementById("btn-salvar-cfg");
+    const msg = document.getElementById("cfg-msg");
+    btn.textContent = "Salvando..."; btn.style.opacity = "0.7";
+    try {
+      const r = await fetch("/config/geral", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({timezone_offset: tz})
+      });
+      if (!r.ok) throw new Error("Erro");
+      msg.textContent = "✓ Salvo. As próximas consultas usarão esse fuso.";
+      msg.style.color = "#22c55e"; msg.style.display = "inline";
+      setTimeout(() => { msg.style.display = "none"; }, 4000);
+    } catch(e) {
+      msg.textContent = "✗ Erro ao salvar"; msg.style.color = "#ef4444"; msg.style.display = "inline";
+    }
+    btn.textContent = "Salvar"; btn.style.opacity = "1";
   }
 
   // ── Membros (entraram/saíram) ──

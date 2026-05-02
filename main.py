@@ -342,6 +342,20 @@ def _get_cfg(chave: str) -> str:
     return r.data[0]["valor"] if r.data else ""
 
 
+@app.get("/config/geral")
+def get_config_geral():
+    return {
+        "timezone_offset": _get_cfg("timezone_offset") or "-3",
+    }
+
+@app.post("/config/geral")
+async def salvar_config_geral(request: Request):
+    data = await request.json()
+    if "timezone_offset" in data:
+        _set_cfg("timezone_offset", str(data["timezone_offset"]))
+    return {"status": "ok"}
+
+
 @app.get("/config/metaads")
 def get_metaads_config(request: Request):
     redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
@@ -916,8 +930,13 @@ def conversion_logs(
         if canal_nome:    q = q.eq("canal_nome", canal_nome)
         if telegram_user_id: q = q.ilike("telegram_user_id", f"%{telegram_user_id}%")
         if direcao:       q = q.eq("direcao", direcao)
-        if data_inicio:   q = q.gte("created_at", data_inicio + "T00:00:00")
-        if data_fim:      q = q.lte("created_at", data_fim + "T23:59:59")
+        try:
+            tz_offset = int(_get_cfg("timezone_offset") or "-3")
+        except Exception:
+            tz_offset = -3
+        tz_str = f"{tz_offset:+03d}:00"
+        if data_inicio:   q = q.gte("created_at", data_inicio + "T00:00:00" + tz_str)
+        if data_fim:      q = q.lte("created_at", data_fim + "T23:59:59" + tz_str)
         r = q.execute()
         return {"logs": r.data or [], "total": len(r.data or [])}
     except Exception as e:
@@ -942,12 +961,20 @@ def telegram_members_historico():
 async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim: str = None):
     """Retorna métricas do dashboard para o canal e período selecionados."""
     try:
-        # Helper to apply date filters
+        # Helper to apply date filters com timezone (offset em horas)
+        try:
+            tz_offset = int(_get_cfg("timezone_offset") or "-3")
+        except Exception:
+            tz_offset = -3
+
         def aplicar_datas(q, inicio, fim):
             if inicio:
-                q = q.gte("created_at", inicio + "T00:00:00")
+                # Converte: início do dia local → UTC. Ex: 00:00 BR (UTC-3) = 03:00 UTC
+                tz_str = f"{tz_offset:+03d}:00"
+                q = q.gte("created_at", inicio + "T00:00:00" + tz_str)
             if fim:
-                q = q.lte("created_at", fim + "T23:59:59")
+                tz_str = f"{tz_offset:+03d}:00"
+                q = q.lte("created_at", fim + "T23:59:59" + tz_str)
             return q
 
         # PageViews
