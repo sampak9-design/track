@@ -746,34 +746,90 @@
 
     <!-- ════ UTMs ════ -->
     <div class="secao" id="sec-utms">
+      <!-- Cards de resumo -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px">
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Fontes únicas</span></div>
+          <div class="metric-value" style="color:#4f6ef7" id="utm-total-sources">0</div>
+          <div class="metric-sub">utm_source distintas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Campanhas</span></div>
+          <div class="metric-value" style="color:#a855f7" id="utm-total-camps">0</div>
+          <div class="metric-sub">utm_campaign distintas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Top fonte</span></div>
+          <div class="metric-value c-white" id="utm-top-source" style="font-size:1.1rem">—</div>
+          <div class="metric-sub" id="utm-top-source-perc">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header"><span class="metric-label">Top campanha</span></div>
+          <div class="metric-value c-white" id="utm-top-camp" style="font-size:1.1rem">—</div>
+          <div class="metric-sub" id="utm-top-camp-perc">—</div>
+        </div>
+      </div>
+
+      <!-- Tabs Source / Campaign / Medium / Content -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #1e2235;margin-bottom:16px">
+        <button class="tab-utm ativo" onclick="mudarTabUtm('source',this)" data-utm="utm_source"
+          style="padding:9px 16px;background:#1e2235;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          Fonte
+        </button>
+        <button class="tab-utm" onclick="mudarTabUtm('campaign',this)" data-utm="utm_campaign"
+          style="padding:9px 16px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          Campanha
+        </button>
+        <button class="tab-utm" onclick="mudarTabUtm('medium',this)" data-utm="utm_medium"
+          style="padding:9px 16px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          Mídia
+        </button>
+        <button class="tab-utm" onclick="mudarTabUtm('content',this)" data-utm="utm_content"
+          style="padding:9px 16px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit">
+          Conteúdo
+        </button>
+      </div>
+
+      <!-- Tabela unificada com taxa de conversão -->
+      <div class="panel" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="padding:14px 18px;border-bottom:1px solid #1e2235;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0" id="utm-tabela-title">Performance por Fonte</div>
+            <div style="font-size:0.74rem;color:#6b7280;margin-top:2px"><span id="utm-tabela-count">0</span> valores únicos</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#0f1117">
+                <th style="text-align:left;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235" id="utm-col-label">Fonte</th>
+                <th style="text-align:right;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Cadastros</th>
+                <th style="text-align:right;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Depósitos</th>
+                <th style="text-align:right;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Receita</th>
+                <th style="text-align:right;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Conversão</th>
+                <th style="text-align:right;padding:10px 16px;font-size:0.7rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">Ticket Médio</th>
+              </tr>
+            </thead>
+            <tbody id="utm-tabela-body">
+              <tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="empty-icon">📊</div><p>Carregando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gráficos donut lado a lado -->
       <div class="grid-2">
         <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Cadastros por utm_source</div></div>
-          <div id="utm-cad-source-bars" class="stat-row"></div>
+          <div class="panel-header"><div class="panel-title">Distribuição de Cadastros</div></div>
+          <div style="height:240px;display:flex;align-items:center;justify-content:center">
+            <canvas id="g-utm-cadastros"></canvas>
+          </div>
         </div>
         <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Depósitos por utm_source</div></div>
-          <div id="utm-dep-source-bars" class="stat-row"></div>
-        </div>
-      </div>
-      <div class="grid-2" style="margin-top:14px">
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Cadastros por utm_campaign</div></div>
-          <div id="utm-cad-camp-bars" class="stat-row"></div>
-        </div>
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Depósitos por utm_campaign</div></div>
-          <div id="utm-dep-camp-bars" class="stat-row"></div>
-        </div>
-      </div>
-      <div class="grid-2" style="margin-top:14px">
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Gráfico — Cadastros por Fonte</div></div>
-          <canvas id="g-utms-cad-source"></canvas>
-        </div>
-        <div class="panel" style="margin-bottom:0">
-          <div class="panel-header"><div class="panel-title">Gráfico — Depósitos por Fonte</div></div>
-          <canvas id="g-utms-dep-source"></canvas>
+          <div class="panel-header"><div class="panel-title">Distribuição de Depósitos</div></div>
+          <div style="height:240px;display:flex;align-items:center;justify-content:center">
+            <canvas id="g-utm-depositos"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -2075,17 +2131,144 @@
   }
 
   // ── UTM Bars ──
+  // Estado da aba UTM
+  let utmCampoAtivo = "utm_source";
+
   function renderUTMBars() {
     const c = allCadastros;
     const d = allDepositos;
 
-    renderStatBars("utm-cad-source-bars", contarPor(c, "utm_source"), "#4f6ef7");
-    renderStatBars("utm-dep-source-bars", contarPor(d, "utm_source"), "#22c55e");
-    renderStatBars("utm-cad-camp-bars", contarPor(c, "utm_campaign"), "#a855f7");
-    renderStatBars("utm-dep-camp-bars", contarPor(d, "utm_campaign"), "#f59e0b");
+    // Cards do topo
+    const sourcesCount = new Set(c.map(r => r.utm_source).filter(Boolean)).size;
+    const campsCount   = new Set(c.map(r => r.utm_campaign).filter(Boolean)).size;
+    document.getElementById("utm-total-sources").textContent = sourcesCount;
+    document.getElementById("utm-total-camps").textContent   = campsCount;
 
-    criarBarras("g-utms-cad-source", ...mapaParaArrays(contarPor(c, "utm_source")));
-    criarBarras("g-utms-dep-source", ...mapaParaArrays(contarPor(d, "utm_source")));
+    const srcMap = contarPor(c, "utm_source");
+    const campMap = contarPor(c, "utm_campaign");
+    const totalCad = c.length || 1;
+
+    const topSrc = Object.entries(srcMap).sort((a,b) => b[1]-a[1])[0];
+    const topCamp = Object.entries(campMap).sort((a,b) => b[1]-a[1])[0];
+    if (topSrc) {
+      document.getElementById("utm-top-source").textContent = topSrc[0];
+      document.getElementById("utm-top-source-perc").textContent = `${topSrc[1]} cadastros · ${(topSrc[1]/totalCad*100).toFixed(0)}%`;
+    }
+    if (topCamp) {
+      document.getElementById("utm-top-camp").textContent = topCamp[0];
+      document.getElementById("utm-top-camp-perc").textContent = `${topCamp[1]} cadastros · ${(topCamp[1]/totalCad*100).toFixed(0)}%`;
+    }
+
+    renderUTMTabela(utmCampoAtivo);
+    renderUTMDonuts();
+  }
+
+  function mudarTabUtm(tipo, btn) {
+    utmCampoAtivo = "utm_" + tipo;
+    document.querySelectorAll(".tab-utm").forEach(b => {
+      b.classList.remove("ativo");
+      b.style.background = "none";
+      b.style.color = "#6b7280";
+    });
+    btn.classList.add("ativo");
+    btn.style.background = "#1e2235";
+    btn.style.color = "#fff";
+    const labels = { utm_source: "Fonte", utm_campaign: "Campanha", utm_medium: "Mídia", utm_content: "Conteúdo" };
+    document.getElementById("utm-col-label").textContent = labels[utmCampoAtivo];
+    document.getElementById("utm-tabela-title").textContent = "Performance por " + labels[utmCampoAtivo];
+    renderUTMTabela(utmCampoAtivo);
+  }
+
+  function renderUTMTabela(campo) {
+    const tb = document.getElementById("utm-tabela-body");
+    const c = allCadastros, d = allDepositos;
+
+    // Agrupa cadastros e depósitos pelo campo
+    const grupos = {};
+    c.forEach(r => {
+      const k = r[campo] || "Direto";
+      if (!grupos[k]) grupos[k] = { cadastros: 0, depositos: 0, receita: 0 };
+      grupos[k].cadastros++;
+    });
+    d.forEach(r => {
+      const k = r[campo] || "Direto";
+      if (!grupos[k]) grupos[k] = { cadastros: 0, depositos: 0, receita: 0 };
+      grupos[k].depositos++;
+      grupos[k].receita += parseFloat(r.valor || 0);
+    });
+
+    const linhas = Object.entries(grupos).sort((a, b) => b[1].cadastros - a[1].cadastros);
+    document.getElementById("utm-tabela-count").textContent = linhas.length;
+
+    if (!linhas.length) {
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:30px"><div class="empty-icon">📊</div><p>Sem dados</p></div></td></tr>';
+      return;
+    }
+
+    const fmtBRL = v => "R$ " + v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const cores = ["#4f6ef7", "#22c55e", "#a855f7", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#84cc16"];
+
+    tb.innerHTML = linhas.map((row, i) => {
+      const [nome, dados] = row;
+      const conv = dados.cadastros > 0 ? (dados.depositos / dados.cadastros * 100).toFixed(1) : 0;
+      const ticket = dados.depositos > 0 ? (dados.receita / dados.depositos) : 0;
+      const cor = cores[i % cores.length];
+      return `<tr style="border-bottom:1px solid #1a1d2e">
+        <td style="padding:12px 16px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${cor};display:inline-block"></span><span style="color:#e2e8f0;font-weight:500;font-size:0.85rem">${nome}</span></span></td>
+        <td style="padding:12px 16px;text-align:right;color:#c9d1e0;font-size:0.85rem">${dados.cadastros}</td>
+        <td style="padding:12px 16px;text-align:right;color:#c9d1e0;font-size:0.85rem">${dados.depositos}</td>
+        <td style="padding:12px 16px;text-align:right;color:#22c55e;font-weight:600;font-size:0.85rem">${fmtBRL(dados.receita)}</td>
+        <td style="padding:12px 16px;text-align:right">
+          <span style="background:${conv >= 10 ? '#14291e' : conv >= 5 ? '#2a1f06' : '#2a0e0e'};color:${conv >= 10 ? '#22c55e' : conv >= 5 ? '#f59e0b' : '#ef4444'};padding:3px 8px;border-radius:12px;font-size:0.74rem;font-weight:600">${conv}%</span>
+        </td>
+        <td style="padding:12px 16px;text-align:right;color:#9ca3af;font-size:0.85rem">${fmtBRL(ticket)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function renderUTMDonuts() {
+    const cadMap = contarPor(allCadastros, utmCampoAtivo);
+    const depMap = contarPor(allDepositos, utmCampoAtivo);
+    criarDonut("g-utm-cadastros", cadMap);
+    criarDonut("g-utm-depositos", depMap);
+  }
+
+  function criarDonut(canvasId, mapa) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const entries = Object.entries(mapa).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const cores = ["#4f6ef7", "#22c55e", "#a855f7", "#f59e0b", "#ef4444", "#06b6d4"];
+
+    if (window["_donut_" + canvasId]) window["_donut_" + canvasId].destroy();
+    window["_donut_" + canvasId] = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: entries.map(e => e[0]),
+        datasets: [{
+          data: entries.map(e => e[1]),
+          backgroundColor: cores,
+          borderColor: "#0f1117",
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "65%",
+        plugins: {
+          legend: { position: "right", labels: { color: "#c9d1e0", font: { size: 11 }, boxWidth: 12, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const v = ctx.parsed;
+                return `${ctx.label}: ${v} (${t > 0 ? (v/t*100).toFixed(1) : 0}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
 
   function mapaParaArrays(m) {
