@@ -395,6 +395,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Tracker
     </div>
+    <div class="nav-item" onclick="mudarSecao('solicitacoes',this)" id="nav-solicitacoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.27 0 4.34.84 5.92 2.22"/></svg>
+      Solicitações
+    </div>
     <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
@@ -1651,6 +1655,16 @@
     </div>
 
     <!-- ════ TRACKER ════ -->
+    <!-- ════ SOLICITAÇÕES DE ENTRADA ════ -->
+    <div class="secao" id="sec-solicitacoes">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Solicitações de Entrada</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Configure aprovação automática para canais privados com solicitação de entrada</p>
+      </div>
+
+      <div id="lista-canais-solic"></div>
+    </div>
+
     <!-- ════ CONFIGURAÇÕES ════ -->
     <div class="secao" id="sec-configuracoes">
       <div style="margin-bottom:14px">
@@ -1931,7 +1945,8 @@
     resumo: "Principal", cadastros: "Cadastros",
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
-    canais: "Canais e Bots", tracker: "Gerador de Tracker", configuracoes: "Configurações"
+    canais: "Canais e Bots", tracker: "Gerador de Tracker",
+    solicitacoes: "Solicitações de Entrada", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2900,6 +2915,7 @@
     if (id === "trafego") { carregarTrafegoInit(); }
     if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
     if (id === "ia") { document.getElementById("ia-input").focus(); }
+    if (id === "solicitacoes") { carregarSolicitacoes(); }
   }
 
   // ── Análise com IA ──
@@ -3002,6 +3018,134 @@
       alert("✓ Chave Anthropic salva!");
     } catch(e) {
       alert("Erro ao salvar");
+    }
+  }
+
+  // ── Solicitações de Entrada ──
+  async function carregarSolicitacoes() {
+    const cont = document.getElementById("lista-canais-solic");
+    cont.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando canais...</p></div>';
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      const canais = cfg.canais || [];
+      if (!canais.length) {
+        cont.innerHTML = '<div class="panel"><div class="empty-state"><div class="empty-icon">📭</div><p>Nenhum canal cadastrado</p></div></div>';
+        return;
+      }
+      // Pega config de aprovação de cada canal
+      const cfgs = {};
+      await Promise.all(canais.map(async c => {
+        try {
+          const x = await (await fetch(`/canais/${c.id}/aprovacao`)).json();
+          cfgs[c.id] = x;
+        } catch(e) { cfgs[c.id] = {auto_aprovar:false, delay_seg:0}; }
+      }));
+
+      cont.innerHTML = canais.map(c => {
+        const ap = cfgs[c.id] || {};
+        const linkAtual = c.link || "(nenhum link salvo)";
+        return `<div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="width:32px;height:32px;background:#1a2440;border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#4f6ef7"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6 6l.96-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">${c.nome || "Canal"}</div>
+              <div style="font-size:0.72rem;color:#6b7280">${c.username || "Privado"} · ID ${c.telegram_id || c.id}</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Link de convite atual</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="link-${c.id}" type="text" value="${linkAtual}" readonly
+                style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#4f6ef7;font-size:0.78rem;font-family:monospace;outline:none">
+              <button onclick="copiarLink(${c.id})" style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit">Copiar</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <button onclick="gerarLinkSolicitacao(${c.id})" style="background:#a855f7;color:white;border:none;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
+              ✨ Gerar novo link com solicitação
+            </button>
+          </div>
+          <div style="font-size:0.7rem;color:#6b7280;margin-bottom:14px;line-height:1.5">
+            ℹ️ Esse link força <b>solicitação de entrada</b> mesmo em canal sem aprovação habilitada. Use no botão da landing.
+          </div>
+
+          <div style="border-top:1px solid #1e2235;padding-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <label style="font-size:0.85rem;color:#e2e8f0;font-weight:600">Aprovar solicitações automaticamente</label>
+              <label style="position:relative;display:inline-block;width:42px;height:22px">
+                <input type="checkbox" id="aprov-${c.id}" ${ap.auto_aprovar ? 'checked' : ''}
+                  onchange="salvarAprovacao(${c.id})"
+                  style="opacity:0;width:0;height:0">
+                <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${ap.auto_aprovar ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
+                  <span style="position:absolute;content:'';height:16px;width:16px;left:${ap.auto_aprovar ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Aprovar após</div>
+              <select id="delay-${c.id}" onchange="salvarAprovacao(${c.id})"
+                style="width:100%;max-width:300px;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none;cursor:pointer">
+                <option value="0"   ${ap.delay_seg === 0 ? 'selected' : ''}>Imediato (0s)</option>
+                <option value="15"  ${ap.delay_seg === 15 ? 'selected' : ''}>15 segundos</option>
+                <option value="30"  ${ap.delay_seg === 30 ? 'selected' : ''}>30 segundos</option>
+                <option value="60"  ${ap.delay_seg === 60 ? 'selected' : ''}>1 minuto</option>
+                <option value="300" ${ap.delay_seg === 300 ? 'selected' : ''}>5 minutos</option>
+                <option value="900" ${ap.delay_seg === 900 ? 'selected' : ''}>15 minutos</option>
+                <option value="1800" ${ap.delay_seg === 1800 ? 'selected' : ''}>30 minutos</option>
+                <option value="3600" ${ap.delay_seg === 3600 ? 'selected' : ''}>1 hora</option>
+              </select>
+            </div>
+            <div id="msg-aprov-${c.id}" style="font-size:0.72rem;color:#22c55e;margin-top:8px;display:none">✓ Salvo</div>
+          </div>
+        </div>`;
+      }).join("");
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  function copiarLink(canalId) {
+    const inp = document.getElementById("link-" + canalId);
+    inp.select();
+    document.execCommand("copy");
+    navigator.clipboard.writeText(inp.value).catch(()=>{});
+  }
+
+  async function salvarAprovacao(canalId) {
+    const auto = document.getElementById("aprov-" + canalId).checked;
+    const delay = parseInt(document.getElementById("delay-" + canalId).value);
+    try {
+      await fetch(`/canais/${canalId}/aprovacao`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({auto_aprovar: auto, delay_seg: delay}),
+      });
+      const msg = document.getElementById("msg-aprov-" + canalId);
+      msg.style.display = "block";
+      setTimeout(() => { msg.style.display = "none"; }, 2000);
+      // Atualiza visual do toggle
+      carregarSolicitacoes();
+    } catch(e) { alert("Erro ao salvar"); }
+  }
+
+  async function gerarLinkSolicitacao(canalId) {
+    if (!confirm("Gerar novo link de convite que exige solicitação? O link atual será substituído.")) return;
+    try {
+      const r = await fetch(`/canais/${canalId}/gerar-link`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({nome: "trackfy_solic"}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "Erro");
+      alert("✓ Novo link gerado:\n" + d.invite_link);
+      carregarSolicitacoes();
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
     }
   }
 

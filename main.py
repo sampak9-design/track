@@ -866,6 +866,41 @@ async def telegram_webhook(request: Request):
             raise HTTPException(status_code=401, detail="invalid secret token")
     update = await request.json()
 
+    # ── Solicitação de entrada (chat_join_request) ──
+    join_req = update.get("chat_join_request")
+    if join_req:
+        chat = join_req.get("chat", {})
+        from_user = join_req.get("from", {})
+        canal_tg_id = chat.get("id")
+        user_id_req = from_user.get("id")
+        canal_nome_req = chat.get("title", "")
+        first_name_req = from_user.get("first_name", "")
+
+        # Busca config de auto-aprovação pelo canal_id interno
+        try:
+            canal = db.table("telegram_canais").select("id").eq("telegram_id", str(canal_tg_id)).execute()
+            canal_id_interno = canal.data[0]["id"] if canal.data else None
+        except Exception:
+            canal_id_interno = None
+
+        if canal_id_interno is not None:
+            cfg = _aprov_cfg(canal_id_interno)
+            if cfg.get("auto_aprovar"):
+                bot_token_local = TELEGRAM_BOT_TOKEN
+                try:
+                    r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+                    if r2.data: bot_token_local = r2.data[0]["valor"]
+                except Exception:
+                    pass
+                # Dispara aprovação em background (com delay configurado)
+                asyncio.create_task(_aprovar_join_request(
+                    bot_token_local, canal_tg_id, user_id_req, cfg.get("delay_seg", 0)
+                ))
+                print(f"[JOIN REQ] {first_name_req} (id {user_id_req}) — auto-aprovação em {cfg.get('delay_seg',0)}s")
+            else:
+                print(f"[JOIN REQ] {first_name_req} (id {user_id_req}) — aguardando aprovação manual")
+        return {"ok": True}
+
     # ── Bot foi adicionado/removido como admin de um canal ──
     my_chat_member = update.get("my_chat_member")
     if my_chat_member:
@@ -996,7 +1031,7 @@ async def salvar_config_telegram(request: Request):
         async with httpx.AsyncClient(timeout=15) as client:
             wh_resp = await client.post(
                 f"https://api.telegram.org/bot{token}/setWebhook",
-                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
                       "secret_token": secret_token}
             )
             print(f"[CONFIG] Webhook setup: {wh_resp.json()}")
@@ -1196,6 +1231,85 @@ def telegram_members_status():
         return {"members": list(by_user.values())}
     except Exception as e:
         return {"members": []}
+
+# ── Solicitações de entrada (Telegram chat_join_request) ──────────
+def _aprov_cfg(canal_id: int) -> dict:
+    """Config de auto-aprovação por canal (salva em configuracoes)."""
+    raw = _get_cfg(f"aprov_{canal_id}")
+    if raw:
+        try: return json.loads(raw)
+        except Exception: pass
+    return {"auto_aprovar": False, "delay_seg": 0}
+
+
+@app.get("/canais/{canal_id}/aprovacao")
+def get_aprovacao_canal(canal_id: int):
+    return _aprov_cfg(canal_id)
+
+
+@app.post("/canais/{canal_id}/aprovacao")
+async def salvar_aprovacao_canal(canal_id: int, request: Request):
+    body = await request.json()
+    cfg = {
+        "auto_aprovar": bool(body.get("auto_aprovar")),
+        "delay_seg":    int(body.get("delay_seg", 0)),
+    }
+    _set_cfg(f"aprov_{canal_id}", json.dumps(cfg))
+    return {"ok": True, **cfg}
+
+
+@app.post("/canais/{canal_id}/gerar-link")
+async def gerar_link_solicitacao(canal_id: int, request: Request):
+    """Cria um novo invite link com creates_join_request=true."""
+    body = await request.json() if request.headers.get("content-length") else {}
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception:
+        pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+    canal = db.table("telegram_canais").select("*").eq("id", canal_id).execute()
+    if not canal.data:
+        raise HTTPException(status_code=404, detail="Canal não encontrado")
+    tg_id = canal.data[0].get("telegram_id")
+    if not tg_id:
+        raise HTTPException(status_code=400, detail="Canal sem telegram_id (precisa estar admin lá)")
+
+    nome = body.get("nome", "trackfy_solicitacao")
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            f"https://api.telegram.org/bot{bot_token}/createChatInviteLink",
+            json={"chat_id": tg_id, "name": nome[:32], "creates_join_request": True},
+        )
+    d = resp.json()
+    if not d.get("ok"):
+        raise HTTPException(status_code=400, detail=d.get("description","erro Telegram"))
+    invite = d["result"]["invite_link"]
+    # Atualiza no banco
+    try:
+        db.table("telegram_canais").update({"link": invite}).eq("id", canal_id).execute()
+    except Exception as e:
+        print(f"[GERAR LINK] erro update: {e}")
+    return {"ok": True, "invite_link": invite}
+
+
+async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int = 0):
+    """Aprova um pedido de entrada após delay opcional."""
+    if delay_seg > 0:
+        await asyncio.sleep(delay_seg)
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/approveChatJoinRequest",
+                json={"chat_id": chat_id, "user_id": user_id},
+            )
+            d = r.json()
+            print(f"[APROVAR JOIN] chat={chat_id} user={user_id} → {d}")
+    except Exception as e:
+        print(f"[APROVAR JOIN ERRO] {e}")
+
 
 @app.get("/conversion-logs")
 def conversion_logs(
@@ -1550,7 +1664,7 @@ async def detectar_canais(request: Request):
         # 3. Reativar webhook imediatamente
         await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
                   "secret_token": _get_telegram_secret_token()}
         )
 
@@ -1637,7 +1751,7 @@ async def telegram_setup(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
                   "secret_token": _get_telegram_secret_token()},
         )
 
