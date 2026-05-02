@@ -569,9 +569,9 @@
       </div>
 
       <!-- Funil + Tempo Médio -->
-      <div style="display:flex;gap:14px;margin-bottom:16px">
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px">
         <!-- Funil de Conversão estilo novo -->
-        <div class="panel" style="flex:1;margin-bottom:0">
+        <div class="panel" style="margin-bottom:0">
           <div class="panel-header">
             <div>
               <div class="panel-title" style="display:flex;align-items:center;gap:7px">
@@ -671,14 +671,14 @@
         </div>
 
         <!-- Tempo Médio entre Etapas -->
-        <div class="panel" style="width:220px;flex-shrink:0;margin-bottom:0">
+        <div class="panel" style="margin-bottom:0">
           <div class="panel-header" style="margin-bottom:14px">
             <div class="panel-title" style="display:flex;align-items:center;gap:7px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Tempo Médio entre Etapas
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
             <div style="background:#1a1f3a;border-radius:9px;padding:12px 14px">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
                 <span style="font-size:0.75rem;color:#7c94fa;font-weight:600">Entrada</span>
