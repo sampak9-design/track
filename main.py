@@ -81,7 +81,12 @@ def salvar_log_conversao(plataforma: str, event_name: str, status: str, code: in
         print(f"[LOG ERRO] {e}")
 
 
-async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None, first_name: str = None, last_name: str = None, telegram_user_id: str = None, canal_nome: str = None):
+async def enviar_meta(event_name: str, email: str = None, phone: str = None, value: float = None,
+                      first_name: str = None, last_name: str = None,
+                      telegram_user_id: str = None, canal_nome: str = None,
+                      fbc: str = None, fbp: str = None, client_ip: str = None,
+                      user_agent: str = None, external_id: str = None,
+                      event_source_url: str = None, action_source: str = "website"):
     pixel_id, token = get_meta_config()
     if not pixel_id or not token:
         print(f"[META ✗] Pixel ID ou Token não configurado")
@@ -89,22 +94,45 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
                              email, phone, value, telegram_user_id, canal_nome)
         return
 
+    # Se faltar fbc/fbp/IP/UA, tenta puxar do snapshot da última entrada (atribuição Telegram)
+    snap = {}
+    if not (fbc and fbp and client_ip and user_agent):
+        try:
+            raw = _get_cfg("_ultima_atribuicao")
+            if raw:
+                snap = json.loads(raw)
+                # Snapshot só vale se for recente (últimas 24h)
+                if int(time.time()) - int(snap.get("ts", 0)) > 86400:
+                    snap = {}
+        except Exception:
+            snap = {}
+    fbc        = fbc        or snap.get("fbc")
+    fbp        = fbp        or snap.get("fbp")
+    client_ip  = client_ip  or snap.get("client_ip")
+    user_agent = user_agent or snap.get("user_agent")
+    external_id = external_id or snap.get("external_id") or telegram_user_id
+    event_source_url = event_source_url or snap.get("page_url")
+
     user_data = {}
-    if email:
-        user_data["em"] = [sha256(email)]
-    if phone:
-        user_data["ph"] = [sha256(phone)]
-    if first_name:
-        user_data["fn"] = [sha256(first_name)]
-    if last_name:
-        user_data["ln"] = [sha256(last_name)]
+    if email:       user_data["em"] = [sha256(email)]
+    if phone:       user_data["ph"] = [sha256(phone)]
+    if first_name:  user_data["fn"] = [sha256(first_name)]
+    if last_name:   user_data["ln"] = [sha256(last_name)]
+    if external_id: user_data["external_id"] = [sha256(external_id)]
+    if fbc:         user_data["fbc"] = fbc
+    if fbp:         user_data["fbp"] = fbp
+    if client_ip:   user_data["client_ip_address"] = client_ip
+    if user_agent:  user_data["client_user_agent"] = user_agent
 
     evento = {
         "event_name":    event_name,
         "event_time":    int(time.time()),
-        "action_source": "website",
+        "event_id":      f"{event_name}_{external_id or telegram_user_id or int(time.time()*1000)}",
+        "action_source": action_source,
         "user_data":     user_data,
     }
+    if event_source_url:
+        evento["event_source_url"] = event_source_url
     if value is not None:
         evento["custom_data"] = {"currency": "BRL", "value": value}
 
@@ -118,7 +146,7 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
                          email, phone, value, telegram_user_id, canal_nome)
 
     if resp.status_code == 200:
-        print(f"[META ✓] Evento '{event_name}' enviado")
+        print(f"[META ✓] {event_name} | fbc={'✓' if fbc else '✗'} fbp={'✓' if fbp else '✗'} ip={'✓' if client_ip else '✗'} ua={'✓' if user_agent else '✗'}")
     else:
         print(f"[META ✗] {resp.status_code} — {resp.text}")
 
@@ -857,8 +885,11 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         print(f"[TELEGRAM ERRO] {e}")
 
+    # Para JoinChannel/LeaveChannel: a chamada vem do Telegram (não do browser do user),
+    # então fbc/fbp/IP/UA serão preenchidos do snapshot da última /tracker/entrada
     await enviar_meta(event_name_meta, first_name=first_name, last_name=last_name,
-                      telegram_user_id=str(user_id) if user_id else None, canal_nome=canal_nome)
+                      telegram_user_id=str(user_id) if user_id else None, canal_nome=canal_nome,
+                      action_source="system_generated")
 
     print(f"[TELEGRAM] {event.upper()} — @{username or user_id} ({first_name} {last_name})")
     return {"ok": True}
@@ -936,6 +967,15 @@ async def adicionar_canal_telegram(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": result.data[0]["id"]}
 
+def _client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else ""
+
+def _client_ua(request: Request) -> str:
+    return request.headers.get("user-agent", "")[:500]
+
 @app.post("/tracker/pageview")
 async def tracker_pageview(request: Request):
     try:
@@ -964,14 +1004,42 @@ async def tracker_entrada(request: Request):
     canal_id = data.get("channel_id")
     page_url = data.get("page_url", "")
     utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
+
+    # Dados de atribuição Meta + identificadores
+    fbc         = data.get("fbc") or ""
+    fbp         = data.get("fbp") or ""
+    external_id = data.get("external_id") or ""
+    referrer    = data.get("referrer") or ""
+    client_ip   = _client_ip(request)
+    user_agent  = data.get("user_agent") or _client_ua(request)
+
+    # Snapshot mais recente para uso quando JoinChannel disparar
     try:
-        db.table("tracker_entradas").insert({
+        _set_cfg("_ultima_atribuicao", json.dumps({
+            "fbc": fbc, "fbp": fbp, "external_id": external_id,
+            "client_ip": client_ip, "user_agent": user_agent,
+            "page_url": page_url, "referrer": referrer,
             "canal_id": canal_id,
-            "page_url": page_url,
-            **utms
-        }).execute()
+            "ts": int(time.time()),
+            **utms,
+        }))
     except Exception as e:
-        print(f"[ENTRADA ERRO] {e}")
+        print(f"[ENTRADA SNAP ERRO] {e}")
+
+    try:
+        registro = {"canal_id": canal_id, "page_url": page_url, **utms}
+        # Tenta salvar campos extras (vão falhar silenciosamente se a coluna não existir)
+        for k, v in [("fbc", fbc), ("fbp", fbp), ("external_id", external_id),
+                     ("client_ip", client_ip), ("user_agent", user_agent), ("referrer", referrer)]:
+            if v: registro[k] = v
+        db.table("tracker_entradas").insert(registro).execute()
+    except Exception as e:
+        # Fallback se faltar coluna nova: só insere campos antigos
+        try:
+            db.table("tracker_entradas").insert({"canal_id": canal_id, "page_url": page_url, **utms}).execute()
+        except Exception as e2:
+            print(f"[ENTRADA ERRO] {e2}")
+        print(f"[ENTRADA EXTRA ERRO] {e}")
     return {"ok": True}
 
 @app.get("/leads")
