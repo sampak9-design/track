@@ -944,7 +944,7 @@
           <div style="padding:14px 18px;border-bottom:1px solid #1e2235;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
             <div>
               <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Campanhas</div>
-              <div style="font-size:0.74rem;color:#6b7280;margin-top:2px"><span id="camp-count">0</span> campanhas encontradas</div>
+              <div style="font-size:0.74rem;color:#6b7280;margin-top:2px"><span id="camp-count">0</span> encontradas · <span id="camp-selected-count" style="color:#1877f2;font-weight:600">0</span> selecionadas</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <input id="camp-busca" oninput="filtrarCampanhas()" type="text" placeholder="Buscar campanha..."
@@ -2550,14 +2550,16 @@
         trafegoPreset("30d", document.querySelector('#sec-trafego .preset-btn.ativo'));
       } else {
         sel.value = cur;
+        await carregarCampanhas();  // garante campanhas carregadas pro resumo
         carregarTrafego();
       }
+      document.getElementById("camp-selected-count").textContent = getCampanhasSelecionadas().length;
     } catch(e) {
       console.error("Erro init trafego:", e);
     }
   }
 
-  function trafegoPreset(preset, btn) {
+  async function trafegoPreset(preset, btn) {
     document.querySelectorAll("#sec-trafego .preset-btn").forEach(b => b.classList.remove("ativo"));
     if (btn) btn.classList.add("ativo");
     const hoje = new Date();
@@ -2571,6 +2573,7 @@
     }
     document.getElementById("trafego-data-inicio").value = fmtData(inicio);
     document.getElementById("trafego-data-fim").value = fmtData(fim);
+    await carregarCampanhas();
     carregarTrafego();
   }
 
@@ -2581,21 +2584,36 @@
     if (!conta) return;
 
     try {
-      // 1. Insights da Meta
-      const params = new URLSearchParams();
-      params.set("account_id", conta);
-      if (di) params.set("since", di);
-      if (df) params.set("until", df);
-      const insights = await (await fetch("/metaads/insights?" + params.toString())).json();
-      const dataPoints = (insights.data && insights.data[0]) || {};
+      const selecionadas = getCampanhasSelecionadas();
+      let spend = 0, impressions = 0, reach = 0, clicks = 0;
 
-      const spend = parseFloat(dataPoints.spend || 0);
-      const impressions = parseInt(dataPoints.impressions || 0);
-      const reach = parseInt(dataPoints.reach || 0);
-      const clicks = parseInt(dataPoints.clicks || 0);
-      const ctr = parseFloat(dataPoints.ctr || 0);
-      const cpc = parseFloat(dataPoints.cpc || 0);
-      const cpm = parseFloat(dataPoints.cpm || 0);
+      if (selecionadas.length > 0 && allCampanhas.length > 0) {
+        // Somar apenas das campanhas selecionadas
+        allCampanhas.forEach(c => {
+          if (!selecionadas.includes(c.id)) return;
+          const ins = c.insights || {};
+          spend += parseFloat(ins.spend || 0);
+          impressions += parseInt(ins.impressions || 0);
+          reach += parseInt(ins.reach || 0);
+          clicks += parseInt(ins.clicks || 0);
+        });
+      } else {
+        // Sem seleção: total da conta
+        const params = new URLSearchParams();
+        params.set("account_id", conta);
+        if (di) params.set("since", di);
+        if (df) params.set("until", df);
+        const insights = await (await fetch("/metaads/insights?" + params.toString())).json();
+        const dataPoints = (insights.data && insights.data[0]) || {};
+        spend = parseFloat(dataPoints.spend || 0);
+        impressions = parseInt(dataPoints.impressions || 0);
+        reach = parseInt(dataPoints.reach || 0);
+        clicks = parseInt(dataPoints.clicks || 0);
+      }
+
+      const ctr = impressions > 0 ? (clicks / impressions * 100) : 0;
+      const cpc = clicks > 0 ? (spend / clicks) : 0;
+      const cpm = impressions > 0 ? (spend / impressions * 1000) : 0;
 
       // 2. Stats internas (cadastros + ftd) no mesmo período
       const sParams = new URLSearchParams();
@@ -2682,6 +2700,7 @@
 
   // Definição de todas as colunas disponíveis
   const COLUNAS_CAMPANHAS = [
+    { key: "selecionar",  label: "",            align: "center", obrigatoria: true },
     { key: "status",      label: "Status",      align: "left",  obrigatoria: true },
     { key: "nome",        label: "Campanha",    align: "left",  obrigatoria: true },
     { key: "spend",       label: "Gasto",       align: "right" },
@@ -2694,12 +2713,46 @@
     { key: "frequency",   label: "Frequência",  align: "right" },
   ];
 
+  function getCampanhasSelecionadas() {
+    try {
+      return JSON.parse(localStorage.getItem("camp_selecionadas") || "[]");
+    } catch(e) { return []; }
+  }
+  function salvarSelecionadas(ids) {
+    localStorage.setItem("camp_selecionadas", JSON.stringify(ids));
+  }
+  function toggleSelecionada(id, checked) {
+    let sel = getCampanhasSelecionadas();
+    if (checked && !sel.includes(id)) sel.push(id);
+    else if (!checked) sel = sel.filter(x => x !== id);
+    salvarSelecionadas(sel);
+    document.getElementById("camp-selected-count").textContent = sel.length;
+    // Atualiza resumo se a aba estiver carregada
+    if (document.getElementById("trafego-tab-resumo").style.display !== "none") carregarTrafego();
+  }
+  function selecionarTodas(checked) {
+    if (checked) {
+      const ids = allCampanhas.map(c => c.id);
+      salvarSelecionadas(ids);
+    } else {
+      salvarSelecionadas([]);
+    }
+    renderCampanhas(allCampanhas);
+    if (document.getElementById("trafego-tab-resumo").style.display !== "none") carregarTrafego();
+  }
+
   function getColunasAtivas() {
     try {
       const saved = JSON.parse(localStorage.getItem("camp_colunas") || "null");
-      if (saved && Array.isArray(saved)) return saved;
+      if (saved && Array.isArray(saved)) {
+        // Garante que selecionar/status/nome estão sempre presentes
+        if (!saved.includes("selecionar")) saved.unshift("selecionar");
+        if (!saved.includes("status")) saved.splice(1, 0, "status");
+        if (!saved.includes("nome")) saved.splice(2, 0, "nome");
+        return saved;
+      }
     } catch(e) {}
-    return ["status", "nome", "spend", "impressions", "clicks", "ctr", "cpc"];
+    return ["selecionar", "status", "nome", "spend", "impressions", "clicks", "ctr", "cpc"];
   }
 
   function salvarColunas(arr) {
@@ -2713,9 +2766,14 @@
     const colObjs = cols.map(k => COLUNAS_CAMPANHAS.find(c => c.key === k)).filter(Boolean);
 
     // Header dinâmico
-    head.innerHTML = colObjs.map(c =>
-      `<th style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">${c.label}</th>`
-    ).join("");
+    const selecionadas = getCampanhasSelecionadas();
+    const todasSel = camps.length > 0 && camps.every(c => selecionadas.includes(c.id));
+    head.innerHTML = colObjs.map(c => {
+      if (c.key === "selecionar") {
+        return `<th style="text-align:center;padding:10px 14px;border-bottom:1px solid #1e2235"><input type="checkbox" ${todasSel?"checked":""} onchange="selecionarTodas(this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></th>`;
+      }
+      return `<th style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;border-bottom:1px solid #1e2235">${c.label}</th>`;
+    }).join("");
 
     document.getElementById("camp-count").textContent = camps.length;
     if (!camps.length) {
@@ -2730,7 +2788,10 @@
       const ins = c.insights || {};
       const isActive = c.status === "ACTIVE";
       const effLabel = c.effective_status || c.status;
+      const isSel = selecionadas.includes(c.id);
       switch (key) {
+        case "selecionar":
+          return `<td style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></td>`;
         case "status":
           return `<td style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
         case "nome":
