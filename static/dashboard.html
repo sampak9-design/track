@@ -3298,6 +3298,9 @@
     { key: "selecionar",  label: "",            align: "center", obrigatoria: true },
     { key: "status",      label: "Status",      align: "left",  obrigatoria: true },
     { key: "nome",        label: "Campanha",    align: "left",  obrigatoria: true },
+    { key: "resultados",  label: "Resultados",  align: "left" },
+    { key: "tipo_resultado", label: "Tipo de Resultado", align: "left" },
+    { key: "custo_resultado", label: "Custo por Resultado", align: "right" },
     { key: "spend",       label: "Gasto",       align: "right" },
     { key: "impressions", label: "Impressões",  align: "right" },
     { key: "reach",       label: "Alcance",     align: "right" },
@@ -3307,6 +3310,87 @@
     { key: "cpm",         label: "CPM",         align: "right" },
     { key: "frequency",   label: "Frequência",  align: "right" },
   ];
+
+  // Mapa de action_types para labels amigáveis
+  const ACTION_LABELS = {
+    "onsite_conversion.messaging_conversation_started_7d": "Conversa iniciada",
+    "onsite_conversion.lead_grouped": "Lead",
+    "lead": "Lead",
+    "leadgen.other": "Lead",
+    "link_click": "Cliques no link",
+    "post_engagement": "Engajamento",
+    "page_engagement": "Engajamento na página",
+    "post_reaction": "Reações",
+    "comment": "Comentários",
+    "post": "Compartilhamentos",
+    "video_view": "Visualizações de vídeo",
+    "purchase": "Compras",
+    "add_to_cart": "Adições ao carrinho",
+    "initiate_checkout": "Início de checkout",
+    "complete_registration": "Registros",
+    "follow": "Seguir ou curtir",
+    "like": "Curtidas",
+    "rsvp": "Confirmações",
+    "video_play": "Reprodução de vídeo",
+    "landing_page_view": "Visualizações da LP",
+    "JoinChannel": "JoinChannel",
+    "LeaveChannel": "LeaveChannel",
+  };
+
+  // Mapeia objetivo da campanha → action_type esperado
+  const OBJETIVO_PARA_ACTION = {
+    "MESSAGES": "onsite_conversion.messaging_conversation_started_7d",
+    "LEAD_GENERATION": "lead",
+    "OUTCOME_LEADS": "lead",
+    "LINK_CLICKS": "link_click",
+    "OUTCOME_TRAFFIC": "link_click",
+    "OUTCOME_ENGAGEMENT": "post_engagement",
+    "POST_ENGAGEMENT": "post_engagement",
+    "PAGE_LIKES": "follow",
+    "OUTCOME_AWARENESS": "reach",
+    "BRAND_AWARENESS": "reach",
+    "REACH": "reach",
+    "VIDEO_VIEWS": "video_view",
+    "OUTCOME_SALES": "purchase",
+    "CONVERSIONS": "purchase",
+    "PRODUCT_CATALOG_SALES": "purchase",
+    "STORE_VISITS": "store_visit",
+  };
+
+  function extrairResultado(c) {
+    const ins = c.insights || {};
+    const actions = ins.actions || [];
+    const objetivo = c.objective || "";
+    const actionEsperada = OBJETIVO_PARA_ACTION[objetivo];
+
+    // Tenta encontrar a action específica do objetivo
+    if (actionEsperada) {
+      const found = actions.find(a => a.action_type === actionEsperada);
+      if (found) {
+        return { value: parseInt(found.value || 0), tipo: ACTION_LABELS[found.action_type] || found.action_type, action_type: found.action_type };
+      }
+    }
+    // Procura JoinChannel customizado primeiro
+    const joinAction = actions.find(a => (a.action_type || "").toLowerCase().includes("joinchannel"));
+    if (joinAction) return { value: parseInt(joinAction.value || 0), tipo: "JoinChannel", action_type: joinAction.action_type };
+    // Pega a action de maior valor que não seja só engajamento básico
+    const ignorar = ["page_engagement", "post_engagement", "post_reaction", "comment", "post", "video_play", "landing_page_view"];
+    const filtradas = actions.filter(a => !ignorar.includes(a.action_type));
+    if (filtradas.length === 1) {
+      const a = filtradas[0];
+      return { value: parseInt(a.value || 0), tipo: ACTION_LABELS[a.action_type] || a.action_type, action_type: a.action_type };
+    }
+    if (filtradas.length > 1) {
+      const total = filtradas.reduce((s, a) => s + parseInt(a.value || 0), 0);
+      return { value: total, tipo: "Múltiplas conversões", action_type: "multiple" };
+    }
+    if (actions.length > 0) {
+      // só engajamento — pega a primeira
+      const a = actions[0];
+      return { value: parseInt(a.value || 0), tipo: ACTION_LABELS[a.action_type] || a.action_type, action_type: a.action_type };
+    }
+    return { value: 0, tipo: "—", action_type: null };
+  }
 
   function getCampanhasSelecionadas() {
     try {
@@ -3403,6 +3487,9 @@
       const isActive = c.status === "ACTIVE";
       const effLabel = c.effective_status || c.status;
       const isSel = selecionadas.includes(c.id);
+      const res = extrairResultado(c);
+      const spendNum = parseFloat(ins.spend || 0);
+      const custoResultado = res.value > 0 ? (spendNum / res.value) : 0;
       switch (key) {
         case "selecionar":
           return `<td style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></td>`;
@@ -3410,6 +3497,12 @@
           return `<td style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
         case "nome":
           return `<td style="padding:12px 14px"><div style="font-size:0.85rem;color:#e2e8f0;font-weight:500">${c.name || "—"}</div><div style="font-size:0.7rem;color:#6b7280;margin-top:2px">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div></td>`;
+        case "resultados":
+          return `<td style="padding:12px 14px"><div style="font-size:0.95rem;color:#e2e8f0;font-weight:600">${res.value > 0 ? res.value.toLocaleString("pt-BR") : "—"}</div></td>`;
+        case "tipo_resultado":
+          return `<td style="padding:12px 14px;color:#9ca3af;font-size:0.78rem">${res.tipo}</td>`;
+        case "custo_resultado":
+          return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${res.value > 0 ? fmtBRL(custoResultado) : "—"}</td>`;
         case "spend":       return `<td style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
         case "impressions": return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.impressions)}</td>`;
         case "reach":       return `<td style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${fmtNum(ins.reach)}</td>`;
