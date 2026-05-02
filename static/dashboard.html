@@ -197,17 +197,23 @@
     .hamburger-btn { display: none; background: none; border: none; color: #c9d1e0; cursor: pointer; padding: 6px; margin-right: 8px; }
     .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 198; }
 
-    /* Garante que nenhum container quebre o layout */
-    .main, .content, .secao, .panel { min-width: 0; max-width: 100%; }
-    .panel { overflow-x: auto; }
-    /* Grids inline com 4-6 colunas viram auto-fit */
-    div[style*="grid-template-columns:repeat(6"],
-    div[style*="grid-template-columns:repeat(5"],
-    div[style*="grid-template-columns:repeat(4"] {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    /* ─── RESPONSIVO ─── */
+    /* Garante containers sem overflow estranho */
+    .main, .content, .secao { min-width: 0; }
+
+    /* Grid de 6 colunas: vira auto-fit responsivo */
+    div[style*="grid-template-columns:repeat(6"] {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
     }
 
+    /* Tablet (≤1100px): tudo um pouco menor mas mantendo layout */
+    @media (max-width: 1100px) {
+      body { font-size: 12.5px; }
+      .content { padding: 16px 18px; }
+      .topbar { padding: 0 18px; }
+    }
+
+    /* Mobile (≤900px): hamburger + reduções */
     @media (max-width: 900px) {
       body { font-size: 12px; }
       .hamburger-btn { display: inline-flex; align-items: center; }
@@ -221,52 +227,57 @@
       }
       .sidebar.aberta { transform: translateX(0); }
       .sidebar-backdrop.aberta { display: block; }
-      .topbar { padding: 0 14px; height: 48px; }
-      .topbar-breadcrumb { display: none; }
-      .topbar-sep { display: none; }
-      .topbar-title { font-size: 0.85rem; }
-      .content { padding: 12px !important; }
-      .panel { padding: 12px !important; }
-      .metric-card { padding: 10px !important; }
-      .metric-value { font-size: 1.2rem !important; }
-      .metric-sub { font-size: 0.68rem !important; }
-      .metric-label { font-size: 0.68rem !important; }
-      .panel-title { font-size: 0.78rem; }
-      h2 { font-size: 1.05rem !important; }
-      .integ-section { padding: 0 !important; }
-      .integ-block { padding: 12px !important; }
-      .nav-item { padding: 10px 14px; font-size: 0.85rem; }
-      .nav-item svg { width: 17px; height: 17px; }
-      table { font-size: 0.72rem; }
-      th, td { padding: 7px 8px !important; white-space: nowrap; }
-      input, select, textarea, button { font-size: 0.82rem !important; }
-      .ia-msg-user, .ia-msg-bot { max-width: 92% !important; }
-      /* Filtros: cada item ocupa linha inteira */
-      [style*="display:flex"][style*="flex-wrap:wrap"] > div { min-width: 0; }
-      /* Inputs de date/select dentro de filtros: largura total */
-      .filter-bar > div, [style*="align-items:flex-end"] > div { flex: 1 1 100%; min-width: 0; }
-      .filter-bar select, .filter-bar input { width: 100%; }
+      .topbar { padding: 0 14px; height: 50px; }
+      .topbar-breadcrumb, .topbar-sep { display: none; }
+      .content { padding: 14px; }
+      .panel { padding: 14px; }
+      .metric-card { padding: 12px; }
+      .metric-value { font-size: 1.3rem; }
+
+      /* Cards 2 por linha em mobile (mantém estética em vez de stack) */
+      div[style*="grid-template-columns:repeat(6"],
+      div[style*="grid-template-columns:repeat(auto-fit,minmax(180px"],
+      div[style*="grid-template-columns:repeat(auto-fit,minmax(150px"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      /* Tabelas com scroll horizontal sempre */
+      .panel table { min-width: 600px; }
+      .panel > div[style*="overflow-x:auto"] { overflow-x: auto; }
+
+      /* Filtros: itens em coluna full-width */
+      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] {
+        gap: 10px;
+      }
+      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] > div { flex: 1 1 calc(50% - 6px); min-width: 0; }
+      .panel input[type="date"], .panel select { width: 100%; box-sizing: border-box; }
+
+      /* Tabs com scroll horizontal */
+      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] { overflow-x: auto; flex-wrap: nowrap !important; }
+      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] > button { flex-shrink: 0; white-space: nowrap; }
+
+      /* IA chat */
+      .ia-msg-user, .ia-msg-bot { max-width: 92%; }
+      .ia-sugestao { font-size: 0.74rem; padding: 7px 12px; }
     }
 
-    @media (max-width: 600px) {
-      /* Esconder colunas menos importantes em tabelas */
-      .hide-mobile { display: none; }
-      .ia-sugestao { font-size: 0.72rem; padding: 6px 10px; }
-      .preset-btn { padding: 6px 8px; font-size: 0.7rem; }
-      .topbar { padding: 0 10px; }
-      .metric-value { font-size: 1.1rem !important; }
-      /* Cards grid: 2 colunas pequenas em vez de uma só (cabe mais) */
-      div[style*="grid-template-columns:repeat(auto-fit"] {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-      }
-      /* Tabs viram scroll horizontal */
-      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] {
-        overflow-x: auto;
-        flex-wrap: nowrap !important;
-      }
-      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] > button { flex-shrink: 0; }
-      /* Modais full-width */
-      #modal-colunas > div { max-width: 95vw !important; max-height: 85vh !important; }
+    /* Smartphone pequeno (≤500px): 1 ou 2 cards por linha conforme tamanho */
+    @media (max-width: 500px) {
+      .content { padding: 10px; }
+      .panel { padding: 12px; }
+      .metric-card { padding: 10px; }
+      .metric-value { font-size: 1.15rem; }
+      .metric-label { font-size: 0.65rem; }
+      .metric-sub { font-size: 0.65rem; }
+
+      /* Filtros 1 por linha */
+      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] > div { flex: 1 1 100%; }
+
+      /* Modal de colunas full-width */
+      #modal-colunas > div { max-width: 95vw; max-height: 88vh; padding: 16px; }
+
+      .preset-btn { padding: 6px 10px; font-size: 0.72rem; }
+      h2 { font-size: 1.05rem !important; }
     }
 
     canvas { max-height: 200px; }
