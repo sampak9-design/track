@@ -4,3 +4,4 @@ supabase
 python-multipart
 httpx
 python-dotenv
+anthropic

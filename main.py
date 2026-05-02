@@ -342,6 +342,162 @@ def _get_cfg(chave: str) -> str:
     return r.data[0]["valor"] if r.data else ""
 
 
+# ── Análise com IA (Claude) ──────────────────────────────────────
+@app.post("/ia/analisar")
+async def ia_analisar(request: Request):
+    body = await request.json()
+    pergunta = (body.get("pergunta") or "").strip()
+    if not pergunta:
+        raise HTTPException(status_code=400, detail="pergunta é obrigatória")
+
+    api_key = _get_cfg("anthropic_api_key") or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="ANTHROPIC_API_KEY não configurada (Configurações → IA)")
+
+    try:
+        import anthropic
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Pacote anthropic não instalado")
+
+    # Coleta dados resumidos do app
+    try:
+        tz_offset = int(_get_cfg("timezone_offset") or "-3")
+    except Exception:
+        tz_offset = -3
+    tz_str = f"{tz_offset:+03d}:00"
+
+    # Período: últimos 30 dias (configurável via body)
+    data_inicio = body.get("data_inicio")
+    data_fim = body.get("data_fim")
+    import datetime
+    if not data_fim:
+        data_fim = datetime.date.today().isoformat()
+    if not data_inicio:
+        data_inicio = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+
+    contexto = {"periodo": {"inicio": data_inicio, "fim": data_fim, "timezone_offset": tz_offset}}
+
+    try:
+        # Cadastros
+        r = (db.table("cadastros").select("id,utm_source,utm_campaign,utm_medium,created_at", count="exact")
+             .gte("created_at", data_inicio + "T00:00:00" + tz_str)
+             .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
+        contexto["cadastros_total"] = r.count
+        from collections import Counter
+        contexto["cadastros_por_source"] = dict(Counter(x.get("utm_source") or "Direto" for x in (r.data or [])))
+        contexto["cadastros_por_campanha"] = dict(Counter(x.get("utm_campaign") or "Direto" for x in (r.data or [])))
+
+        # Depósitos
+        r2 = (db.table("depositos").select("id,email,valor,utm_source,created_at")
+              .gte("created_at", data_inicio + "T00:00:00" + tz_str)
+              .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
+        deps = r2.data or []
+        contexto["depositos_total"] = len(deps)
+        contexto["receita_total"] = round(sum(float(d.get("valor") or 0) for d in deps), 2)
+        # FTD
+        seen = set(); ftd = 0; ftd_valor = 0
+        for d in sorted(deps, key=lambda x: x.get("created_at", "")):
+            email = d.get("email", "")
+            if email and email not in seen:
+                seen.add(email); ftd += 1; ftd_valor += float(d.get("valor") or 0)
+        contexto["ftd_count"] = ftd
+        contexto["ftd_valor"] = round(ftd_valor, 2)
+        contexto["redep_count"] = len(deps) - ftd
+        contexto["redep_valor"] = round(contexto["receita_total"] - ftd_valor, 2)
+
+        # Telegram members
+        r3 = (db.table("telegram_members").select("event", count="exact")
+              .gte("created_at", data_inicio + "T00:00:00" + tz_str)
+              .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
+        contexto["telegram_joins"]  = sum(1 for x in (r3.data or []) if x.get("event") == "join")
+        contexto["telegram_leaves"] = sum(1 for x in (r3.data or []) if x.get("event") == "leave")
+
+        # PageViews
+        r4 = (db.table("tracker_pageviews").select("id", count="exact")
+              .gte("created_at", data_inicio + "T00:00:00" + tz_str)
+              .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
+        contexto["pageviews"] = r4.count
+
+        # Conversões enviadas
+        r5 = (db.table("conversion_logs").select("plataforma,event_name,status", count="exact")
+              .gte("created_at", data_inicio + "T00:00:00" + tz_str)
+              .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
+        cl_data = r5.data or []
+        contexto["conversoes_enviadas"] = {
+            "total": len(cl_data),
+            "sucesso": sum(1 for x in cl_data if x.get("status") == "sucesso"),
+            "erro":    sum(1 for x in cl_data if x.get("status") == "erro"),
+            "por_plataforma": dict(Counter(x.get("plataforma") for x in cl_data)),
+            "por_evento":     dict(Counter(x.get("event_name") for x in cl_data)),
+        }
+
+        # Meta Ads (se conectado)
+        meta_token = _get_cfg("metaads_access_token")
+        if meta_token and body.get("metaads_account_id"):
+            account_id = body["metaads_account_id"]
+            async with httpx.AsyncClient(timeout=20) as client:
+                ri = await client.get(
+                    f"https://graph.facebook.com/v19.0/{account_id}/insights",
+                    params={
+                        "access_token": meta_token,
+                        "fields": "spend,impressions,clicks,ctr,cpc,cpm,reach",
+                        "level": "account",
+                        "time_range": json.dumps({"since": data_inicio, "until": data_fim}),
+                    },
+                )
+                d = ri.json().get("data", [])
+                if d:
+                    ins = d[0]
+                    contexto["meta_ads"] = {
+                        "spend":       float(ins.get("spend", 0)),
+                        "impressions": int(ins.get("impressions", 0)),
+                        "clicks":      int(ins.get("clicks", 0)),
+                        "ctr":         float(ins.get("ctr", 0)),
+                        "cpc":         float(ins.get("cpc", 0)),
+                        "cpm":         float(ins.get("cpm", 0)),
+                        "reach":       int(ins.get("reach", 0)),
+                    }
+    except Exception as e:
+        contexto["erro_coleta"] = str(e)
+
+    # Chama Claude
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = f"""Você é um analista de marketing digital especializado em tráfego pago e conversão. Analise os dados abaixo e responda à pergunta do usuário de forma direta, prática e com insights acionáveis.
+
+DADOS DO PERÍODO ({contexto['periodo']['inicio']} até {contexto['periodo']['fim']}):
+{json.dumps(contexto, ensure_ascii=False, indent=2)}
+
+PERGUNTA DO USUÁRIO:
+{pergunta}
+
+Responda em português, formato Markdown. Se houver problemas óbvios (ex: ROAS negativo, CPL alto, conversão baixa), aponte. Se faltar dado importante, diga. Seja conciso — máximo 5 parágrafos curtos."""
+
+        msg = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        resposta = msg.content[0].text
+        return {"resposta": resposta, "contexto": contexto}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao chamar IA: {e}")
+
+
+@app.post("/config/ia")
+async def salvar_config_ia(request: Request):
+    body = await request.json()
+    if "anthropic_api_key" in body:
+        _set_cfg("anthropic_api_key", body["anthropic_api_key"])
+    return {"status": "ok"}
+
+
+@app.get("/config/ia")
+def ler_config_ia():
+    key = _get_cfg("anthropic_api_key")
+    return {"configurada": bool(key), "preview": (key[:15] + "..." + key[-5:]) if key else ""}
+
+
 @app.get("/config/geral")
 def get_config_geral():
     return {

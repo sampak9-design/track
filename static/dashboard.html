@@ -334,6 +334,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Tráfego Meta
     </div>
+    <div class="nav-item" onclick="mudarSecao('ia',this)" id="nav-ia">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1.5a2.5 2.5 0 0 0-2.5 2.5v0a2.5 2.5 0 0 0 0 5v0a2.5 2.5 0 0 0 2.5 2.5V18a3 3 0 0 0 6 0v-1.5a2.5 2.5 0 0 0 2.5-2.5v0a2.5 2.5 0 0 0 0-5v0A2.5 2.5 0 0 0 15 6.5V5a3 3 0 0 0-3-3z"/><circle cx="9.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="14.5" cy="9.5" r=".5" fill="currentColor"/></svg>
+      Análise com IA
+    </div>
   </div>
 
   <div class="nav-section">
@@ -877,6 +881,98 @@
           <tbody id="t-sairam"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ════ ANÁLISE COM IA ════ -->
+    <div class="secao" id="sec-ia">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+          <span style="background:linear-gradient(135deg,#a855f7,#1877f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Análise com IA</span>
+          <span style="font-size:0.65rem;background:#1a1d2e;color:#a855f7;padding:3px 8px;border-radius:10px;font-weight:600;letter-spacing:0.5px">CLAUDE</span>
+        </h2>
+        <p style="font-size:0.82rem;color:#6b7280">Pergunte qualquer coisa sobre seus dados — vendas, campanhas, conversão, otimizações</p>
+      </div>
+
+      <!-- Sugestões -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="ia-sugestao" onclick="iaSugestao('Como está minha performance geral nos últimos 30 dias? Aponte o que está bom e o que precisa melhorar.')">📊 Visão geral 30 dias</button>
+        <button class="ia-sugestao" onclick="iaSugestao('Quais UTM sources estão trazendo mais conversão e quais estão queimando dinheiro?')">🎯 Análise por fonte</button>
+        <button class="ia-sugestao" onclick="iaSugestao('Meu CPL e CPA estão saudáveis comparados à receita gerada? Recomende ajustes.')">💰 Saúde do funil</button>
+        <button class="ia-sugestao" onclick="iaSugestao('Compare entradas vs saídas no Telegram. A retenção está OK?')">👥 Retenção Telegram</button>
+        <button class="ia-sugestao" onclick="iaSugestao('Os pixels Meta/Kwai/TikTok estão recebendo eventos corretamente? Há erros?')">🔌 Status dos pixels</button>
+      </div>
+
+      <!-- Chat -->
+      <div class="panel" style="display:flex;flex-direction:column;min-height:500px;padding:0">
+        <div id="ia-mensagens" style="flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#0f1117;border:1px solid #1e2235;border-radius:10px;padding:14px;color:#9ca3af;font-size:0.85rem;text-align:center">
+            👋 Olá! Faça uma pergunta ou clique numa sugestão acima.
+          </div>
+        </div>
+        <div style="border-top:1px solid #1e2235;padding:12px 14px;display:flex;gap:8px;align-items:flex-end">
+          <textarea id="ia-input" placeholder="Pergunte sobre seus dados..." rows="2"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarPergunta()}"
+            style="flex:1;background:#0f1117;border:1px solid #1e2235;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;min-height:42px;max-height:120px"></textarea>
+          <button onclick="enviarPergunta()" id="btn-enviar-ia"
+            style="background:linear-gradient(135deg,#a855f7,#1877f2);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:6px;align-self:stretch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Enviar
+          </button>
+        </div>
+      </div>
+
+      <style>
+        .ia-sugestao {
+          background: #13151f;
+          border: 1px solid #1e2235;
+          color: #c9d1e0;
+          padding: 8px 14px;
+          border-radius: 20px;
+          font-size: 0.78rem;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .ia-sugestao:hover { background: #1a1d2e; border-color: #a855f7; }
+        .ia-msg-user {
+          align-self: flex-end;
+          background: linear-gradient(135deg, #1877f2, #0d6efd);
+          color: white;
+          padding: 10px 14px;
+          border-radius: 14px 14px 4px 14px;
+          max-width: 75%;
+          font-size: 0.85rem;
+          line-height: 1.5;
+        }
+        .ia-msg-bot {
+          align-self: flex-start;
+          background: #0f1117;
+          border: 1px solid #1e2235;
+          color: #e2e8f0;
+          padding: 12px 16px;
+          border-radius: 14px 14px 14px 4px;
+          max-width: 90%;
+          font-size: 0.85rem;
+          line-height: 1.6;
+        }
+        .ia-msg-bot p { margin: 0 0 8px 0; }
+        .ia-msg-bot p:last-child { margin-bottom: 0; }
+        .ia-msg-bot strong { color: #a855f7; }
+        .ia-msg-bot ul, .ia-msg-bot ol { margin: 8px 0 8px 18px; }
+        .ia-msg-bot code { background: #1a1d2e; padding: 2px 6px; border-radius: 4px; font-size: 0.78rem; color: #f59e0b; }
+        .ia-thinking {
+          align-self: flex-start;
+          color: #6b7280;
+          font-size: 0.85rem;
+          padding: 10px 14px;
+          font-style: italic;
+        }
+        .ia-thinking::after {
+          content: '';
+          animation: dots 1.5s steps(4) infinite;
+        }
+        @keyframes dots { 0% {content: ''} 25% {content: '.'} 50% {content: '..'} 75% {content: '...'} }
+      </style>
     </div>
 
     <!-- ════ TRÁFEGO META ════ -->
@@ -1546,6 +1642,23 @@
           ℹ️ <strong style="color:#c9d1e0">Por que isso importa:</strong> os dados são salvos em UTC no banco. O fuso configurado aqui faz o filtro "Hoje" considerar 00:00–23:59 da sua hora local em vez de UTC.
         </div>
       </div>
+
+      <!-- IA Configuração -->
+      <div class="panel" style="margin-top:14px">
+        <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1.5a2.5 2.5 0 0 0-2.5 2.5v0a2.5 2.5 0 0 0 0 5v0a2.5 2.5 0 0 0 2.5 2.5V18a3 3 0 0 0 6 0v-1.5a2.5 2.5 0 0 0 2.5-2.5v0a2.5 2.5 0 0 0 0-5v0A2.5 2.5 0 0 0 15 6.5V5a3 3 0 0 0-3-3z"/></svg>
+          Anthropic API (Análise com IA)
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole sua chave Anthropic para habilitar a aba "Análise com IA". Obtenha em <span style="color:#a855f7">console.anthropic.com</span></p>
+        <div style="display:flex;flex-direction:column;gap:6px;max-width:500px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="cfg-anthropic-key" type="password" placeholder="sk-ant-api03-..."
+              style="flex:1;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none">
+            <button onclick="salvarConfigIA()" style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+          </div>
+          <div id="cfg-anthropic-status" style="font-size:0.74rem;color:#6b7280">—</div>
+        </div>
+      </div>
     </div>
 
     <div class="secao" id="sec-tracker">
@@ -1770,8 +1883,8 @@
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
-    trafego: "Tráfego Meta", integracoes: "Pixels", canais: "Canais e Bots",
-    tracker: "Gerador de Tracker", configuracoes: "Configurações"
+    trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
+    canais: "Canais e Bots", tracker: "Gerador de Tracker", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2720,7 +2833,111 @@
     if (id === "membros") { carregarMembros(); }
     if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
     if (id === "trafego") { carregarTrafegoInit(); }
-    if (id === "configuracoes") { carregarConfigGeral(); }
+    if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
+    if (id === "ia") { document.getElementById("ia-input").focus(); }
+  }
+
+  // ── Análise com IA ──
+  function iaSugestao(pergunta) {
+    document.getElementById("ia-input").value = pergunta;
+    enviarPergunta();
+  }
+
+  function escapeHtml(s) {
+    return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function mdToHtml(md) {
+    let html = escapeHtml(md);
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\n\n/g, "</p><p>");
+    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+    html = html.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+    return "<p>" + html + "</p>";
+  }
+
+  async function enviarPergunta() {
+    const input = document.getElementById("ia-input");
+    const pergunta = input.value.trim();
+    if (!pergunta) return;
+    const cont = document.getElementById("ia-mensagens");
+    const btn = document.getElementById("btn-enviar-ia");
+
+    // Adiciona pergunta do user
+    const msgUser = document.createElement("div");
+    msgUser.className = "ia-msg-user";
+    msgUser.textContent = pergunta;
+    cont.appendChild(msgUser);
+
+    // Loading
+    const thinking = document.createElement("div");
+    thinking.className = "ia-thinking";
+    thinking.textContent = "Analisando seus dados";
+    cont.appendChild(thinking);
+    cont.scrollTop = cont.scrollHeight;
+
+    input.value = "";
+    input.disabled = true;
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+
+    try {
+      const r = await fetch("/ia/analisar", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({pergunta})
+      });
+      thinking.remove();
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "Erro");
+
+      const msgBot = document.createElement("div");
+      msgBot.className = "ia-msg-bot";
+      msgBot.innerHTML = mdToHtml(d.resposta || "(sem resposta)");
+      cont.appendChild(msgBot);
+    } catch(e) {
+      thinking.remove();
+      const erro = document.createElement("div");
+      erro.className = "ia-msg-bot";
+      erro.style.borderColor = "#7f1d1d";
+      erro.style.color = "#f87171";
+      erro.textContent = "✗ Erro: " + (e.message || "Falha ao analisar");
+      cont.appendChild(erro);
+    }
+
+    cont.scrollTop = cont.scrollHeight;
+    input.disabled = false;
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    input.focus();
+  }
+
+  async function carregarConfigIA() {
+    try {
+      const r = await fetch("/config/ia");
+      const cfg = await r.json();
+      const inp = document.getElementById("cfg-anthropic-key");
+      const status = document.getElementById("cfg-anthropic-status");
+      if (inp && cfg.preview) inp.placeholder = cfg.preview;
+      if (status) status.textContent = cfg.configurada ? "✓ Configurada" : "Não configurada";
+      if (status) status.style.color = cfg.configurada ? "#22c55e" : "#6b7280";
+    } catch(e) {}
+  }
+
+  async function salvarConfigIA() {
+    const key = document.getElementById("cfg-anthropic-key").value.trim();
+    if (!key) return;
+    try {
+      await fetch("/config/ia", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({anthropic_api_key: key})
+      });
+      document.getElementById("cfg-anthropic-key").value = "";
+      carregarConfigIA();
+      alert("✓ Chave Anthropic salva!");
+    } catch(e) {
+      alert("Erro ao salvar");
+    }
   }
 
   // ── Configurações Gerais ──
