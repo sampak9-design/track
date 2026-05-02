@@ -867,8 +867,26 @@
               <button class="preset-btn" onclick="trafegoPreset('mes',this)">Mês</button>
             </div>
           </div>
+          <div style="margin-left:auto">
+            <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
+            <button id="btn-atualizar-trafego" onclick="aplicarSelecaoTrafego()" class="btn-refresh">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-2px;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar
+            </button>
+          </div>
         </div>
       </div>
+
+      <style>
+        #btn-atualizar-trafego.pendente {
+          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+          box-shadow: 0 0 0 2px rgba(249,115,22,0.3);
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5); }
+          50% { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+        }
+      </style>
 
       <!-- Cards principais (Resumo) -->
       <div id="trafego-tab-resumo">
@@ -2727,8 +2745,7 @@
     else if (!checked) sel = sel.filter(x => x !== id);
     salvarSelecionadas(sel);
     document.getElementById("camp-selected-count").textContent = sel.length;
-    // Atualiza resumo se a aba estiver carregada
-    if (document.getElementById("trafego-tab-resumo").style.display !== "none") carregarTrafego();
+    marcarPendente();
   }
   function selecionarTodas(checked) {
     if (checked) {
@@ -2737,8 +2754,28 @@
     } else {
       salvarSelecionadas([]);
     }
-    renderCampanhas(allCampanhas);
-    if (document.getElementById("trafego-tab-resumo").style.display !== "none") carregarTrafego();
+    document.getElementById("camp-selected-count").textContent = getCampanhasSelecionadas().length;
+    // Atualiza só os checkboxes visíveis (sem re-render completo)
+    document.querySelectorAll("#t-campanhas input[type=checkbox]").forEach(cb => {
+      const onclick = cb.getAttribute("onchange") || "";
+      if (onclick.includes("toggleSelecionada")) cb.checked = checked;
+    });
+    marcarPendente();
+  }
+  function marcarPendente() {
+    const btn = document.getElementById("btn-atualizar-trafego");
+    if (btn) {
+      btn.classList.add("pendente");
+      btn.textContent = "⚡ Aplicar seleção";
+    }
+  }
+  function aplicarSelecaoTrafego() {
+    const btn = document.getElementById("btn-atualizar-trafego");
+    if (btn) {
+      btn.classList.remove("pendente");
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-2px;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar';
+    }
+    carregarTrafego();
   }
 
   function getColunasAtivas() {
