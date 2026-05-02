@@ -86,7 +86,7 @@
     .user-role { font-size: 0.7rem; color: #6b7280; }
 
     /* ─── MAIN ─── */
-    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-width: 0; }
+    .main { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; min-width: 0; }
 
     /* ─── TOPBAR ─── */
     .topbar {
@@ -139,7 +139,7 @@
     .filter-select:focus, .filter-select:hover { border-color: #2d3a6e; }
 
     /* ─── CONTENT ─── */
-    .content { padding: 20px 24px; flex: 1; }
+    .content { padding: 20px 24px 40px; flex: 1; overflow-x: hidden; }
     .secao { display: none; }
     .secao.visivel { display: block; }
 
@@ -198,25 +198,19 @@
     .hamburger-btn { display: none; background: none; border: none; color: #c9d1e0; cursor: pointer; padding: 6px; margin-right: 8px; }
     .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 198; }
 
-    /* ─── RESPONSIVO ─── */
-    /* Garante containers sem overflow estranho */
-    .main, .content, .secao { min-width: 0; }
+    /* ─── RESPONSIVO MÍNIMO ─── */
+    /* Containers principais não estouram a viewport */
+    .main, .content, .secao { min-width: 0; max-width: 100%; }
 
-    /* Grid de 6 colunas: vira auto-fit responsivo */
-    div[style*="grid-template-columns:repeat(6"] {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    /* Tabelas largas: scroll horizontal interno + padding extra pra não cortar última coluna */
+    .tabela-wrap, .panel > div[style*="overflow-x"] {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
     }
 
-    /* Tablet (≤1100px): tudo um pouco menor mas mantendo layout */
-    @media (max-width: 1100px) {
-      body { font-size: 12.5px; }
-      .content { padding: 16px 18px; }
-      .topbar { padding: 0 18px; }
-    }
-
-    /* Mobile (≤900px): hamburger + reduções */
+    /* Mobile: sidebar colapsável (mantém todo resto intacto) */
     @media (max-width: 900px) {
-      body { font-size: 12px; }
       .hamburger-btn { display: inline-flex; align-items: center; }
       .sidebar {
         position: fixed; top: 0; bottom: 0; left: 0;
@@ -228,88 +222,11 @@
       }
       .sidebar.aberta { transform: translateX(0); }
       .sidebar-backdrop.aberta { display: block; }
-      .topbar { padding: 0 14px; height: 50px; }
       .topbar-breadcrumb, .topbar-sep { display: none; }
-      .content { padding: 14px; }
-      .panel { padding: 14px; }
-      .metric-card { padding: 12px; }
-      .metric-value { font-size: 1.3rem; }
-
-      /* Cards 2 por linha em mobile (mantém estética em vez de stack) */
-      div[style*="grid-template-columns:repeat(6"],
-      div[style*="grid-template-columns:repeat(auto-fit,minmax(180px"],
-      div[style*="grid-template-columns:repeat(auto-fit,minmax(150px"] {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
-
-      /* Tabelas com scroll horizontal sempre */
-      .panel table { min-width: 600px; }
-      .panel > div[style*="overflow-x:auto"] { overflow-x: auto; }
-
-      /* Filtros: itens em coluna full-width */
-      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] {
-        gap: 10px;
-      }
-      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] > div { flex: 1 1 calc(50% - 6px); min-width: 0; }
-      .panel input[type="date"], .panel select { width: 100%; box-sizing: border-box; }
-
-      /* Tabs com scroll horizontal */
-      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] { overflow-x: auto; flex-wrap: nowrap !important; }
-      div[style*="border-bottom:1px solid #1e2235"][style*="display:flex"] > button { flex-shrink: 0; white-space: nowrap; }
-
-      /* IA chat */
-      .ia-msg-user, .ia-msg-bot { max-width: 92%; }
-      .ia-sugestao { font-size: 0.74rem; padding: 7px 12px; }
-    }
-
-    /* Tabela de campanhas vira CARDS verticais no mobile (sem scroll lateral) */
-    @media (max-width: 900px) {
-      #t-campanhas tr {
-        display: block;
-        background: #0f1117;
-        border: 1px solid #1e2235;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        padding: 12px;
-      }
-      #t-campanhas td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 6px 0 !important;
-        text-align: left !important;
-        border: none !important;
-        white-space: normal !important;
-      }
-      #t-campanhas td:before {
-        content: attr(data-label);
-        color: #6b7280;
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-right: 12px;
-      }
-      #camp-header { display: none; }
-      .panel table#wrap-campanhas-table { min-width: 0; }
-    }
-
-    /* Smartphone pequeno (≤500px): 1 ou 2 cards por linha conforme tamanho */
-    @media (max-width: 500px) {
-      .content { padding: 10px; }
-      .panel { padding: 12px; }
-      .metric-card { padding: 10px; }
-      .metric-value { font-size: 1.15rem; }
-      .metric-label { font-size: 0.65rem; }
-      .metric-sub { font-size: 0.65rem; }
-
-      /* Filtros 1 por linha */
-      .panel > div[style*="display:flex"][style*="flex-wrap:wrap"] > div { flex: 1 1 100%; }
-
-      /* Modal de colunas full-width */
-      #modal-colunas > div { max-width: 95vw; max-height: 88vh; padding: 16px; }
-
-      .preset-btn { padding: 6px 10px; font-size: 0.72rem; }
-      h2 { font-size: 1.05rem !important; }
+      /* Tabelas: garantir scroll horizontal interno (não na página) */
+      .panel table { display: table; }
+      /* Margem extra abaixo pra não cortar último elemento */
+      .content { padding-bottom: 40px; }
     }
 
     canvas { max-height: 200px; }
