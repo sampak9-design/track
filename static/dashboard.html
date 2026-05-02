@@ -3436,6 +3436,8 @@
     { key: "selecionar",  label: "",            align: "center", obrigatoria: true },
     { key: "status",      label: "Status",      align: "left",  obrigatoria: true },
     { key: "nome",        label: "Campanha",    align: "left",  obrigatoria: true },
+    { key: "joinchannel", label: "JoinChannel", align: "right" },
+    { key: "custo_join",  label: "Custo por JoinChannel", align: "right" },
     { key: "resultados",  label: "Resultados",  align: "left" },
     { key: "tipo_resultado", label: "Tipo de Resultado", align: "left" },
     { key: "custo_resultado", label: "Custo por Resultado", align: "right" },
@@ -3448,6 +3450,15 @@
     { key: "cpm",         label: "CPM",         align: "right" },
     { key: "frequency",   label: "Frequência",  align: "right" },
   ];
+
+  function extrairJoinChannelCamp(c) {
+    const actions = (c.insights || {}).actions || [];
+    const found = actions.find(a => {
+      const t = (a.action_type || "").toLowerCase();
+      return t.includes("joinchannel") || t === "join_channel" || t === "subscribe" || t === "offsite_conversion.fb_pixel_custom";
+    });
+    return found ? parseInt(found.value || 0) : 0;
+  }
 
   // Mapa de action_types para labels amigáveis
   const ACTION_LABELS = {
@@ -3637,6 +3648,15 @@
           return `<td ${dl} style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
         case "nome":
           return `<td ${dl} style="padding:12px 14px"><div style="font-size:0.85rem;color:#e2e8f0;font-weight:500;text-align:right">${c.name || "—"}</div><div style="font-size:0.7rem;color:#6b7280;margin-top:2px;text-align:right">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#9ca3af'}">${effLabel}</span></div></td>`;
+        case "joinchannel": {
+          const j = extrairJoinChannelCamp(c);
+          return `<td ${dl} style="padding:12px 14px;text-align:right;font-size:0.85rem"><span style="color:${j > 0 ? '#1877f2' : '#4a5568'};font-weight:600">${j > 0 ? j.toLocaleString("pt-BR") : "—"}</span></td>`;
+        }
+        case "custo_join": {
+          const j = extrairJoinChannelCamp(c);
+          const custoJ = j > 0 ? (spendNum / j) : 0;
+          return `<td ${dl} style="padding:12px 14px;text-align:right;color:#c9d1e0;font-size:0.85rem">${j > 0 ? fmtBRL(custoJ) : "—"}</td>`;
+        }
         case "resultados":
           return `<td ${dl} style="padding:12px 14px"><div style="font-size:0.95rem;color:#e2e8f0;font-weight:600">${res.value > 0 ? res.value.toLocaleString("pt-BR") : "—"}</div></td>`;
         case "tipo_resultado":
