@@ -3301,9 +3301,13 @@
 
       function extrairJoinChannel(actions) {
         if (!actions) return 0;
+        // Meta agrega custom events em offsite_conversion.fb_pixel_custom
         const found = actions.find(a => {
           const t = (a.action_type || "").toLowerCase();
-          return t.includes("joinchannel") || t === "join_channel" || t === "subscribe";
+          return t.includes("joinchannel")
+              || t === "join_channel"
+              || t === "subscribe"
+              || t === "offsite_conversion.fb_pixel_custom";
         });
         return found ? parseInt(found.value || 0) : 0;
       }
