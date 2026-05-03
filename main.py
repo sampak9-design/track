@@ -2251,5 +2251,178 @@ async def telegram_setup(request: Request):
     return result
 
 
+# ═══════════════════════════════════════════════════════════════════
+# ─── BOOSTER (userbots, views, reações) ────────────────────────────
+# ═══════════════════════════════════════════════════════════════════
+import base64
+
+def _booster_fernet():
+    """Inicializa Fernet com chave derivada de SUPABASE_KEY (estável entre restarts)."""
+    try:
+        from cryptography.fernet import Fernet
+        seed = os.environ.get("BOOSTER_ENC_KEY") or os.environ.get("SUPABASE_KEY", "")
+        key = base64.urlsafe_b64encode(hashlib.sha256(seed.encode()).digest())
+        return Fernet(key)
+    except Exception as e:
+        print(f"[BOOSTER fernet ERRO] {e}")
+        return None
+
+def _enc(s: str) -> str:
+    if not s: return ""
+    f = _booster_fernet()
+    if not f: return s
+    try: return f.encrypt(s.encode()).decode()
+    except Exception: return s
+
+def _dec(s: str) -> str:
+    if not s: return ""
+    f = _booster_fernet()
+    if not f: return s
+    try: return f.decrypt(s.encode()).decode()
+    except Exception: return ""
+
+
+# ── Config global (api_id / api_hash compartilhado entre as contas) ──
+@app.get("/booster/config")
+def booster_get_config():
+    return {
+        "api_id":   _get_cfg("booster_api_id") or "",
+        "api_hash": bool(_get_cfg("booster_api_hash")),
+    }
+
+
+@app.post("/booster/config")
+async def booster_set_config(request: Request):
+    body = await request.json()
+    if "api_id" in body:
+        _set_cfg("booster_api_id", str(body.get("api_id") or "").strip())
+    if "api_hash" in body and body.get("api_hash"):
+        _set_cfg("booster_api_hash", _enc(str(body["api_hash"]).strip()))
+    return {"ok": True}
+
+
+def _booster_api_creds():
+    api_id = _get_cfg("booster_api_id")
+    api_hash_enc = _get_cfg("booster_api_hash")
+    api_hash = _dec(api_hash_enc) if api_hash_enc else ""
+    return api_id, api_hash
+
+
+# ── Contas (CRUD básico) ─────────────────────────────────────────────
+@app.get("/booster/contas")
+def booster_listar_contas():
+    try:
+        rows = (db.table("booster_contas")
+                .select("id,phone,username,first_name,user_id_tg,proxy,has_2fa,status,"
+                        "cooldown_ate,views_hoje,reacoes_hoje,total_views,total_reacoes,"
+                        "ultima_acao,banido_em,erro_msg,criado_em")
+                .order("criado_em", desc=True).execute().data) or []
+        return {"contas": rows}
+    except Exception as e:
+        return {"contas": [], "erro": str(e)}
+
+
+@app.post("/booster/contas/upload-session")
+async def booster_upload_session(request: Request):
+    """Recebe um .session (Telethon) base64 e converte pra StringSession."""
+    body = await request.json()
+    session_b64 = (body.get("session_b64") or "").strip()
+    proxy = (body.get("proxy") or "").strip()
+    if not session_b64:
+        raise HTTPException(status_code=400, detail="session_b64 obrigatório")
+    api_id, api_hash = _booster_api_creds()
+    if not api_id or not api_hash:
+        raise HTTPException(status_code=400, detail="Configure api_id e api_hash em Booster → Config primeiro")
+
+    try:
+        from telethon import TelegramClient
+        from telethon.sessions import SQLiteSession, StringSession
+        import tempfile
+
+        # Salva o .session temporariamente em disco pra abrir
+        raw = base64.b64decode(session_b64)
+        with tempfile.NamedTemporaryFile(suffix=".session", delete=False) as tf:
+            tf.write(raw)
+            tmp_path = tf.name
+
+        # Abre como SQLiteSession e converte pra StringSession
+        sql_sess = SQLiteSession(tmp_path[:-len(".session")])
+        client = TelegramClient(sql_sess, int(api_id), api_hash)
+        await client.connect()
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            os.unlink(tmp_path)
+            raise HTTPException(status_code=400, detail="Sessão não autorizada (.session vencida ou inválida)")
+        me = await client.get_me()
+        # Converte pra StringSession in-memory
+        str_sess = StringSession.save(client.session)
+        await client.disconnect()
+        os.unlink(tmp_path)
+
+        # Insere no banco
+        new_row = {
+            "phone":          getattr(me, "phone", None) and ("+" + me.phone),
+            "username":       getattr(me, "username", None),
+            "first_name":     getattr(me, "first_name", None),
+            "user_id_tg":     str(getattr(me, "id", "")),
+            "session_string": _enc(str_sess),
+            "proxy":          proxy or None,
+            "status":         "ativa",
+        }
+        ins = db.table("booster_contas").insert(new_row).execute()
+        return {"ok": True, "conta": {k: new_row[k] for k in ("phone","username","first_name","user_id_tg")}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[BOOSTER upload-session ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/booster/contas/{conta_id}")
+def booster_deletar_conta(conta_id: int):
+    try:
+        db.table("booster_contas").delete().eq("id", conta_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/booster/contas/{conta_id}/testar")
+async def booster_testar_conta(conta_id: int):
+    """Conecta a conta e chama get_me pra validar que está ativa."""
+    try:
+        row = db.table("booster_contas").select("*").eq("id", conta_id).execute()
+        if not row.data:
+            raise HTTPException(status_code=404, detail="Conta não encontrada")
+        conta = row.data[0]
+        api_id, api_hash = _booster_api_creds()
+        if not api_id or not api_hash:
+            raise HTTPException(status_code=400, detail="Config booster ausente")
+        from telethon import TelegramClient
+        from telethon.sessions import StringSession
+        sess = _dec(conta.get("session_string") or "")
+        client = TelegramClient(StringSession(sess), int(api_id), api_hash)
+        await client.connect()
+        if not await client.is_user_authorized():
+            db.table("booster_contas").update({"status": "banida", "erro_msg": "session expirada"}).eq("id", conta_id).execute()
+            await client.disconnect()
+            return {"ok": False, "motivo": "session expirada"}
+        me = await client.get_me()
+        await client.disconnect()
+        db.table("booster_contas").update({
+            "status": "ativa", "erro_msg": None,
+            "username": getattr(me, "username", None),
+            "first_name": getattr(me, "first_name", None),
+        }).eq("id", conta_id).execute()
+        return {"ok": True, "first_name": getattr(me, "first_name", ""), "username": getattr(me, "username", "")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        try:
+            db.table("booster_contas").update({"status": "erro", "erro_msg": str(e)[:200]}).eq("id", conta_id).execute()
+        except Exception: pass
+        return {"ok": False, "motivo": str(e)}
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

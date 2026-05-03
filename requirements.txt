@@ -5,3 +5,5 @@ python-multipart
 httpx
 python-dotenv
 anthropic
+telethon
+cryptography

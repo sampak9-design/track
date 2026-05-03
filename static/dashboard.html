@@ -403,6 +403,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6"/><path d="m4.22 4.22 4.24 4.24m7.08 7.08 4.24 4.24"/><path d="M1 12h6m10 0h6"/><path d="m4.22 19.78 4.24-4.24m7.08-7.08 4.24-4.24"/></svg>
       Automação
     </div>
+    <div class="nav-item" onclick="mudarSecao('booster',this)" id="nav-booster">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Booster
+    </div>
     <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
@@ -1769,6 +1773,142 @@
       </div>
     </div>
 
+    <!-- ════ BOOSTER (userbots / views / reações) ════ -->
+    <div class="secao" id="sec-booster">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">⚡ Booster</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Pool de contas Telegram pra impulsionar views e reações nas postagens dos seus canais</p>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px;background:#2a1810;border:1px solid #5f3a1e">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:1.1rem">⚠️</span>
+          <div style="font-size:0.78rem;color:#edc5a8;line-height:1.6">
+            <b style="color:#e2e8f0">Importante:</b> esse recurso usa userbots (contas reais via MTProto). Viola os ToS do Telegram e pode resultar em ban da conta. Use com moderação e de preferência em canais não vinculados a anúncios pagos (Meta detecta engajamento falso).
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-abas -->
+      <div style="display:flex;gap:4px;border-bottom:1px solid #1e2235;margin-bottom:18px;overflow-x:auto">
+        <button onclick="abrirBoosterTab('contas')" id="btab-contas"
+          style="background:none;border:none;border-bottom:2px solid #f59e0b;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          👥 Contas
+        </button>
+        <button onclick="abrirBoosterTab('campanhas')" id="btab-campanhas"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          🎯 Campanhas
+        </button>
+        <button onclick="abrirBoosterTab('status')" id="btab-status"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          📊 Status
+        </button>
+        <button onclick="abrirBoosterTab('config')" id="btab-config"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          ⚙️ Config
+        </button>
+      </div>
+
+      <!-- TAB: Contas -->
+      <div id="b-tab-contas">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Pool de Contas</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="abrirModalUploadSession()"
+              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              📂 Upload .session
+            </button>
+            <button onclick="alert('Login via SMS chega na próxima atualização. Por enquanto use upload de .session.')"
+              style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              📱 Login via SMS
+            </button>
+          </div>
+        </div>
+
+        <div id="b-lista-contas">
+          <div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
+            <div style="font-size:2rem;margin-bottom:10px">⏳</div>
+            <p>Carregando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Campanhas -->
+      <div id="b-tab-campanhas" style="display:none">
+        <div class="panel">
+          <div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
+            <div style="font-size:2rem;margin-bottom:10px">🎯</div>
+            <p>Em breve — vai aparecer aqui depois que você adicionar contas e a primeira campanha</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Status -->
+      <div id="b-tab-status" style="display:none">
+        <div class="panel">
+          <div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
+            <div style="font-size:2rem;margin-bottom:10px">📊</div>
+            <p>Estatísticas de entrega aparecerão aqui</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Config -->
+      <div id="b-tab-config" style="display:none">
+        <div class="panel">
+          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">Telegram API Credentials</div>
+          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">
+            Obrigatório pra usar o Booster. Pegue em
+            <a href="https://my.telegram.org/apps" target="_blank" style="color:#4f6ef7">my.telegram.org/apps</a>
+            (cadastra com qualquer conta sua, é grátis e instantâneo).
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:500px">
+            <div>
+              <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">API ID</label>
+              <input type="text" id="b-api-id" placeholder="12345678"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">API Hash</label>
+              <input type="password" id="b-api-hash" placeholder="abc123def456..."
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              <div id="b-api-hash-status" style="font-size:0.7rem;color:#6b7280;margin-top:4px">—</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+              <button onclick="salvarBoosterConfig()"
+                style="background:#22c55e;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+              <span id="b-config-msg" style="font-size:0.74rem;display:none"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Upload .session -->
+    <div id="modal-upload-session" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+      <div style="background:#1a1d2e;border:1px solid #2d3148;border-radius:10px;padding:22px;max-width:500px;width:92%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:1rem;font-weight:700;color:#e2e8f0">Upload de .session</div>
+          <button onclick="fecharModalUploadSession()" style="background:none;border:none;color:#6b7280;font-size:1.4rem;cursor:pointer;line-height:1">×</button>
+        </div>
+        <p style="font-size:0.8rem;color:#9ca3af;line-height:1.5;margin-bottom:14px">
+          Selecione um arquivo <code>.session</code> do Telethon. O sistema valida com a API e converte pra StringSession (formato seguro pra cloud).
+        </p>
+        <input type="file" id="b-session-file" accept=".session"
+          style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:10px;border-radius:7px;margin-bottom:12px;font-family:inherit;font-size:0.82rem">
+        <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Proxy (opcional)</label>
+        <input type="text" id="b-proxy" placeholder="socks5://user:pass@host:1080"
+          style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none;margin-bottom:14px">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="fecharModalUploadSession()"
+            style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+          <button onclick="uploadSession()" id="b-btn-upload"
+            style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Validar e adicionar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ════ CONFIGURAÇÕES ════ -->
     <div class="secao" id="sec-configuracoes">
       <div style="margin-bottom:14px">
@@ -2050,7 +2190,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", automacao: "Automação", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster ⚡", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -3021,6 +3161,7 @@
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "automacao") { abrirAutomacao(); }
+    if (id === "booster") { abrirBooster(); }
   }
 
   // ── Análise com IA ──
@@ -3872,6 +4013,197 @@
     } finally {
       inp.disabled = false;
       inp.focus();
+    }
+  }
+
+  // ── Booster ──
+  let _boosterTab = "contas";
+  function abrirBooster() {
+    abrirBoosterTab(_boosterTab || "contas");
+    carregarBoosterConfig();
+  }
+  function abrirBoosterTab(tab) {
+    _boosterTab = tab;
+    ["contas","campanhas","status","config"].forEach(t => {
+      const btn = document.getElementById("btab-" + t);
+      const pane = document.getElementById("b-tab-" + t);
+      if (btn) {
+        const ativo = (t === tab);
+        btn.style.borderBottom = ativo ? "2px solid #f59e0b" : "2px solid transparent";
+        btn.style.color = ativo ? "#e2e8f0" : "#6b7280";
+      }
+      if (pane) pane.style.display = (t === tab) ? "" : "none";
+    });
+    if (tab === "contas") carregarBoosterContas();
+    if (tab === "config") carregarBoosterConfig();
+  }
+
+  async function carregarBoosterConfig() {
+    try {
+      const r = await fetch("/booster/config");
+      const d = await r.json();
+      const idIn = document.getElementById("b-api-id");
+      if (idIn) idIn.value = d.api_id || "";
+      const status = document.getElementById("b-api-hash-status");
+      if (status) {
+        status.textContent = d.api_hash ? "✓ API Hash já salvo (digite pra substituir)" : "Nenhum API Hash salvo";
+        status.style.color = d.api_hash ? "#22c55e" : "#6b7280";
+      }
+    } catch(e) {}
+  }
+
+  async function salvarBoosterConfig() {
+    const apiId = document.getElementById("b-api-id").value.trim();
+    const apiHash = document.getElementById("b-api-hash").value.trim();
+    const msg = document.getElementById("b-config-msg");
+    const body = {api_id: apiId};
+    if (apiHash) body.api_hash = apiHash;
+    try {
+      const r = await fetch("/booster/config", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error("Erro");
+      msg.textContent = "✓ Salvo";
+      msg.style.color = "#22c55e";
+      msg.style.display = "inline";
+      document.getElementById("b-api-hash").value = "";
+      carregarBoosterConfig();
+      setTimeout(() => { msg.style.display = "none"; }, 2500);
+    } catch(e) {
+      msg.textContent = "✗ " + e.message;
+      msg.style.color = "#ef4444";
+      msg.style.display = "inline";
+    }
+  }
+
+  function _statusBadge(status) {
+    const map = {
+      ativa:    {cor:"#22c55e", bg:"#0d2818", txt:"✓ Ativa"},
+      cooldown: {cor:"#f59e0b", bg:"#2a1d05", txt:"⏸ Cooldown"},
+      banida:   {cor:"#ef4444", bg:"#2a0d0d", txt:"⛔ Banida"},
+      erro:     {cor:"#ef4444", bg:"#2a0d0d", txt:"⚠ Erro"},
+      pendente: {cor:"#6b7280", bg:"#1a1d2e", txt:"⏳ Pendente"},
+    };
+    const s = map[status] || {cor:"#6b7280", bg:"#1a1d2e", txt:status};
+    return `<span style="background:${s.bg};color:${s.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">${s.txt}</span>`;
+  }
+
+  async function carregarBoosterContas() {
+    const cont = document.getElementById("b-lista-contas");
+    try {
+      const r = await fetch("/booster/contas");
+      const d = await r.json();
+      const contas = d.contas || [];
+      if (!contas.length) {
+        cont.innerHTML = `<div class="panel"><div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
+          <div style="font-size:2rem;margin-bottom:10px">👥</div>
+          <p>Nenhuma conta ainda. Clique em <b style="color:#e2e8f0">📂 Upload .session</b> pra começar.</p>
+          <p style="font-size:0.74rem;margin-top:8px">Se ainda não configurou API ID/Hash, vá em <b>Config</b> primeiro.</p>
+        </div></div>`;
+        return;
+      }
+      cont.innerHTML = `<div class="panel" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;min-width:780px">
+          <thead>
+            <tr style="background:#0f1117;text-align:left">
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase">Conta</th>
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase">Telefone</th>
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase">Status</th>
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase">Hoje</th>
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase">Total</th>
+              <th style="padding:10px 12px;color:#9ca3af;font-weight:600;font-size:0.72rem;text-transform:uppercase;text-align:right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${contas.map(c => `
+              <tr style="border-top:1px solid #1e2235">
+                <td style="padding:10px 12px;color:#e2e8f0">
+                  <div style="font-weight:600">${_escHtml(c.first_name || "—")}</div>
+                  <div style="font-size:0.72rem;color:#6b7280">${c.username ? "@"+_escHtml(c.username) : "—"}</div>
+                </td>
+                <td style="padding:10px 12px;color:#c9d1e0;font-family:monospace;font-size:0.78rem">${_escHtml(c.phone || "—")}</td>
+                <td style="padding:10px 12px">${_statusBadge(c.status)}</td>
+                <td style="padding:10px 12px;color:#c9d1e0">${(c.views_hoje||0)}v · ${(c.reacoes_hoje||0)}r</td>
+                <td style="padding:10px 12px;color:#c9d1e0">${(c.total_views||0)}v · ${(c.total_reacoes||0)}r</td>
+                <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+                  <button onclick="testarConta(${c.id})" title="Testar conexão"
+                    style="background:#0f1117;border:1px solid #1e2235;color:#4f6ef7;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit;margin-right:4px">↻ Testar</button>
+                  <button onclick="deletarConta(${c.id}, '${_escHtml(c.phone||c.username||c.id)}')" title="Excluir"
+                    style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">🗑</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  async function testarConta(id) {
+    try {
+      const r = await fetch(`/booster/contas/${id}/testar`, {method:"POST"});
+      const d = await r.json();
+      if (d.ok) alert(`✓ Conta OK\n\n${d.first_name || ""} ${d.username ? "(@"+d.username+")" : ""}`);
+      else alert("✗ Falhou: " + (d.motivo || "erro desconhecido"));
+      carregarBoosterContas();
+    } catch(e) {
+      alert("✗ " + e.message);
+    }
+  }
+
+  async function deletarConta(id, label) {
+    if (!confirm(`Excluir a conta ${label}? A session será apagada permanentemente.`)) return;
+    try {
+      await fetch(`/booster/contas/${id}`, {method:"DELETE"});
+      carregarBoosterContas();
+    } catch(e) {
+      alert("✗ " + e.message);
+    }
+  }
+
+  function abrirModalUploadSession() {
+    document.getElementById("modal-upload-session").style.display = "flex";
+  }
+  function fecharModalUploadSession() {
+    document.getElementById("modal-upload-session").style.display = "none";
+    document.getElementById("b-session-file").value = "";
+    document.getElementById("b-proxy").value = "";
+  }
+
+  async function uploadSession() {
+    const file = document.getElementById("b-session-file").files[0];
+    if (!file) { alert("Selecione um arquivo .session"); return; }
+    const proxy = document.getElementById("b-proxy").value.trim();
+    const btn = document.getElementById("b-btn-upload");
+    btn.disabled = true;
+    btn.textContent = "Validando...";
+    try {
+      // Lê o arquivo como base64
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+
+      const r = await fetch("/booster/contas/upload-session", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({session_b64: b64, proxy}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      alert(`✓ Conta adicionada\n\n${d.conta.first_name || ""} ${d.conta.username ? "(@"+d.conta.username+")" : ""}\n${d.conta.phone || ""}`);
+      fecharModalUploadSession();
+      carregarBoosterContas();
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Validar e adicionar";
     }
   }
 
