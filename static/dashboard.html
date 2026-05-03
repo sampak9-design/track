@@ -1835,21 +1835,82 @@
 
       <!-- TAB: Campanhas -->
       <div id="b-tab-campanhas" style="display:none">
-        <div class="panel">
-          <div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
-            <div style="font-size:2rem;margin-bottom:10px">🎯</div>
-            <p>Em breve — vai aparecer aqui depois que você adicionar contas e a primeira campanha</p>
+        <!-- Form criar campanha -->
+        <div class="panel" style="margin-bottom:14px">
+          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">🎯 Nova Campanha</div>
+          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole o link completo do post no canal. Ex: <code>https://t.me/seucanal/123</code></p>
+
+          <div style="display:grid;grid-template-columns:1fr;gap:12px;max-width:680px">
+            <div>
+              <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Link do post</label>
+              <input type="url" id="camp-link" placeholder="https://t.me/canal/123"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:monospace;outline:none">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">👁 Views</label>
+                <input type="number" id="camp-views" min="0" value="50"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              </div>
+              <div>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">❤️ Reações</label>
+                <input type="number" id="camp-reacoes" min="0" value="10"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:6px">Emojis das reações</label>
+              <div id="camp-emojis-row" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+              <div>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Janela (min)</label>
+                <input type="number" id="camp-janela" min="1" value="30"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              </div>
+              <div>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Delay min (s)</label>
+                <input type="number" id="camp-dmin" min="1" value="2"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              </div>
+              <div>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Delay max (s)</label>
+                <input type="number" id="camp-dmax" min="2" value="30"
+                  style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
+              <button onclick="criarCampanha()" id="btn-criar-camp"
+                style="background:#22c55e;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
+                🚀 Criar e iniciar
+              </button>
+              <span id="camp-msg" style="font-size:0.78rem;display:none"></span>
+            </div>
           </div>
         </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Campanhas</div>
+          <button onclick="carregarCampanhas()"
+            style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻ Atualizar</button>
+        </div>
+        <div id="b-lista-campanhas"></div>
       </div>
 
       <!-- TAB: Status -->
       <div id="b-tab-status" style="display:none">
+        <div id="b-status-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px"></div>
         <div class="panel">
-          <div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
-            <div style="font-size:2rem;margin-bottom:10px">📊</div>
-            <p>Estatísticas de entrega aparecerão aqui</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Últimas ações</div>
+            <button onclick="carregarStatusBooster()"
+              style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻</button>
           </div>
+          <div id="b-status-acoes"></div>
         </div>
       </div>
 
@@ -4121,6 +4182,8 @@
     });
     if (tab === "contas") carregarBoosterContas();
     if (tab === "config") carregarBoosterConfig();
+    if (tab === "campanhas") { renderEmojisCampanha(); carregarCampanhas(); }
+    if (tab === "status") carregarStatusBooster();
   }
 
   async function carregarBoosterConfig() {
@@ -4446,6 +4509,210 @@
       else if (s3 && s3.style.display !== "none") loginConfirmar2fa();
     }
   });
+
+  // ── Booster: Campanhas ──
+  const EMOJIS_DISPONIVEIS = ["👍","❤️","🔥","🎉","😍","🤩","💯","👏","🙏","⚡","🚀","💪"];
+  let _campEmojisSel = ["👍","❤️","🔥"];
+
+  function renderEmojisCampanha() {
+    const cont = document.getElementById("camp-emojis-row");
+    if (!cont) return;
+    cont.innerHTML = EMOJIS_DISPONIVEIS.map(e => {
+      const sel = _campEmojisSel.includes(e);
+      return `<button type="button" onclick="toggleEmojiCampanha('${e}')"
+        style="background:${sel?'#1877f2':'#0f1117'};border:1px solid ${sel?'#1877f2':'#1e2235'};color:#e2e8f0;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
+    }).join("");
+  }
+  function toggleEmojiCampanha(e) {
+    if (_campEmojisSel.includes(e)) {
+      _campEmojisSel = _campEmojisSel.filter(x => x !== e);
+    } else {
+      _campEmojisSel.push(e);
+    }
+    if (!_campEmojisSel.length) _campEmojisSel = ["👍"];
+    renderEmojisCampanha();
+  }
+
+  async function criarCampanha() {
+    const link = document.getElementById("camp-link").value.trim();
+    const views = parseInt(document.getElementById("camp-views").value) || 0;
+    const reacoes = parseInt(document.getElementById("camp-reacoes").value) || 0;
+    const janela = parseInt(document.getElementById("camp-janela").value) || 30;
+    const dmin = parseInt(document.getElementById("camp-dmin").value) || 2;
+    const dmax = parseInt(document.getElementById("camp-dmax").value) || 30;
+    const msg = document.getElementById("camp-msg");
+    const btn = document.getElementById("btn-criar-camp");
+
+    if (!link) { msg.textContent = "✗ Cole o link do post"; msg.style.color="#ef4444"; msg.style.display="inline"; return; }
+    if (!views && !reacoes) { msg.textContent = "✗ Defina pelo menos 1 view ou 1 reação"; msg.style.color="#ef4444"; msg.style.display="inline"; return; }
+
+    btn.disabled = true; btn.textContent = "Criando...";
+    try {
+      const r = await fetch("/booster/campanhas", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          canal_link: link,
+          qtd_views: views, qtd_reacoes: reacoes,
+          reacoes_emojis: _campEmojisSel,
+          janela_min: janela,
+          delay_min_seg: dmin, delay_max_seg: dmax,
+          iniciar_agora: true,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      msg.textContent = "✓ Campanha criada e iniciada"; msg.style.color = "#22c55e"; msg.style.display = "inline";
+      setTimeout(() => { msg.style.display = "none"; }, 3000);
+      document.getElementById("camp-link").value = "";
+      carregarCampanhas();
+    } catch(e) {
+      msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
+    } finally {
+      btn.disabled = false; btn.textContent = "🚀 Criar e iniciar";
+    }
+  }
+
+  function _campStatusBadge(s) {
+    const map = {
+      pendente:  {bg:"#1a1d2e",cor:"#9ca3af",txt:"⏳ Pendente"},
+      rodando:   {bg:"#0f2e1a",cor:"#22c55e",txt:"▶ Rodando"},
+      pausada:   {bg:"#2a1d05",cor:"#f59e0b",txt:"⏸ Pausada"},
+      concluida: {bg:"#0f1d34",cor:"#4f6ef7",txt:"✓ Concluída"},
+      cancelada: {bg:"#1a1d2e",cor:"#6b7280",txt:"✕ Cancelada"},
+      erro:      {bg:"#2a0d0d",cor:"#ef4444",txt:"⚠ Erro"},
+    };
+    const m = map[s] || {bg:"#1a1d2e",cor:"#6b7280",txt:s};
+    return `<span style="background:${m.bg};color:${m.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">${m.txt}</span>`;
+  }
+
+  async function carregarCampanhas() {
+    const cont = document.getElementById("b-lista-campanhas");
+    try {
+      const r = await fetch("/booster/campanhas");
+      const d = await r.json();
+      const camps = d.campanhas || [];
+      if (!camps.length) {
+        cont.innerHTML = '<div class="panel"><div class="empty-state" style="padding:30px 20px;text-align:center;color:#6b7280">📭 Nenhuma campanha ainda</div></div>';
+        return;
+      }
+      cont.innerHTML = camps.map(c => {
+        const totalAlvo = (c.qtd_views||0) + (c.qtd_reacoes||0);
+        const entregue = (c.views_entregues||0) + (c.reacoes_entregues||0);
+        const pct = totalAlvo ? Math.min(100, Math.round((entregue/totalAlvo)*100)) : 0;
+        const podeCancelar = ["rodando","pendente","pausada"].includes(c.status);
+        return `<div class="panel" style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0;margin-bottom:2px">${_escHtml(c.nome||"—")}</div>
+              <div style="font-size:0.7rem;color:#6b7280;font-family:monospace;overflow:hidden;text-overflow:ellipsis">${_escHtml(c.canal_link||"")}</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              ${_campStatusBadge(c.status)}
+              ${podeCancelar ? `<button onclick="cancelarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#f59e0b;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">✕ Cancelar</button>` : ""}
+              <button onclick="deletarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">🗑</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:14px;font-size:0.78rem;color:#c9d1e0;margin-bottom:8px;flex-wrap:wrap">
+            <div>👁 <b>${c.views_entregues||0}</b> / ${c.qtd_views||0}</div>
+            <div>❤️ <b>${c.reacoes_entregues||0}</b> / ${c.qtd_reacoes||0}</div>
+            <div style="color:#6b7280">⏱ ${c.janela_min||0}min</div>
+          </div>
+
+          <div style="background:#0f1117;border:1px solid #1e2235;border-radius:5px;height:6px;overflow:hidden">
+            <div style="background:#22c55e;height:100%;width:${pct}%;transition:width 0.3s"></div>
+          </div>
+          <div style="font-size:0.66rem;color:#6b7280;margin-top:4px">${pct}% concluído</div>
+        </div>`;
+      }).join("");
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  async function cancelarCampanha(id) {
+    if (!confirm("Cancelar campanha? Ações já agendadas serão interrompidas.")) return;
+    try {
+      await fetch(`/booster/campanhas/${id}/cancelar`, {method:"POST"});
+      carregarCampanhas();
+    } catch(e) { alert("✗ " + e.message); }
+  }
+
+  async function deletarCampanha(id) {
+    if (!confirm("Deletar campanha? Histórico de ações também será removido.")) return;
+    try {
+      await fetch(`/booster/campanhas/${id}`, {method:"DELETE"});
+      carregarCampanhas();
+    } catch(e) { alert("✗ " + e.message); }
+  }
+
+  // ── Booster: Status ──
+  async function carregarStatusBooster() {
+    try {
+      const r = await fetch("/booster/status-resumo");
+      const d = await r.json();
+      const cardsEl = document.getElementById("b-status-cards");
+      if (cardsEl) {
+        const c = d.contas || {}, p = d.campanhas || {}, t = d.totais || {};
+        const card = (label, valor, cor) => `
+          <div class="panel" style="text-align:center;padding:14px">
+            <div style="font-size:0.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${label}</div>
+            <div style="font-size:1.6rem;font-weight:700;color:${cor}">${valor}</div>
+          </div>`;
+        cardsEl.innerHTML =
+          card("Contas Ativas", c.ativa||0, "#22c55e") +
+          card("Cooldown", c.cooldown||0, "#f59e0b") +
+          card("Banidas", c.banida||0, "#ef4444") +
+          card("Rodando", p.rodando||0, "#22c55e") +
+          card("Views entregues", t.views_entregues||0, "#4f6ef7") +
+          card("Reações entregues", t.reacoes_entregues||0, "#a855f7");
+      }
+      // Busca últimas ações (todas campanhas)
+      const camps = (await (await fetch("/booster/campanhas?limit=10")).json()).campanhas || [];
+      const acoesEl = document.getElementById("b-status-acoes");
+      if (!camps.length) {
+        acoesEl.innerHTML = '<div class="empty-state" style="padding:24px;text-align:center;color:#6b7280">Nenhuma ação ainda</div>';
+        return;
+      }
+      let allAcoes = [];
+      for (const camp of camps.slice(0, 5)) {
+        const ar = await (await fetch(`/booster/campanhas/${camp.id}/acoes?limit=30`)).json();
+        (ar.acoes || []).forEach(a => { a._campNome = camp.nome; allAcoes.push(a); });
+      }
+      allAcoes.sort((a,b) => (b.executado_em||"").localeCompare(a.executado_em||""));
+      allAcoes = allAcoes.slice(0, 50);
+      if (!allAcoes.length) {
+        acoesEl.innerHTML = '<div class="empty-state" style="padding:24px;text-align:center;color:#6b7280">Nenhuma ação executada ainda</div>';
+        return;
+      }
+      acoesEl.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;min-width:580px">
+        <thead><tr style="background:#0f1117">
+          <th style="padding:8px 10px;color:#9ca3af;text-align:left;font-size:0.68rem;text-transform:uppercase">Quando</th>
+          <th style="padding:8px 10px;color:#9ca3af;text-align:left;font-size:0.68rem;text-transform:uppercase">Tipo</th>
+          <th style="padding:8px 10px;color:#9ca3af;text-align:left;font-size:0.68rem;text-transform:uppercase">Conta</th>
+          <th style="padding:8px 10px;color:#9ca3af;text-align:left;font-size:0.68rem;text-transform:uppercase">Campanha</th>
+          <th style="padding:8px 10px;color:#9ca3af;text-align:left;font-size:0.68rem;text-transform:uppercase">Status</th>
+        </tr></thead>
+        <tbody>
+          ${allAcoes.map(a => {
+            const corStatus = a.status==="sucesso"?"#22c55e":a.status==="flood"?"#f59e0b":"#ef4444";
+            const conta = a.booster_contas || {};
+            const contaNome = conta.first_name || conta.username || conta.phone || ("id "+a.conta_id);
+            const tipoTxt = a.tipo === "view" ? "👁 view" : `${a.emoji||"❤️"} reação`;
+            return `<tr style="border-top:1px solid #1e2235">
+              <td style="padding:7px 10px;color:#9ca3af;font-family:monospace;font-size:0.7rem">${_formatTempo(a.executado_em)}</td>
+              <td style="padding:7px 10px;color:#e2e8f0">${tipoTxt}</td>
+              <td style="padding:7px 10px;color:#c9d1e0;font-size:0.74rem">${_escHtml(contaNome)}</td>
+              <td style="padding:7px 10px;color:#9ca3af;font-size:0.74rem">${_escHtml(a._campNome||"")}</td>
+              <td style="padding:7px 10px;color:${corStatus};font-weight:600">${a.status}${a.erro_msg?` <span style="color:#6b7280;font-weight:400">· ${_escHtml(a.erro_msg.slice(0,40))}</span>`:""}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></div>`;
+    } catch(e) {
+      console.error(e);
+    }
+  }
 
   // ── Configurações Gerais ──
   async function carregarConfigGeral() {

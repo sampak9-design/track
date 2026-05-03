@@ -2615,5 +2615,350 @@ async def booster_testar_conta(conta_id: int):
         return {"ok": False, "motivo": str(e)}
 
 
+# ── Campanhas: parser de URL + helpers Telethon ─────────────────────
+import re, random
+from datetime import datetime, timezone
+
+def _parse_post_url(url: str):
+    """Extrai (peer, msg_id) de uma URL do Telegram. Aceita t.me/canal/123, t.me/c/12345/123, @canal/123."""
+    if not url: return (None, None)
+    url = url.strip()
+    # t.me/c/123456789/123 (canal privado)
+    m = re.match(r"https?://t\.me/c/(\d+)/(\d+)", url)
+    if m:
+        return (int("-100" + m.group(1)), int(m.group(2)))
+    # t.me/username/123
+    m = re.match(r"https?://t\.me/([^/]+)/(\d+)", url)
+    if m:
+        return (m.group(1), int(m.group(2)))
+    # @username/123 ou username/123
+    m = re.match(r"@?([^/\s]+)/(\d+)", url)
+    if m:
+        return (m.group(1), int(m.group(2)))
+    return (None, None)
+
+
+def _parse_proxy(s: str):
+    if not s: return None
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(s.strip())
+        if not p.scheme or not p.hostname: return None
+        if p.username:
+            return (p.scheme, p.hostname, p.port, True, p.username, p.password)
+        return (p.scheme, p.hostname, p.port)
+    except Exception: return None
+
+
+async def _conectar_conta(conta: dict):
+    """Cria TelegramClient autenticado a partir do registro do banco."""
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
+    api_id, api_hash = _booster_api_creds()
+    if not api_id or not api_hash:
+        raise Exception("api_id/api_hash não configurados")
+    sess = _dec(conta.get("session_string") or "")
+    if not sess:
+        raise Exception("session_string vazia/inválida")
+    proxy = _parse_proxy(conta.get("proxy") or "")
+    client = TelegramClient(StringSession(sess), int(api_id), api_hash, proxy=proxy)
+    await client.connect()
+    if not await client.is_user_authorized():
+        raise Exception("session expirada")
+    return client
+
+
+async def _executar_view(conta: dict, peer, msg_id: int):
+    """Executa uma view no post. Retorna (ok, erro_msg)."""
+    from telethon.errors import FloodWaitError, UserDeactivatedBanError, AuthKeyUnregisteredError, ChannelPrivateError
+    client = None
+    try:
+        client = await _conectar_conta(conta)
+        entity = await client.get_entity(peer)
+        # GetMessages incrementa contador de views automaticamente
+        await client.get_messages(entity, ids=[msg_id])
+        return (True, None)
+    except FloodWaitError as e:
+        return (False, f"flood {e.seconds}s")
+    except (UserDeactivatedBanError, AuthKeyUnregisteredError):
+        return (False, "banida")
+    except ChannelPrivateError:
+        return (False, "canal privado/sem acesso")
+    except Exception as e:
+        return (False, str(e)[:200])
+    finally:
+        if client:
+            try: await client.disconnect()
+            except Exception: pass
+
+
+async def _executar_reacao(conta: dict, peer, msg_id: int, emoji: str):
+    """Adiciona reação ao post. Retorna (ok, erro_msg)."""
+    from telethon.errors import FloodWaitError, UserDeactivatedBanError, AuthKeyUnregisteredError, ChannelPrivateError, ReactionInvalidError
+    from telethon.tl.functions.messages import SendReactionRequest
+    from telethon.tl.types import ReactionEmoji
+    client = None
+    try:
+        client = await _conectar_conta(conta)
+        entity = await client.get_entity(peer)
+        await client(SendReactionRequest(
+            peer=entity, msg_id=msg_id,
+            reaction=[ReactionEmoji(emoticon=emoji)],
+        ))
+        return (True, None)
+    except FloodWaitError as e:
+        return (False, f"flood {e.seconds}s")
+    except (UserDeactivatedBanError, AuthKeyUnregisteredError):
+        return (False, "banida")
+    except ChannelPrivateError:
+        return (False, "canal privado/sem acesso")
+    except ReactionInvalidError:
+        return (False, f"emoji '{emoji}' inválido pra esse canal")
+    except Exception as e:
+        return (False, str(e)[:200])
+    finally:
+        if client:
+            try: await client.disconnect()
+            except Exception: pass
+
+
+# ── Worker (executa campanhas em background) ──────────────────────────
+_campanhas_tasks: dict = {}  # camp_id -> set(asyncio.Task)
+_worker_iniciado = False
+
+
+async def _registrar_acao(camp_id: int, conta_id: int, tipo: str, emoji: str, ok: bool, erro: str):
+    """Persiste uma ação executada e atualiza contadores."""
+    try:
+        status = "sucesso" if ok else ("flood" if erro and "flood" in erro else ("banida" if erro == "banida" else "erro"))
+        db.table("booster_acoes").insert({
+            "campanha_id": camp_id, "conta_id": conta_id,
+            "tipo": tipo, "emoji": emoji,
+            "status": status, "erro_msg": erro,
+        }).execute()
+        # Marca conta como banida se for o caso
+        if status == "banida":
+            db.table("booster_contas").update({"status": "banida", "banido_em": datetime.now(timezone.utc).isoformat(), "erro_msg": erro}).eq("id", conta_id).execute()
+        elif status == "flood" and erro:
+            mat = re.search(r"flood (\d+)", erro)
+            if mat:
+                segs = int(mat.group(1))
+                from datetime import timedelta
+                ate = datetime.now(timezone.utc) + timedelta(seconds=segs)
+                db.table("booster_contas").update({"status": "cooldown", "cooldown_ate": ate.isoformat()}).eq("id", conta_id).execute()
+        # Incrementa contadores se sucesso
+        if ok:
+            r = db.table("booster_contas").select("views_hoje,reacoes_hoje,total_views,total_reacoes").eq("id", conta_id).execute()
+            if r.data:
+                d = r.data[0]
+                upd = {"ultima_acao": datetime.now(timezone.utc).isoformat()}
+                if tipo == "view":
+                    upd["views_hoje"]   = (d.get("views_hoje") or 0) + 1
+                    upd["total_views"]  = (d.get("total_views") or 0) + 1
+                else:
+                    upd["reacoes_hoje"]  = (d.get("reacoes_hoje") or 0) + 1
+                    upd["total_reacoes"] = (d.get("total_reacoes") or 0) + 1
+                db.table("booster_contas").update(upd).eq("id", conta_id).execute()
+            r2 = db.table("booster_campanhas").select("views_entregues,reacoes_entregues").eq("id", camp_id).execute()
+            if r2.data:
+                d2 = r2.data[0]
+                col = "views_entregues" if tipo == "view" else "reacoes_entregues"
+                db.table("booster_campanhas").update({col: (d2.get(col) or 0) + 1}).eq("id", camp_id).execute()
+    except Exception as e:
+        print(f"[BOOSTER registrar_acao ERRO] {e}")
+
+
+async def _executar_acao_agendada(camp_id: int, conta: dict, acao: dict, peer, msg_id: int):
+    """Espera o delay programado e executa a ação."""
+    try:
+        await asyncio.sleep(acao["delay"])
+        if acao["tipo"] == "view":
+            ok, erro = await _executar_view(conta, peer, msg_id)
+            await _registrar_acao(camp_id, conta["id"], "view", "", ok, erro)
+        else:
+            ok, erro = await _executar_reacao(conta, peer, msg_id, acao["emoji"])
+            await _registrar_acao(camp_id, conta["id"], "reacao", acao["emoji"], ok, erro)
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        print(f"[BOOSTER acao agendada ERRO] {e}")
+
+
+async def _executar_campanha(camp: dict):
+    """Distribui as ações da campanha pelas contas elegíveis e roda em paralelo."""
+    camp_id = camp["id"]
+    janela_seg = (camp.get("janela_min") or 30) * 60
+    delay_min = camp.get("delay_min_seg") or 1
+    delay_max = camp.get("delay_max_seg") or 30
+
+    peer, msg_id = _parse_post_url(camp.get("canal_link") or "")
+    if not msg_id:
+        db.table("booster_campanhas").update({"status": "erro", "erro_msg": "URL do post inválida"}).eq("id", camp_id).execute()
+        return
+
+    contas = (db.table("booster_contas").select("*").eq("status","ativa").execute().data) or []
+    if not contas:
+        db.table("booster_campanhas").update({"status": "erro", "erro_msg": "nenhuma conta ativa"}).eq("id", camp_id).execute()
+        return
+
+    qtd_views = camp.get("qtd_views") or 0
+    qtd_reacoes = camp.get("qtd_reacoes") or 0
+    emojis = camp.get("reacoes_emojis") or ["👍"]
+
+    # Cria lista de ações
+    acoes = []
+    for _ in range(qtd_views):
+        acoes.append({"tipo": "view"})
+    for _ in range(qtd_reacoes):
+        acoes.append({"tipo": "reacao", "emoji": random.choice(emojis)})
+    random.shuffle(acoes)
+
+    # Distribui no tempo (cumulativo)
+    tempo = 0.0
+    for a in acoes:
+        d = random.uniform(delay_min, delay_max)
+        tempo += d
+        if tempo > janela_seg:
+            tempo = random.uniform(0, janela_seg)
+        a["delay"] = tempo
+
+    # Spawn tasks
+    db.table("booster_campanhas").update({"status": "rodando", "iniciado_em": datetime.now(timezone.utc).isoformat()}).eq("id", camp_id).execute()
+    tasks = set()
+    _campanhas_tasks[camp_id] = tasks
+    for a in acoes:
+        conta = random.choice(contas)
+        t = asyncio.create_task(_executar_acao_agendada(camp_id, conta, a, peer, msg_id))
+        tasks.add(t)
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+    # Marca concluída se ainda estiver rodando
+    r = db.table("booster_campanhas").select("status").eq("id", camp_id).execute()
+    if r.data and r.data[0]["status"] == "rodando":
+        db.table("booster_campanhas").update({"status": "concluida", "finalizado_em": datetime.now(timezone.utc).isoformat()}).eq("id", camp_id).execute()
+    _campanhas_tasks.pop(camp_id, None)
+
+
+async def _booster_worker_loop():
+    """Loop infinito: pega campanhas pendentes e dispara execução."""
+    while True:
+        try:
+            r = db.table("booster_campanhas").select("*").eq("status", "pendente").execute()
+            for camp in (r.data or []):
+                if camp["id"] not in _campanhas_tasks:
+                    asyncio.create_task(_executar_campanha(camp))
+        except Exception as e:
+            print(f"[BOOSTER WORKER] erro: {e}")
+        await asyncio.sleep(5)
+
+
+@app.on_event("startup")
+async def _startup_booster():
+    global _worker_iniciado
+    if not _worker_iniciado:
+        asyncio.create_task(_booster_worker_loop())
+        _worker_iniciado = True
+        print("[BOOSTER] worker iniciado")
+
+
+# ── Endpoints de campanhas ──────────────────────────────────────────
+@app.get("/booster/campanhas")
+def booster_listar_campanhas(limit: int = 100):
+    try:
+        rows = (db.table("booster_campanhas").select("*").order("criado_em", desc=True).limit(limit).execute().data) or []
+        return {"campanhas": rows}
+    except Exception as e:
+        return {"campanhas": [], "erro": str(e)}
+
+
+@app.post("/booster/campanhas")
+async def booster_criar_campanha(request: Request):
+    body = await request.json()
+    canal_link = (body.get("canal_link") or "").strip()
+    if not canal_link:
+        raise HTTPException(status_code=400, detail="canal_link obrigatório (link completo do post)")
+    peer, msg_id = _parse_post_url(canal_link)
+    if not msg_id:
+        raise HTTPException(status_code=400, detail="URL inválida. Use o link completo do post (ex: https://t.me/canal/123)")
+    qtd_views   = max(0, int(body.get("qtd_views")   or 0))
+    qtd_reacoes = max(0, int(body.get("qtd_reacoes") or 0))
+    if qtd_views == 0 and qtd_reacoes == 0:
+        raise HTTPException(status_code=400, detail="Defina pelo menos qtd_views ou qtd_reacoes")
+    new_row = {
+        "nome":             body.get("nome") or f"Campanha {datetime.now().strftime('%d/%m %H:%M')}",
+        "canal_link":       canal_link,
+        "msg_id":           msg_id,
+        "qtd_views":        qtd_views,
+        "qtd_reacoes":      qtd_reacoes,
+        "reacoes_emojis":   body.get("reacoes_emojis") or ["👍","❤️","🔥"],
+        "delay_min_seg":    max(1, int(body.get("delay_min_seg") or 2)),
+        "delay_max_seg":    max(2, int(body.get("delay_max_seg") or 30)),
+        "janela_min":       max(1, int(body.get("janela_min") or 30)),
+        "status":           "pendente" if body.get("iniciar_agora", True) else "pausada",
+    }
+    ins = db.table("booster_campanhas").insert(new_row).execute()
+    return {"ok": True, "campanha": (ins.data[0] if ins.data else new_row)}
+
+
+@app.post("/booster/campanhas/{camp_id}/iniciar")
+def booster_iniciar_campanha(camp_id: int):
+    db.table("booster_campanhas").update({"status": "pendente"}).eq("id", camp_id).execute()
+    return {"ok": True}
+
+
+@app.post("/booster/campanhas/{camp_id}/cancelar")
+async def booster_cancelar_campanha(camp_id: int):
+    tasks = _campanhas_tasks.get(camp_id, set())
+    for t in list(tasks):
+        try: t.cancel()
+        except Exception: pass
+    _campanhas_tasks.pop(camp_id, None)
+    db.table("booster_campanhas").update({"status": "cancelada", "finalizado_em": datetime.now(timezone.utc).isoformat()}).eq("id", camp_id).execute()
+    return {"ok": True}
+
+
+@app.delete("/booster/campanhas/{camp_id}")
+async def booster_deletar_campanha(camp_id: int):
+    tasks = _campanhas_tasks.get(camp_id, set())
+    for t in list(tasks):
+        try: t.cancel()
+        except Exception: pass
+    _campanhas_tasks.pop(camp_id, None)
+    db.table("booster_campanhas").delete().eq("id", camp_id).execute()
+    return {"ok": True}
+
+
+@app.get("/booster/campanhas/{camp_id}/acoes")
+def booster_acoes_campanha(camp_id: int, limit: int = 200):
+    try:
+        rows = (db.table("booster_acoes").select("*,booster_contas(phone,first_name,username)")
+                .eq("campanha_id", camp_id)
+                .order("executado_em", desc=True).limit(limit).execute().data) or []
+        return {"acoes": rows}
+    except Exception as e:
+        return {"acoes": [], "erro": str(e)}
+
+
+@app.get("/booster/status-resumo")
+def booster_status_resumo():
+    """Resumo geral pra aba Status."""
+    try:
+        contas = db.table("booster_contas").select("status").execute().data or []
+        camps  = db.table("booster_campanhas").select("status,views_entregues,reacoes_entregues").execute().data or []
+        from collections import Counter
+        contas_por_status = Counter(c.get("status") or "?" for c in contas)
+        camps_por_status  = Counter(c.get("status") or "?" for c in camps)
+        return {
+            "contas": dict(contas_por_status),
+            "campanhas": dict(camps_por_status),
+            "totais": {
+                "views_entregues":   sum((c.get("views_entregues")   or 0) for c in camps),
+                "reacoes_entregues": sum((c.get("reacoes_entregues") or 0) for c in camps),
+            },
+        }
+    except Exception as e:
+        return {"erro": str(e)}
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
