@@ -2387,6 +2387,197 @@ def booster_deletar_conta(conta_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Login via SMS (cadastro de novo número direto pelo painel) ────────
+# Cache em memória com TelegramClient ainda conectado, expira em 10min.
+_login_pending: dict = {}  # login_id -> {client, phone, criado_em}
+
+def _gen_login_id() -> str:
+    import secrets
+    return secrets.token_urlsafe(12)
+
+async def _cleanup_logins_antigos():
+    """Remove logins pendentes com mais de 10min."""
+    agora = time.time()
+    expirados = [lid for lid, d in _login_pending.items() if agora - d["criado_em"] > 600]
+    for lid in expirados:
+        try:
+            cli = _login_pending[lid].get("client")
+            if cli: await cli.disconnect()
+        except Exception: pass
+        _login_pending.pop(lid, None)
+
+
+@app.post("/booster/login/iniciar")
+async def booster_login_iniciar(request: Request):
+    """Step 1: recebe phone + proxy, conecta Telethon, manda SMS, retorna login_id."""
+    await _cleanup_logins_antigos()
+    body = await request.json()
+    phone = (body.get("phone") or "").strip()
+    proxy_str = (body.get("proxy") or "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="phone é obrigatório")
+    api_id, api_hash = _booster_api_creds()
+    if not api_id or not api_hash:
+        raise HTTPException(status_code=400, detail="Configure api_id e api_hash em Booster → Config primeiro")
+    try:
+        from telethon import TelegramClient
+        from telethon.sessions import StringSession
+        # Parse proxy se fornecido
+        proxy = None
+        if proxy_str:
+            try:
+                # formato esperado: socks5://user:pass@host:porta
+                from urllib.parse import urlparse
+                p = urlparse(proxy_str)
+                proxy_type = p.scheme  # socks5, http, etc
+                user = p.username; pw = p.password
+                host = p.hostname; port = p.port
+                proxy = (proxy_type, host, port, True, user, pw) if user else (proxy_type, host, port)
+            except Exception:
+                pass
+        client = TelegramClient(StringSession(), int(api_id), api_hash, proxy=proxy)
+        await client.connect()
+        sent = await client.send_code_request(phone)
+        login_id = _gen_login_id()
+        _login_pending[login_id] = {
+            "client": client,
+            "phone": phone,
+            "phone_code_hash": sent.phone_code_hash,
+            "proxy": proxy_str,
+            "criado_em": time.time(),
+        }
+        return {"ok": True, "login_id": login_id}
+    except Exception as e:
+        print(f"[BOOSTER login iniciar ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/booster/login/confirmar")
+async def booster_login_confirmar(request: Request):
+    """Step 2: recebe código de 5 dígitos. Se conta tem 2FA, retorna needs_password=true."""
+    body = await request.json()
+    login_id = body.get("login_id")
+    codigo = (body.get("codigo") or "").strip()
+    auto_2fa = bool(body.get("auto_2fa"))
+    if not login_id or not codigo:
+        raise HTTPException(status_code=400, detail="login_id e codigo obrigatórios")
+    sess = _login_pending.get(login_id)
+    if not sess:
+        raise HTTPException(status_code=400, detail="login_id inválido ou expirado (refaça)")
+    client = sess["client"]
+    phone = sess["phone"]
+    try:
+        from telethon.errors import SessionPasswordNeededError, PhoneCodeInvalidError, PhoneCodeExpiredError
+        try:
+            await client.sign_in(phone=phone, code=codigo, phone_code_hash=sess["phone_code_hash"])
+        except SessionPasswordNeededError:
+            return {"ok": True, "needs_password": True}
+        except PhoneCodeInvalidError:
+            raise HTTPException(status_code=400, detail="Código inválido")
+        except PhoneCodeExpiredError:
+            raise HTTPException(status_code=400, detail="Código expirou. Reenvie um novo.")
+        # Se chegou aqui, autenticou sem 2FA
+        return await _finalizar_login(login_id, auto_2fa=auto_2fa)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[BOOSTER login confirmar ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/booster/login/confirmar-2fa")
+async def booster_login_2fa(request: Request):
+    """Step 3 (opcional): senha 2FA."""
+    body = await request.json()
+    login_id = body.get("login_id")
+    senha = body.get("senha") or ""
+    auto_2fa = bool(body.get("auto_2fa"))
+    if not login_id or not senha:
+        raise HTTPException(status_code=400, detail="login_id e senha obrigatórios")
+    sess = _login_pending.get(login_id)
+    if not sess:
+        raise HTTPException(status_code=400, detail="login_id inválido ou expirado")
+    client = sess["client"]
+    try:
+        from telethon.errors import PasswordHashInvalidError
+        try:
+            await client.sign_in(password=senha)
+        except PasswordHashInvalidError:
+            raise HTTPException(status_code=400, detail="Senha 2FA incorreta")
+        return await _finalizar_login(login_id, auto_2fa=auto_2fa, senha_2fa_existente=senha)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[BOOSTER login 2FA ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/booster/login/cancelar")
+async def booster_login_cancelar(request: Request):
+    body = await request.json()
+    login_id = body.get("login_id")
+    sess = _login_pending.pop(login_id, None)
+    if sess:
+        try: await sess["client"].disconnect()
+        except Exception: pass
+    return {"ok": True}
+
+
+async def _finalizar_login(login_id: str, auto_2fa: bool = False, senha_2fa_existente: str = ""):
+    """Pega o cliente autenticado, salva conta no banco, opcionalmente ativa 2FA, libera cache."""
+    from telethon.sessions import StringSession
+    sess = _login_pending.get(login_id)
+    if not sess:
+        raise HTTPException(status_code=400, detail="login_id inválido")
+    client = sess["client"]
+    phone = sess["phone"]
+    proxy_str = sess.get("proxy", "")
+
+    me = await client.get_me()
+    senha_2fa_nova = ""
+    has_2fa = bool(senha_2fa_existente)
+
+    # Se pediu auto-2FA E ainda não tem 2FA, gera senha forte e configura
+    if auto_2fa and not has_2fa:
+        try:
+            import secrets, string
+            senha_2fa_nova = "".join(secrets.choice(string.ascii_letters + string.digits + "!@#$%") for _ in range(16))
+            await client.edit_2fa(new_password=senha_2fa_nova, hint="Apollo Booster")
+            has_2fa = True
+            print(f"[BOOSTER 2FA] ativada pra {phone}")
+        except Exception as e:
+            print(f"[BOOSTER 2FA ERRO] {e}")
+            senha_2fa_nova = ""
+
+    str_sess = StringSession.save(client.session)
+    await client.disconnect()
+    _login_pending.pop(login_id, None)
+
+    new_row = {
+        "phone":          phone,
+        "username":       getattr(me, "username", None),
+        "first_name":     getattr(me, "first_name", None),
+        "user_id_tg":     str(getattr(me, "id", "")),
+        "session_string": _enc(str_sess),
+        "proxy":          proxy_str or None,
+        "has_2fa":        has_2fa,
+        "senha_2fa_enc":  _enc(senha_2fa_nova or senha_2fa_existente) if (senha_2fa_nova or senha_2fa_existente) else None,
+        "status":         "ativa",
+    }
+    db.table("booster_contas").insert(new_row).execute()
+    return {
+        "ok": True,
+        "conta": {
+            "phone":      phone,
+            "username":   new_row["username"],
+            "first_name": new_row["first_name"],
+            "user_id_tg": new_row["user_id_tg"],
+            "has_2fa":    has_2fa,
+        },
+        "senha_2fa_gerada": senha_2fa_nova or "",  # só retorna se foi gerada agora (mostra 1x na UI)
+    }
+
+
 @app.post("/booster/contas/{conta_id}/testar")
 async def booster_testar_conta(conta_id: int):
     """Conecta a conta e chama get_me pra validar que está ativa."""

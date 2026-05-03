@@ -1818,8 +1818,8 @@
               style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
               📂 Upload .session
             </button>
-            <button onclick="alert('Login via SMS chega na próxima atualização. Por enquanto use upload de .session.')"
-              style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+            <button onclick="abrirModalLogin()"
+              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
               📱 Login via SMS
             </button>
           </div>
@@ -1882,6 +1882,91 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal Login via SMS (multi-step) -->
+    <div id="modal-login-sms" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+      <div style="background:#1a1d2e;border:1px solid #2d3148;border-radius:10px;padding:22px;max-width:480px;width:92%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div id="login-titulo" style="font-size:1rem;font-weight:700;color:#e2e8f0">Login via SMS</div>
+          <button onclick="fecharModalLogin()" style="background:none;border:none;color:#6b7280;font-size:1.4rem;cursor:pointer;line-height:1">×</button>
+        </div>
+
+        <!-- Step 1: telefone -->
+        <div id="login-step-1">
+          <p style="font-size:0.8rem;color:#9ca3af;line-height:1.5;margin-bottom:14px">
+            Digite o telefone com DDI. O Telegram vai mandar um código de 5 dígitos no app dessa conta.
+          </p>
+          <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Telefone</label>
+          <input type="tel" id="login-phone" placeholder="+5511999999999"
+            style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:10px 12px;border-radius:7px;font-size:0.95rem;font-family:monospace;outline:none;margin-bottom:12px">
+
+          <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Proxy (opcional)</label>
+          <input type="text" id="login-proxy" placeholder="socks5://user:pass@host:1080"
+            style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.78rem;font-family:inherit;outline:none;margin-bottom:14px">
+
+          <div style="background:#0f1d34;border:1px solid #1e3a5f;border-radius:7px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="login-auto-2fa" checked style="width:16px;height:16px;cursor:pointer">
+            <label for="login-auto-2fa" style="font-size:0.78rem;color:#a8c5ed;cursor:pointer;flex:1">
+              🔒 <b style="color:#e2e8f0">Ativar 2FA automaticamente</b> — gera senha forte e protege a conta de roubo
+            </label>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="fecharModalLogin()"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+            <button onclick="loginIniciar()" id="login-btn-1"
+              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Enviar código</button>
+          </div>
+        </div>
+
+        <!-- Step 2: código -->
+        <div id="login-step-2" style="display:none">
+          <p style="font-size:0.8rem;color:#9ca3af;line-height:1.5;margin-bottom:14px">
+            ✉️ Código enviado pra <b id="login-phone-disp" style="color:#e2e8f0"></b>.
+            Cole abaixo (chega no app Telegram, não por SMS):
+          </p>
+          <input type="text" id="login-codigo" maxlength="6" placeholder="12345"
+            style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:14px 12px;border-radius:7px;font-size:1.4rem;font-family:monospace;outline:none;margin-bottom:14px;text-align:center;letter-spacing:0.4em">
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="loginCancelar()"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+            <button onclick="loginConfirmar()" id="login-btn-2"
+              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Confirmar</button>
+          </div>
+        </div>
+
+        <!-- Step 3: 2FA -->
+        <div id="login-step-3" style="display:none">
+          <p style="font-size:0.8rem;color:#9ca3af;line-height:1.5;margin-bottom:14px">
+            🔐 Essa conta tem verificação em duas etapas. Digite a senha da nuvem:
+          </p>
+          <input type="password" id="login-senha-2fa" placeholder="••••••••••••"
+            style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:10px 12px;border-radius:7px;font-size:0.95rem;font-family:inherit;outline:none;margin-bottom:14px">
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="loginCancelar()"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+            <button onclick="loginConfirmar2fa()" id="login-btn-3"
+              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Entrar</button>
+          </div>
+        </div>
+
+        <!-- Step 4: sucesso -->
+        <div id="login-step-4" style="display:none;text-align:center">
+          <div style="font-size:3rem;margin-bottom:10px">✅</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">Conta adicionada!</div>
+          <div id="login-resumo" style="font-size:0.85rem;color:#9ca3af;line-height:1.6;margin-bottom:16px"></div>
+          <div id="login-senha-mostrar" style="display:none;background:#2a1810;border:1px solid #5f3a1e;border-radius:7px;padding:12px;margin-bottom:14px;text-align:left">
+            <div style="font-size:0.74rem;color:#edc5a8;margin-bottom:6px;font-weight:600">⚠️ ANOTE A SENHA 2FA AGORA — só aparece 1 vez</div>
+            <div style="background:#0f1117;padding:8px 10px;border-radius:5px;font-family:monospace;font-size:0.95rem;color:#22c55e;word-break:break-all" id="login-senha-text"></div>
+            <button onclick="copiarSenha2fa()" style="margin-top:8px;background:#0f1117;border:1px solid #1e2235;color:#4f6ef7;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">📋 Copiar</button>
+          </div>
+          <button onclick="fecharModalLogin()"
+            style="background:#22c55e;color:white;border:none;padding:10px 24px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Concluir</button>
+        </div>
+
+        <div id="login-erro" style="display:none;color:#ef4444;font-size:0.78rem;margin-top:10px;background:#2a0d0d;border:1px solid #5f1e1e;padding:8px 12px;border-radius:6px"></div>
       </div>
     </div>
 
@@ -4183,7 +4268,6 @@
     btn.disabled = true;
     btn.textContent = "Validando...";
     try {
-      // Lê o arquivo como base64
       const buf = await file.arrayBuffer();
       const bytes = new Uint8Array(buf);
       let bin = "";
@@ -4206,6 +4290,162 @@
       btn.textContent = "Validar e adicionar";
     }
   }
+
+  // ── Login via SMS (multi-step) ──
+  let _loginId = null;
+
+  function abrirModalLogin() {
+    _loginId = null;
+    _loginStep(1);
+    document.getElementById("login-phone").value = "";
+    document.getElementById("login-proxy").value = "";
+    document.getElementById("login-codigo").value = "";
+    document.getElementById("login-senha-2fa").value = "";
+    document.getElementById("login-erro").style.display = "none";
+    document.getElementById("modal-login-sms").style.display = "flex";
+    setTimeout(() => document.getElementById("login-phone").focus(), 100);
+  }
+
+  function fecharModalLogin() {
+    document.getElementById("modal-login-sms").style.display = "none";
+    if (_loginId) loginCancelar(true);
+    _loginId = null;
+  }
+
+  function _loginStep(n) {
+    [1,2,3,4].forEach(i => {
+      const el = document.getElementById("login-step-" + i);
+      if (el) el.style.display = (i === n) ? "" : "none";
+    });
+    document.getElementById("login-erro").style.display = "none";
+  }
+
+  function _loginErro(msg) {
+    const el = document.getElementById("login-erro");
+    el.textContent = "✗ " + msg;
+    el.style.display = "block";
+  }
+
+  async function loginIniciar() {
+    const phone = document.getElementById("login-phone").value.trim();
+    const proxy = document.getElementById("login-proxy").value.trim();
+    if (!phone) { _loginErro("Digite o telefone"); return; }
+    if (!phone.startsWith("+")) { _loginErro("Telefone precisa começar com + e DDI (ex: +5511...)"); return; }
+    const btn = document.getElementById("login-btn-1");
+    btn.disabled = true; btn.textContent = "Enviando...";
+    try {
+      const r = await fetch("/booster/login/iniciar", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({phone, proxy}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      _loginId = d.login_id;
+      document.getElementById("login-phone-disp").textContent = phone;
+      _loginStep(2);
+      setTimeout(() => document.getElementById("login-codigo").focus(), 100);
+    } catch(e) {
+      _loginErro(e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Enviar código";
+    }
+  }
+
+  async function loginConfirmar() {
+    const codigo = document.getElementById("login-codigo").value.trim();
+    const auto_2fa = document.getElementById("login-auto-2fa").checked;
+    if (!codigo) { _loginErro("Digite o código"); return; }
+    const btn = document.getElementById("login-btn-2");
+    btn.disabled = true; btn.textContent = "Validando...";
+    try {
+      const r = await fetch("/booster/login/confirmar", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({login_id: _loginId, codigo, auto_2fa}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      if (d.needs_password) {
+        _loginStep(3);
+        setTimeout(() => document.getElementById("login-senha-2fa").focus(), 100);
+      } else {
+        _exibirSucesso(d);
+      }
+    } catch(e) {
+      _loginErro(e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Confirmar";
+    }
+  }
+
+  async function loginConfirmar2fa() {
+    const senha = document.getElementById("login-senha-2fa").value;
+    const auto_2fa = document.getElementById("login-auto-2fa").checked;
+    if (!senha) { _loginErro("Digite a senha 2FA"); return; }
+    const btn = document.getElementById("login-btn-3");
+    btn.disabled = true; btn.textContent = "Validando...";
+    try {
+      const r = await fetch("/booster/login/confirmar-2fa", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({login_id: _loginId, senha, auto_2fa}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      _exibirSucesso(d);
+    } catch(e) {
+      _loginErro(e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Entrar";
+    }
+  }
+
+  async function loginCancelar(silent) {
+    if (!_loginId) { if (!silent) fecharModalLogin(); return; }
+    const id = _loginId;
+    _loginId = null;
+    try {
+      await fetch("/booster/login/cancelar", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({login_id: id}),
+      });
+    } catch(e) {}
+    if (!silent) fecharModalLogin();
+  }
+
+  function _exibirSucesso(d) {
+    _loginId = null;
+    const c = d.conta || {};
+    const nome = (c.first_name || "—") + (c.username ? " (@" + c.username + ")" : "");
+    let resumo = `<b style="color:#e2e8f0">${nome}</b><br>📱 ${c.phone || ""}<br>🆔 ${c.user_id_tg || ""}`;
+    if (c.has_2fa) resumo += "<br>🔒 2FA ativa";
+    document.getElementById("login-resumo").innerHTML = resumo;
+    if (d.senha_2fa_gerada) {
+      document.getElementById("login-senha-text").textContent = d.senha_2fa_gerada;
+      document.getElementById("login-senha-mostrar").style.display = "block";
+    } else {
+      document.getElementById("login-senha-mostrar").style.display = "none";
+    }
+    _loginStep(4);
+    carregarBoosterContas();
+  }
+
+  function copiarSenha2fa() {
+    const t = document.getElementById("login-senha-text").textContent;
+    navigator.clipboard.writeText(t).catch(()=>{});
+    alert("✓ Senha copiada");
+  }
+
+  // Enter avança steps
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    if (document.getElementById("modal-login-sms")?.style.display === "flex") {
+      const s2 = document.getElementById("login-step-2");
+      const s3 = document.getElementById("login-step-3");
+      const s1 = document.getElementById("login-step-1");
+      if (s1 && s1.style.display !== "none") loginIniciar();
+      else if (s2 && s2.style.display !== "none") loginConfirmar();
+      else if (s3 && s3.style.display !== "none") loginConfirmar2fa();
+    }
+  });
 
   // ── Configurações Gerais ──
   async function carregarConfigGeral() {
