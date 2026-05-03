@@ -916,6 +916,8 @@ async def telegram_webhook(request: Request):
                     tipo=bv.get("tipo", "texto"),
                     midia_url=bv.get("midia_url", ""),
                     botoes=botoes_render,
+                    canal_id=canal_id_interno, evento="welcome",
+                    user_obj=from_user,
                 ))
                 print(f"[BOAS-VINDAS] disparado pra {first_name_req} (chat {user_chat_id_req}) tipo={bv.get('tipo','texto')}")
 
@@ -971,6 +973,35 @@ async def telegram_webhook(request: Request):
                 except Exception as e:
                     print(f"[CANAL AUTO ERRO] {e}")
 
+        return {"ok": True}
+
+    # ── Mensagem privada recebida (resposta do usuário no DM do bot) ──
+    msg_in = update.get("message")
+    if msg_in and msg_in.get("chat", {}).get("type") == "private":
+        from_u = msg_in.get("from", {})
+        # Detecta tipo + conteúdo
+        tipo_in = "texto"
+        midia_in = ""
+        if msg_in.get("photo"):
+            tipo_in = "foto"
+        elif msg_in.get("video"):
+            tipo_in = "video"
+        elif msg_in.get("animation"):
+            tipo_in = "animacao"
+        elif msg_in.get("voice") or msg_in.get("audio"):
+            tipo_in = "audio"
+        elif msg_in.get("document"):
+            tipo_in = "documento"
+        conteudo_in = msg_in.get("text") or msg_in.get("caption") or ""
+        # Não persiste comandos como /start (apenas eventos relevantes pra inbox)
+        if conteudo_in.strip() != "/start":
+            salvar_msg_bot(
+                direcao="in", user=from_u,
+                evento="user_reply", tipo=tipo_in,
+                conteudo=conteudo_in, midia_url=midia_in,
+                status="recebida",
+            )
+            print(f"[INBOX IN] @{from_u.get('username') or from_u.get('id')}: {conteudo_in[:60]}")
         return {"ok": True}
 
     # ── Usuário entrou/saiu do canal ──
@@ -1046,6 +1077,8 @@ async def telegram_webhook(request: Request):
                         tipo=saida.get("tipo", "texto"),
                         midia_url=saida.get("midia_url", ""),
                         botoes=botoes_render,
+                        canal_id=canal_id_interno, evento="leave",
+                        user_obj=user,
                     ))
                     print(f"[SAIDA DM] disparado pra {first_name} (user {user_id})")
 
@@ -1092,7 +1125,7 @@ async def salvar_config_telegram(request: Request):
         async with httpx.AsyncClient(timeout=15) as client:
             wh_resp = await client.post(
                 f"https://api.telegram.org/bot{token}/setWebhook",
-                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
+                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
                       "secret_token": secret_token}
             )
             print(f"[CONFIG] Webhook setup: {wh_resp.json()}")
@@ -1348,6 +1381,33 @@ def _bv_saida_cfg(canal_id: int) -> dict:
     }
 
 
+def salvar_msg_bot(direcao: str, user: dict, canal_id: int = None, canal_nome: str = "",
+                    evento: str = "", tipo: str = "texto", conteudo: str = "",
+                    midia_url: str = "", botoes: list = None,
+                    status: str = "", response_code: int = 0, response_body: str = ""):
+    """Persiste uma mensagem trocada com o usuário (entrada ou saída) na tabela bot_messages."""
+    try:
+        db.table("bot_messages").insert({
+            "user_id":       str(user.get("id") or user.get("user_id") or ""),
+            "username":      user.get("username"),
+            "first_name":    user.get("first_name"),
+            "last_name":     user.get("last_name"),
+            "canal_id":      canal_id,
+            "canal_nome":    canal_nome,
+            "direcao":       direcao,
+            "evento":        evento,
+            "tipo":          tipo or "texto",
+            "conteudo":      conteudo or "",
+            "midia_url":     midia_url or "",
+            "botoes":        botoes or [],
+            "status":        status,
+            "response_code": response_code,
+            "response_body": (response_body or "")[:500],
+        }).execute()
+    except Exception as e:
+        print(f"[BOT_MSG ERRO] {e}")
+
+
 def _build_inline_keyboard(botoes: list) -> dict:
     """Converte lista [{texto,url}, ...] em reply_markup do Telegram."""
     if not botoes:
@@ -1378,10 +1438,13 @@ def _render_msg(template: str, user: dict) -> str:
 
 async def _enviar_dm_boas_vindas(bot_token: str, user_chat_id, mensagem: str, parse_mode: str = "HTML",
                                   canal_nome: str = "", user_id_log: str = "",
-                                  tipo: str = "texto", midia_url: str = "", botoes: list = None):
+                                  tipo: str = "texto", midia_url: str = "", botoes: list = None,
+                                  canal_id: int = None, evento: str = "welcome",
+                                  user_obj: dict = None):
     """Envia DM de boas-vindas via user_chat_id (janela de 5min do join_request).
 
     Suporta texto, foto, vídeo, animação (GIF) e botões inline com URL.
+    Persiste a mensagem na tabela bot_messages pra alimentar o Inbox.
     """
     tipo = (tipo or "texto").lower()
     midia_url = (midia_url or "").strip()
@@ -1420,12 +1483,28 @@ async def _enviar_dm_boas_vindas(bot_token: str, user_chat_id, mensagem: str, pa
             "telegram", "WelcomeDM", status, r.status_code, json.dumps(d, ensure_ascii=False)[:500],
             telegram_user_id=str(user_id_log), canal_nome=canal_nome, direcao="enviado",
         )
+        # Persiste mensagem no Inbox
+        salvar_msg_bot(
+            direcao="out",
+            user=(user_obj or {"id": user_id_log}),
+            canal_id=canal_id, canal_nome=canal_nome, evento=evento,
+            tipo=tipo, conteudo=mensagem, midia_url=midia_url, botoes=botoes or [],
+            status=status, response_code=r.status_code,
+            response_body=json.dumps(d, ensure_ascii=False)[:500],
+        )
         print(f"[BOAS-VINDAS {endpoint}] user={user_id_log} ok={ok} resp={d}")
         return ok
     except Exception as e:
         salvar_log_conversao(
             "telegram", "WelcomeDM", "erro", 0, str(e)[:500],
             telegram_user_id=str(user_id_log), canal_nome=canal_nome, direcao="enviado",
+        )
+        salvar_msg_bot(
+            direcao="out",
+            user=(user_obj or {"id": user_id_log}),
+            canal_id=canal_id, canal_nome=canal_nome, evento=evento,
+            tipo=tipo, conteudo=mensagem, midia_url=midia_url, botoes=botoes or [],
+            status="erro", response_code=0, response_body=str(e)[:500],
         )
         print(f"[BOAS-VINDAS DM ERRO] {e}")
         return False
@@ -1496,7 +1575,7 @@ async def testar_boas_vindas(canal_id: int, request: Request):
         raise HTTPException(status_code=400, detail="Bot não configurado")
     canal = db.table("telegram_canais").select("nome").eq("id", canal_id).execute()
     canal_nome = canal.data[0]["nome"] if canal.data else ""
-    fake_user = {"first_name": "Teste", "username": "teste", "last_name": ""}
+    fake_user = {"first_name": "Teste", "username": "teste", "last_name": "", "id": user_id}
     msg = _render_msg(bv.get("mensagem", ""), fake_user)
     botoes_render = [
         {"texto": _render_msg(b.get("texto",""), fake_user), "url": b.get("url","")}
@@ -1505,6 +1584,7 @@ async def testar_boas_vindas(canal_id: int, request: Request):
     ok = await _enviar_dm_boas_vindas(
         bot_token, user_id, msg, bv.get("parse_mode","HTML"), canal_nome, str(user_id),
         tipo=bv.get("tipo","texto"), midia_url=bv.get("midia_url",""), botoes=botoes_render,
+        canal_id=canal_id, evento="welcome_test", user_obj=fake_user,
     )
     return {"ok": ok}
 
@@ -1557,7 +1637,7 @@ async def testar_saida(canal_id: int, request: Request):
         raise HTTPException(status_code=400, detail="Bot não configurado")
     canal = db.table("telegram_canais").select("nome").eq("id", canal_id).execute()
     canal_nome = canal.data[0]["nome"] if canal.data else ""
-    fake_user = {"first_name": "Teste", "username": "teste", "last_name": ""}
+    fake_user = {"first_name": "Teste", "username": "teste", "last_name": "", "id": user_id}
     msg = _render_msg(saida.get("mensagem", ""), fake_user)
     botoes_render = [
         {"texto": _render_msg(b.get("texto",""), fake_user), "url": b.get("url","")}
@@ -1566,6 +1646,7 @@ async def testar_saida(canal_id: int, request: Request):
     ok = await _enviar_dm_boas_vindas(
         bot_token, user_id, msg, saida.get("parse_mode","HTML"), canal_nome, str(user_id),
         tipo=saida.get("tipo","texto"), midia_url=saida.get("midia_url",""), botoes=botoes_render,
+        canal_id=canal_id, evento="leave_test", user_obj=fake_user,
     )
     return {"ok": ok}
 
@@ -1631,6 +1712,94 @@ async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int
             telegram_user_id=str(user_id), canal_nome=canal_nome, direcao="enviado",
         )
         print(f"[APROVAR JOIN ERRO] {e}")
+
+
+# ── Inbox: histórico de mensagens trocadas com usuários ──────────
+@app.get("/inbox/threads")
+def inbox_threads(canal_id: int = None, limit: int = 100):
+    """Lista threads (1 por usuário) com a última mensagem e contagem total."""
+    try:
+        q = db.table("bot_messages").select("*").order("created_at", desc=True).limit(2000)
+        if canal_id:
+            q = q.eq("canal_id", canal_id)
+        rows = q.execute().data or []
+        threads = {}
+        for r in rows:
+            uid = r.get("user_id") or ""
+            if not uid:
+                continue
+            if uid not in threads:
+                threads[uid] = {
+                    "user_id":     uid,
+                    "username":    r.get("username"),
+                    "first_name":  r.get("first_name"),
+                    "last_name":   r.get("last_name"),
+                    "canal_id":    r.get("canal_id"),
+                    "canal_nome":  r.get("canal_nome"),
+                    "ultima_msg":  r.get("conteudo") or "",
+                    "ultima_dir":  r.get("direcao"),
+                    "ultima_em":   r.get("created_at"),
+                    "ultimo_tipo": r.get("tipo"),
+                    "total":       1,
+                    "tem_resposta": (r.get("direcao") == "in"),
+                }
+            else:
+                threads[uid]["total"] += 1
+                if r.get("direcao") == "in":
+                    threads[uid]["tem_resposta"] = True
+        lista = sorted(threads.values(), key=lambda x: x.get("ultima_em") or "", reverse=True)
+        return {"threads": lista[:limit]}
+    except Exception as e:
+        print(f"[INBOX threads ERRO] {e}")
+        return {"threads": []}
+
+
+@app.get("/inbox/thread/{user_id}")
+def inbox_thread(user_id: str, limit: int = 200):
+    """Histórico completo de mensagens com um usuário (ordem cronológica)."""
+    try:
+        rows = (db.table("bot_messages").select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=False)
+                .limit(limit).execute().data) or []
+        return {"messages": rows}
+    except Exception as e:
+        print(f"[INBOX thread ERRO] {e}")
+        return {"messages": []}
+
+
+@app.post("/inbox/reply")
+async def inbox_reply(request: Request):
+    """Envia resposta manual do admin pra um usuário (precisa /start prévio)."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    texto = (body.get("texto") or "").strip()
+    if not user_id or not texto:
+        raise HTTPException(status_code=400, detail="user_id e texto são obrigatórios")
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception:
+        pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+    last = (db.table("bot_messages").select("*").eq("user_id", str(user_id))
+            .order("created_at", desc=True).limit(1).execute().data) or []
+    user_info = {
+        "id": user_id,
+        "first_name": (last[0].get("first_name") if last else "") or "",
+        "username":   (last[0].get("username") if last else "") or "",
+        "last_name":  (last[0].get("last_name") if last else "") or "",
+    }
+    canal_id_use = last[0].get("canal_id") if last else None
+    canal_nome_use = last[0].get("canal_nome") if last else ""
+    ok = await _enviar_dm_boas_vindas(
+        bot_token, user_id, texto, "HTML", canal_nome_use, str(user_id),
+        tipo="texto", midia_url="", botoes=[],
+        canal_id=canal_id_use, evento="manual", user_obj=user_info,
+    )
+    return {"ok": ok}
 
 
 @app.get("/conversion-logs")
@@ -1986,7 +2155,7 @@ async def detectar_canais(request: Request):
         # 3. Reativar webhook imediatamente
         await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
                   "secret_token": _get_telegram_secret_token()}
         )
 
@@ -2073,7 +2242,7 @@ async def telegram_setup(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
                   "secret_token": _get_telegram_secret_token()},
         )
 

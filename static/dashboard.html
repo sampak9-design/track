@@ -399,13 +399,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.27 0 4.34.84 5.92 2.22"/></svg>
       Solicitações
     </div>
-    <div class="nav-item" onclick="mudarSecao('boasvindas',this)" id="nav-boasvindas">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Boas-vindas
-    </div>
-    <div class="nav-item" onclick="mudarSecao('saida',this)" id="nav-saida">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Saída
+    <div class="nav-item" onclick="mudarSecao('automacao',this)" id="nav-automacao">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6"/><path d="m4.22 4.22 4.24 4.24m7.08 7.08 4.24 4.24"/><path d="M1 12h6m10 0h6"/><path d="m4.22 19.78 4.24-4.24m7.08-7.08 4.24-4.24"/></svg>
+      Automação
     </div>
     <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1683,56 +1679,94 @@
       <div id="lista-canais-solic"></div>
     </div>
 
-    <!-- ════ BOAS-VINDAS ════ -->
-    <div class="secao" id="sec-boasvindas">
+    <!-- ════ AUTOMAÇÃO (Boas-vindas + Saída + Inbox) ════ -->
+    <div class="secao" id="sec-automacao">
       <div style="margin-bottom:14px">
-        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Boas-vindas no Privado</h2>
-        <p style="font-size:0.82rem;color:#6b7280">Envie mensagem privada automática quando o usuário solicitar entrada no canal — sem precisar de /start no bot</p>
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Automação</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Mensagens automáticas no privado e histórico de conversas com usuários</p>
       </div>
 
-      <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:1.1rem">ℹ️</span>
-          <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
-            <b style="color:#e2e8f0">Como funciona:</b> quando alguém clica no link de solicitação, o Telegram libera uma janela de <b>5 minutos</b> em que o bot pode mandar DM mesmo sem o usuário ter dado /start.
-            A mensagem é enviada <b>antes</b> da aprovação (depois da aprovação, a janela fecha).
-            <br><br>
-            <b style="color:#e2e8f0">Placeholders disponíveis:</b>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{primeiro_nome}</code>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{nome}</code>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e">{username}</code>
+      <!-- Sub-abas horizontais -->
+      <div style="display:flex;gap:4px;border-bottom:1px solid #1e2235;margin-bottom:18px;overflow-x:auto">
+        <button onclick="abrirAutomacaoTab('boasvindas')" id="autotab-boasvindas"
+          style="background:none;border:none;border-bottom:2px solid #4f6ef7;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          👋 Boas-vindas
+        </button>
+        <button onclick="abrirAutomacaoTab('saida')" id="autotab-saida"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          🚪 Saída
+        </button>
+        <button onclick="abrirAutomacaoTab('inbox')" id="autotab-inbox"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          💬 Inbox
+        </button>
+      </div>
+
+      <!-- TAB: Boas-vindas -->
+      <div id="aut-tab-boasvindas">
+        <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="font-size:1.1rem">ℹ️</span>
+            <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
+              <b style="color:#e2e8f0">Como funciona:</b> quando alguém clica no link de solicitação, o Telegram libera uma janela de <b>5 minutos</b> em que o bot pode mandar DM mesmo sem o usuário ter dado /start.
+              A mensagem é enviada <b>antes</b> da aprovação.
+              <br><br>
+              <b style="color:#e2e8f0">Placeholders:</b>
+              <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{primeiro_nome}</code>
+              <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{nome}</code>
+              <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e">{username}</code>
+            </div>
+          </div>
+        </div>
+        <div id="lista-canais-bv"></div>
+      </div>
+
+      <!-- TAB: Saída -->
+      <div id="aut-tab-saida" style="display:none">
+        <div class="panel" style="margin-bottom:14px;background:#2a1810;border:1px solid #5f3a1e">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="font-size:1.1rem">⚠️</span>
+            <div style="font-size:0.78rem;color:#edc5a8;line-height:1.6">
+              <b style="color:#e2e8f0">Limitação:</b> a saída não tem janela especial. A DM só funciona se o usuário tiver dado /start no bot antes.
+              <br><br>
+              <b style="color:#e2e8f0">Pra alta entrega:</b> use deep link no anúncio (<code>t.me/seubot?start=xxx</code>) — todo lead passa pelo bot antes do canal.
+            </div>
+          </div>
+        </div>
+        <div id="lista-canais-saida"></div>
+      </div>
+
+      <!-- TAB: Inbox (chat) -->
+      <div id="aut-tab-inbox" style="display:none">
+        <div id="inbox-container" style="display:flex;gap:14px;height:calc(100vh - 230px);min-height:480px">
+          <!-- Lista de threads -->
+          <div style="width:300px;flex-shrink:0;background:#1a1d2e;border:1px solid #1e2235;border-radius:8px;display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:12px 14px;border-bottom:1px solid #1e2235;display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0">Conversas</div>
+              <button onclick="carregarInboxThreads()"
+                style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;font-family:inherit">↻</button>
+            </div>
+            <div id="inbox-threads-list" style="overflow-y:auto;flex:1">
+              <div style="padding:20px;text-align:center;color:#6b7280;font-size:0.8rem">Carregando...</div>
+            </div>
+          </div>
+
+          <!-- Painel de conversa -->
+          <div style="flex:1;background:#1a1d2e;border:1px solid #1e2235;border-radius:8px;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+            <div id="inbox-chat-header" style="padding:12px 16px;border-bottom:1px solid #1e2235;font-size:0.88rem;color:#6b7280">
+              Selecione uma conversa
+            </div>
+            <div id="inbox-chat-body" style="flex:1;overflow-y:auto;padding:16px;background:#0f1117;display:flex;flex-direction:column;gap:8px"></div>
+            <div id="inbox-chat-input" style="padding:10px;border-top:1px solid #1e2235;display:none;gap:8px">
+              <input type="text" id="inbox-reply-text" placeholder="Digite uma mensagem..."
+                style="flex:1;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:6px;font-size:0.85rem;font-family:inherit;outline:none"
+                onkeydown="if(event.key==='Enter')enviarReplyInbox()">
+              <button onclick="enviarReplyInbox()"
+                style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Enviar</button>
+            </div>
           </div>
         </div>
       </div>
-
-      <div id="lista-canais-bv"></div>
-    </div>
-
-    <!-- ════ MENSAGEM DE SAÍDA ════ -->
-    <div class="secao" id="sec-saida">
-      <div style="margin-bottom:14px">
-        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Mensagem de Saída</h2>
-        <p style="font-size:0.82rem;color:#6b7280">Envia DM automática quando o usuário sai do canal — útil pra retenção, feedback ou recuperação</p>
-      </div>
-
-      <div class="panel" style="margin-bottom:14px;background:#2a1810;border:1px solid #5f3a1e">
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:1.1rem">⚠️</span>
-          <div style="font-size:0.78rem;color:#edc5a8;line-height:1.6">
-            <b style="color:#e2e8f0">Limitação importante:</b> diferente das boas-vindas (que têm janela de 5min do <code>user_chat_id</code>), a saída <b>não tem janela especial</b>.
-            A DM só funciona se o usuário tiver dado <code>/start</code> no bot antes de sair.
-            <br><br>
-            <b style="color:#e2e8f0">Solução pra alta entrega:</b> use deep link no botão do anúncio (<code>t.me/seubot?start=xxx</code>) — assim todo lead passa pelo bot antes de entrar no canal, e a saída consegue mandar DM.
-            <br><br>
-            <b style="color:#e2e8f0">Placeholders:</b>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{primeiro_nome}</code>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{nome}</code>
-            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e">{username}</code>
-          </div>
-        </div>
-      </div>
-
-      <div id="lista-canais-saida"></div>
     </div>
 
     <!-- ════ CONFIGURAÇÕES ════ -->
@@ -2016,7 +2050,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", boasvindas: "Boas-vindas", saida: "Mensagem de Saída", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", automacao: "Automação", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2986,8 +3020,7 @@
     if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
-    if (id === "boasvindas") { carregarBoasVindas(); }
-    if (id === "saida") { carregarSaida(); }
+    if (id === "automacao") { abrirAutomacao(); }
   }
 
   // ── Análise com IA ──
@@ -3690,6 +3723,155 @@
       else alert("✗ Falhou. Verifique se o usuário deu /start no bot e se a URL da mídia é acessível.");
     } catch(e) {
       alert("✗ Erro: " + e.message);
+    }
+  }
+
+  // ── Automação: switcher de sub-abas ──
+  let _autoTab = "boasvindas";
+  function abrirAutomacao() {
+    abrirAutomacaoTab(_autoTab || "boasvindas");
+  }
+  function abrirAutomacaoTab(tab) {
+    _autoTab = tab;
+    ["boasvindas","saida","inbox"].forEach(t => {
+      const btn = document.getElementById("autotab-" + t);
+      const pane = document.getElementById("aut-tab-" + t);
+      if (btn) {
+        const ativo = (t === tab);
+        btn.style.borderBottom = ativo ? "2px solid #4f6ef7" : "2px solid transparent";
+        btn.style.color = ativo ? "#e2e8f0" : "#6b7280";
+      }
+      if (pane) pane.style.display = (t === tab) ? "" : "none";
+    });
+    if (tab === "boasvindas") carregarBoasVindas();
+    else if (tab === "saida") carregarSaida();
+    else if (tab === "inbox") carregarInboxThreads();
+  }
+
+  // ── Inbox: lista de threads + chat ──
+  let _inboxAtivo = null;  // user_id da thread selecionada
+  let _inboxPolling = null;
+
+  function _formatTempo(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return "agora";
+    if (diff < 3600) return Math.floor(diff/60) + "m";
+    if (diff < 86400) return Math.floor(diff/3600) + "h";
+    if (diff < 604800) return Math.floor(diff/86400) + "d";
+    return d.toLocaleDateString("pt-BR");
+  }
+
+  async function carregarInboxThreads() {
+    const cont = document.getElementById("inbox-threads-list");
+    if (!cont) return;
+    try {
+      const r = await fetch("/inbox/threads");
+      const d = await r.json();
+      const threads = d.threads || [];
+      if (!threads.length) {
+        cont.innerHTML = '<div style="padding:24px 16px;text-align:center;color:#6b7280;font-size:0.8rem;line-height:1.6">📭<br>Nenhuma conversa ainda.<br><span style="font-size:0.7rem">Crie a tabela <code>bot_messages</code> no Supabase ou aguarde uma boas-vindas ser enviada.</span></div>';
+        return;
+      }
+      cont.innerHTML = threads.map(t => {
+        const nome = t.first_name || t.username || ("user " + t.user_id);
+        const inicial = (nome[0] || "?").toUpperCase();
+        const preview = (t.ultima_msg || "").slice(0, 50).replace(/\n/g," ");
+        const dirIcon = t.ultima_dir === "in" ? "📨" : "📤";
+        const ativo = (_inboxAtivo === t.user_id);
+        return `<div onclick="abrirThread('${t.user_id}')" style="padding:11px 14px;border-bottom:1px solid #1e2235;cursor:pointer;background:${ativo?'#2a3160':'transparent'};display:flex;gap:10px;align-items:center;transition:0.15s"
+          onmouseover="if(!${ativo})this.style.background='#22273f'" onmouseout="if(!${ativo})this.style.background='transparent'">
+          <div style="width:36px;height:36px;border-radius:50%;background:#2a3160;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#e2e8f0;flex-shrink:0">${_escHtml(inicial)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+              <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(nome)}</div>
+              <div style="font-size:0.66rem;color:#6b7280;flex-shrink:0">${_formatTempo(t.ultima_em)}</div>
+            </div>
+            <div style="font-size:0.72rem;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${dirIcon} ${_escHtml(preview)}</div>
+            <div style="font-size:0.62rem;color:#4b5563;margin-top:2px">${_escHtml(t.canal_nome||'')} · ${t.total} msgs ${t.tem_resposta?'· 💬 respondeu':''}</div>
+          </div>
+        </div>`;
+      }).join("");
+    } catch(e) {
+      cont.innerHTML = `<div style="padding:20px;color:#ef4444;font-size:0.8rem">Erro: ${e.message}</div>`;
+    }
+  }
+
+  async function abrirThread(userId) {
+    _inboxAtivo = userId;
+    // Atualiza visual da lista
+    carregarInboxThreads();
+    const body = document.getElementById("inbox-chat-body");
+    const header = document.getElementById("inbox-chat-header");
+    const inputRow = document.getElementById("inbox-chat-input");
+    body.innerHTML = '<div style="text-align:center;color:#6b7280;font-size:0.78rem;padding:20px">Carregando...</div>';
+    inputRow.style.display = "flex";
+    try {
+      const r = await fetch(`/inbox/thread/${encodeURIComponent(userId)}`);
+      const d = await r.json();
+      const msgs = d.messages || [];
+      if (msgs.length) {
+        const first = msgs[0];
+        const nome = first.first_name || first.username || ("user " + userId);
+        header.innerHTML = `<b style="color:#e2e8f0">${_escHtml(nome)}</b> <span style="color:#6b7280">· ${_escHtml(first.username||'')} · ID ${userId}</span> <span style="color:#6b7280;float:right">${_escHtml(first.canal_nome||'')}</span>`;
+      } else {
+        header.textContent = "user " + userId;
+      }
+      body.innerHTML = msgs.map(m => {
+        const out = (m.direcao === "out");
+        const ts = m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "";
+        const evento = m.evento || "";
+        const eventoLabel = evento === "welcome" ? "👋 Boas-vindas"
+                          : evento === "leave"   ? "🚪 Saída"
+                          : evento === "manual"  ? "✏️ Manual"
+                          : evento === "user_reply" ? "📨 Resposta"
+                          : evento;
+        const conteudo = (m.conteudo || "").replace(/\n/g,"<br>");
+        const midia = m.midia_url ? `<div style="margin-bottom:6px"><img src="${_escHtml(m.midia_url)}" style="max-width:100%;max-height:220px;border-radius:6px" onerror="this.style.display='none'"></div>` : "";
+        const botoes = (m.botoes && m.botoes.length) ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">` +
+          m.botoes.map(b => `<a href="${_escHtml(b.url)}" target="_blank" style="background:#0f1117;border:1px solid #1e2235;color:#4f6ef7;padding:5px 10px;border-radius:5px;font-size:0.72rem;text-decoration:none;text-align:center">${_escHtml(b.texto)}</a>`).join("") + `</div>` : "";
+        const statusIcon = (m.status === "erro") ? '<span style="color:#ef4444"> ✗</span>' : (out ? '<span style="color:#22c55e"> ✓</span>' : '');
+        return `<div style="display:flex;justify-content:${out?'flex-end':'flex-start'}">
+          <div style="max-width:75%;background:${out?'#1e3a5f':'#1a1d2e'};border:1px solid ${out?'#2a4a78':'#1e2235'};padding:8px 12px;border-radius:10px;${out?'border-bottom-right-radius:2px':'border-bottom-left-radius:2px'}">
+            <div style="font-size:0.62rem;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${_escHtml(eventoLabel)}</div>
+            ${midia}
+            <div style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;white-space:pre-wrap;word-wrap:break-word">${conteudo}</div>
+            ${botoes}
+            <div style="font-size:0.62rem;color:#6b7280;margin-top:4px;text-align:right">${ts}${statusIcon}</div>
+          </div>
+        </div>`;
+      }).join("");
+      body.scrollTop = body.scrollHeight;
+    } catch(e) {
+      body.innerHTML = `<div style="color:#ef4444;padding:20px">Erro: ${e.message}</div>`;
+    }
+  }
+
+  async function enviarReplyInbox() {
+    if (!_inboxAtivo) return;
+    const inp = document.getElementById("inbox-reply-text");
+    const texto = inp.value.trim();
+    if (!texto) return;
+    inp.disabled = true;
+    try {
+      const r = await fetch("/inbox/reply", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({user_id: _inboxAtivo, texto}),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        inp.value = "";
+        abrirThread(_inboxAtivo);
+        carregarInboxThreads();
+      } else {
+        alert("✗ Falhou ao enviar (usuário pode não ter /start no bot)");
+      }
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
+    } finally {
+      inp.disabled = false;
+      inp.focus();
     }
   }
 
