@@ -403,6 +403,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Boas-vindas
     </div>
+    <div class="nav-item" onclick="mudarSecao('saida',this)" id="nav-saida">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Saída
+    </div>
     <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
@@ -1704,6 +1708,33 @@
       <div id="lista-canais-bv"></div>
     </div>
 
+    <!-- ════ MENSAGEM DE SAÍDA ════ -->
+    <div class="secao" id="sec-saida">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Mensagem de Saída</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Envia DM automática quando o usuário sai do canal — útil pra retenção, feedback ou recuperação</p>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px;background:#2a1810;border:1px solid #5f3a1e">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:1.1rem">⚠️</span>
+          <div style="font-size:0.78rem;color:#edc5a8;line-height:1.6">
+            <b style="color:#e2e8f0">Limitação importante:</b> diferente das boas-vindas (que têm janela de 5min do <code>user_chat_id</code>), a saída <b>não tem janela especial</b>.
+            A DM só funciona se o usuário tiver dado <code>/start</code> no bot antes de sair.
+            <br><br>
+            <b style="color:#e2e8f0">Solução pra alta entrega:</b> use deep link no botão do anúncio (<code>t.me/seubot?start=xxx</code>) — assim todo lead passa pelo bot antes de entrar no canal, e a saída consegue mandar DM.
+            <br><br>
+            <b style="color:#e2e8f0">Placeholders:</b>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{primeiro_nome}</code>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{nome}</code>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e">{username}</code>
+          </div>
+        </div>
+      </div>
+
+      <div id="lista-canais-saida"></div>
+    </div>
+
     <!-- ════ CONFIGURAÇÕES ════ -->
     <div class="secao" id="sec-configuracoes">
       <div style="margin-bottom:14px">
@@ -1985,7 +2016,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", boasvindas: "Boas-vindas", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", boasvindas: "Boas-vindas", saida: "Mensagem de Saída", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2956,6 +2987,7 @@
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "boasvindas") { carregarBoasVindas(); }
+    if (id === "saida") { carregarSaida(); }
   }
 
   // ── Análise com IA ──
@@ -3429,6 +3461,233 @@
       const d = await r.json();
       if (d.ok) alert("✓ DM enviada com sucesso");
       else alert("✗ Falhou. Verifique se o usuário deu /start no bot, se o bot_token está correto e se a URL da mídia é acessível.");
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
+    }
+  }
+
+  // ── Mensagem de Saída (espelho da estrutura de Boas-vindas) ──
+  const _saidaBotoes = {};
+
+  async function carregarSaida() {
+    const cont = document.getElementById("lista-canais-saida");
+    cont.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando canais...</p></div>';
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      const canais = cfg.canais || [];
+      if (!canais.length) {
+        cont.innerHTML = '<div class="panel"><div class="empty-state"><div class="empty-icon">📭</div><p>Nenhum canal cadastrado.</p></div></div>';
+        return;
+      }
+      const cfgs = {};
+      await Promise.all(canais.map(async c => {
+        try {
+          const x = await (await fetch(`/canais/${c.id}/saida`)).json();
+          cfgs[c.id] = x;
+        } catch(e) {
+          cfgs[c.id] = {ativo:false, mensagem:"", parse_mode:"HTML", tipo:"texto", midia_url:"", botoes:[]};
+        }
+      }));
+
+      cont.innerHTML = canais.map(c => {
+        const sv = cfgs[c.id] || {};
+        const msg = _escHtml(sv.mensagem || "");
+        const pm = sv.parse_mode || "HTML";
+        const tipo = sv.tipo || "texto";
+        const midia = _escHtml(sv.midia_url || "");
+        _saidaBotoes[c.id] = Array.isArray(sv.botoes) ? sv.botoes.slice() : [];
+        const showMidia = tipo !== "texto" ? "" : "display:none";
+        return `<div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="width:32px;height:32px;background:#3a1f0f;border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">${c.nome || "Canal"}</div>
+              <div style="font-size:0.72rem;color:#6b7280">${c.username || "Privado"} · ID ${c.telegram_id || c.id}</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:42px;height:22px">
+              <input type="checkbox" id="sv-ativo-${c.id}" ${sv.ativo ? 'checked' : ''}
+                onchange="salvarSaida(${c.id})"
+                style="opacity:0;width:0;height:0">
+              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${sv.ativo ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
+                <span style="position:absolute;content:'';height:16px;width:16px;left:${sv.ativo ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
+              </span>
+            </label>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Tipo de mensagem</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${["texto","foto","video","animacao"].map(t => `
+                <button type="button" onclick="svSetTipo(${c.id},'${t}')"
+                  id="sv-tipo-${c.id}-${t}"
+                  style="background:${tipo===t?'#f59e0b':'#0f1117'};border:1px solid ${tipo===t?'#f59e0b':'#1e2235'};color:${tipo===t?'white':'#c9d1e0'};padding:7px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
+                  ${t==="texto"?"📝 Texto":t==="foto"?"🖼️ Foto":t==="video"?"🎬 Vídeo":"🎞️ GIF"}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <div id="sv-midia-row-${c.id}" style="margin-bottom:12px;${showMidia}">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">URL da mídia</div>
+            <input type="url" id="sv-midia-${c.id}" value="${midia}" placeholder="https://exemplo.com/imagem.jpg"
+              style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none">
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">${tipo==='texto'?'Mensagem':'Legenda'}</div>
+            <textarea id="sv-msg-${c.id}" rows="5"
+              style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;line-height:1.5">${msg}</textarea>
+          </div>
+
+          <div style="margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+            <div>
+              <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Formatação</div>
+              <select id="sv-pm-${c.id}"
+                style="background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none;cursor:pointer">
+                <option value="HTML"        ${pm==="HTML"?"selected":""}>HTML (&lt;b&gt;, &lt;i&gt;, &lt;a&gt;)</option>
+                <option value="Markdown"    ${pm==="Markdown"?"selected":""}>Markdown</option>
+                <option value="MarkdownV2"  ${pm==="MarkdownV2"?"selected":""}>MarkdownV2</option>
+                <option value=""            ${pm===""?"selected":""}>Texto puro</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;border-top:1px solid #1e2235;padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0">🔘 Botões inline</div>
+              <button type="button" onclick="svAddBotao(${c.id})"
+                style="background:#0f1117;border:1px solid #1e2235;color:#f59e0b;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
+                + Adicionar botão
+              </button>
+            </div>
+            <div id="sv-botoes-${c.id}"></div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
+            <button onclick="salvarSaida(${c.id})"
+              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              💾 Salvar
+            </button>
+            <button onclick="testarSaida(${c.id})"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              🧪 Enviar teste
+            </button>
+            <span id="sv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
+          </div>
+        </div>`;
+      }).join("");
+
+      canais.forEach(c => svRenderBotoes(c.id));
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  function svSetTipo(canalId, tipo) {
+    ["texto","foto","video","animacao"].forEach(t => {
+      const btn = document.getElementById(`sv-tipo-${canalId}-${t}`);
+      if (!btn) return;
+      const ativo = (t === tipo);
+      btn.style.background = ativo ? "#f59e0b" : "#0f1117";
+      btn.style.borderColor = ativo ? "#f59e0b" : "#1e2235";
+      btn.style.color = ativo ? "white" : "#c9d1e0";
+      btn.style.fontWeight = ativo ? "600" : "500";
+      btn.dataset.ativo = ativo ? "1" : "0";
+    });
+    const row = document.getElementById(`sv-midia-row-${canalId}`);
+    if (row) row.style.display = (tipo === "texto") ? "none" : "";
+  }
+
+  function svGetTipo(canalId) {
+    for (const t of ["texto","foto","video","animacao"]) {
+      const btn = document.getElementById(`sv-tipo-${canalId}-${t}`);
+      if (btn && btn.dataset.ativo === "1") return t;
+    }
+    return "texto";
+  }
+
+  function svAddBotao(canalId) {
+    if (!_saidaBotoes[canalId]) _saidaBotoes[canalId] = [];
+    _saidaBotoes[canalId].push({texto: "", url: ""});
+    svRenderBotoes(canalId);
+  }
+
+  function svRemoveBotao(canalId, idx) {
+    _saidaBotoes[canalId].splice(idx, 1);
+    svRenderBotoes(canalId);
+  }
+
+  function svSyncBotaoFromInputs(canalId) {
+    const lista = _saidaBotoes[canalId] || [];
+    lista.forEach((_, idx) => {
+      const t = document.getElementById(`sv-bt-texto-${canalId}-${idx}`);
+      const u = document.getElementById(`sv-bt-url-${canalId}-${idx}`);
+      if (t) lista[idx].texto = t.value;
+      if (u) lista[idx].url = u.value;
+    });
+  }
+
+  function svRenderBotoes(canalId) {
+    const cont = document.getElementById(`sv-botoes-${canalId}`);
+    if (!cont) return;
+    const lista = _saidaBotoes[canalId] || [];
+    if (!lista.length) {
+      cont.innerHTML = '<div style="font-size:0.74rem;color:#6b7280;padding:8px 0;font-style:italic">Nenhum botão.</div>';
+      return;
+    }
+    cont.innerHTML = lista.map((b, idx) => `
+      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:stretch">
+        <input type="text" id="sv-bt-texto-${canalId}-${idx}" value="${_escHtml(b.texto||'')}" placeholder="Texto do botão"
+          style="flex:1;min-width:120px;background:#0f1117;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:0.78rem;font-family:inherit;outline:none">
+        <input type="url" id="sv-bt-url-${canalId}-${idx}" value="${_escHtml(b.url||'')}" placeholder="https://..."
+          style="flex:2;min-width:160px;background:#0f1117;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:0.78rem;font-family:inherit;outline:none">
+        <button type="button" onclick="svRemoveBotao(${canalId},${idx})"
+          style="background:#1a1d2e;border:1px solid #2d3148;color:#ef4444;padding:0 12px;border-radius:6px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
+      </div>
+    `).join("");
+  }
+
+  async function salvarSaida(canalId) {
+    const ativo = document.getElementById("sv-ativo-" + canalId).checked;
+    const mensagem = document.getElementById("sv-msg-" + canalId).value;
+    const parse_mode = document.getElementById("sv-pm-" + canalId).value;
+    const tipo = svGetTipo(canalId);
+    const midia_url = (document.getElementById("sv-midia-" + canalId)?.value || "").trim();
+    svSyncBotaoFromInputs(canalId);
+    const botoes = (_saidaBotoes[canalId] || []).filter(b => (b.texto||"").trim() && (b.url||"").trim());
+    const status = document.getElementById("sv-msg-status-" + canalId);
+    try {
+      const r = await fetch(`/canais/${canalId}/saida`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ativo, mensagem, parse_mode, tipo, midia_url, botoes}),
+      });
+      if (!r.ok) throw new Error("Erro ao salvar");
+      status.textContent = "✓ Salvo";
+      status.style.color = "#22c55e";
+      status.style.display = "inline";
+      setTimeout(() => { status.style.display = "none"; }, 2200);
+    } catch(e) {
+      status.textContent = "✗ " + e.message;
+      status.style.color = "#ef4444";
+      status.style.display = "inline";
+    }
+  }
+
+  async function testarSaida(canalId) {
+    const userId = prompt("Digite o user_id pra receber o teste.\n\n⚠️ A pessoa precisa ter dado /start no bot antes (mesma regra do fluxo real de saída).");
+    if (!userId) return;
+    await salvarSaida(canalId);
+    try {
+      const r = await fetch(`/canais/${canalId}/saida/testar`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({user_id: userId.trim()}),
+      });
+      const d = await r.json();
+      if (d.ok) alert("✓ DM enviada com sucesso");
+      else alert("✗ Falhou. Verifique se o usuário deu /start no bot e se a URL da mídia é acessível.");
     } catch(e) {
       alert("✗ Erro: " + e.message);
     }

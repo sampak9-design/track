@@ -1018,6 +1018,37 @@ async def telegram_webhook(request: Request):
                       telegram_user_id=str(user_id) if user_id else None, canal_nome=canal_nome,
                       action_source="website")
 
+    # ── Mensagem de saída: tenta DM (só funciona se user deu /start no bot) ──
+    if left and user_id:
+        try:
+            canal_row = db.table("telegram_canais").select("id").eq("telegram_id", str(chat_evento.get("id"))).execute()
+            canal_id_interno = canal_row.data[0]["id"] if canal_row.data else None
+        except Exception:
+            canal_id_interno = None
+        if canal_id_interno is not None:
+            saida = _bv_saida_cfg(canal_id_interno)
+            if saida.get("ativo"):
+                bot_token_local = TELEGRAM_BOT_TOKEN
+                try:
+                    r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+                    if r2.data: bot_token_local = r2.data[0]["valor"]
+                except Exception:
+                    pass
+                if bot_token_local:
+                    msg_renderizada = _render_msg(saida.get("mensagem", ""), user)
+                    botoes_render = [
+                        {"texto": _render_msg(b.get("texto",""), user), "url": b.get("url","")}
+                        for b in (saida.get("botoes") or [])
+                    ]
+                    asyncio.create_task(_enviar_dm_boas_vindas(
+                        bot_token_local, user_id, msg_renderizada,
+                        saida.get("parse_mode", "HTML"), canal_nome, str(user_id),
+                        tipo=saida.get("tipo", "texto"),
+                        midia_url=saida.get("midia_url", ""),
+                        botoes=botoes_render,
+                    ))
+                    print(f"[SAIDA DM] disparado pra {first_name} (user {user_id})")
+
     print(f"[TELEGRAM] {event.upper()} — @{username or user_id} ({first_name} {last_name})")
     return {"ok": True}
 
@@ -1295,6 +1326,28 @@ def _bv_cfg(canal_id: int) -> dict:
     }
 
 
+def _bv_saida_cfg(canal_id: int) -> dict:
+    """Config de mensagem de saída por canal."""
+    raw = _get_cfg(f"bvsaida_{canal_id}")
+    if raw:
+        try:
+            cfg = json.loads(raw)
+            cfg.setdefault("tipo", "texto")
+            cfg.setdefault("midia_url", "")
+            cfg.setdefault("botoes", [])
+            return cfg
+        except Exception:
+            pass
+    return {
+        "ativo": False,
+        "mensagem": "Olá {primeiro_nome}, vimos que você saiu do canal. 😢\n\nSe foi por engano ou se quiser voltar, é só clicar abaixo.",
+        "parse_mode": "HTML",
+        "tipo": "texto",
+        "midia_url": "",
+        "botoes": [],
+    }
+
+
 def _build_inline_keyboard(botoes: list) -> dict:
     """Converte lista [{texto,url}, ...] em reply_markup do Telegram."""
     if not botoes:
@@ -1452,6 +1505,67 @@ async def testar_boas_vindas(canal_id: int, request: Request):
     ok = await _enviar_dm_boas_vindas(
         bot_token, user_id, msg, bv.get("parse_mode","HTML"), canal_nome, str(user_id),
         tipo=bv.get("tipo","texto"), midia_url=bv.get("midia_url",""), botoes=botoes_render,
+    )
+    return {"ok": ok}
+
+
+@app.get("/canais/{canal_id}/saida")
+def get_saida(canal_id: int):
+    return _bv_saida_cfg(canal_id)
+
+
+@app.post("/canais/{canal_id}/saida")
+async def salvar_saida(canal_id: int, request: Request):
+    body = await request.json()
+    botoes_in = body.get("botoes") or []
+    botoes = []
+    for b in botoes_in:
+        t = (b.get("texto") or "").strip()
+        u = (b.get("url") or "").strip()
+        if t and u:
+            botoes.append({"texto": t[:64], "url": u[:512]})
+    tipo = (body.get("tipo") or "texto").lower()
+    if tipo not in ("texto", "foto", "video", "animacao"):
+        tipo = "texto"
+    cfg = {
+        "ativo":      bool(body.get("ativo")),
+        "mensagem":   (body.get("mensagem") or "").strip(),
+        "parse_mode": body.get("parse_mode") or "HTML",
+        "tipo":       tipo,
+        "midia_url":  (body.get("midia_url") or "").strip(),
+        "botoes":     botoes,
+    }
+    _set_cfg(f"bvsaida_{canal_id}", json.dumps(cfg, ensure_ascii=False))
+    return {"ok": True, **cfg}
+
+
+@app.post("/canais/{canal_id}/saida/testar")
+async def testar_saida(canal_id: int, request: Request):
+    """Envia DM de saída de teste pra um user_id (precisa /start prévio no bot)."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id é obrigatório")
+    saida = _bv_saida_cfg(canal_id)
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception:
+        pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+    canal = db.table("telegram_canais").select("nome").eq("id", canal_id).execute()
+    canal_nome = canal.data[0]["nome"] if canal.data else ""
+    fake_user = {"first_name": "Teste", "username": "teste", "last_name": ""}
+    msg = _render_msg(saida.get("mensagem", ""), fake_user)
+    botoes_render = [
+        {"texto": _render_msg(b.get("texto",""), fake_user), "url": b.get("url","")}
+        for b in (saida.get("botoes") or [])
+    ]
+    ok = await _enviar_dm_boas_vindas(
+        bot_token, user_id, msg, saida.get("parse_mode","HTML"), canal_nome, str(user_id),
+        tipo=saida.get("tipo","texto"), midia_url=saida.get("midia_url",""), botoes=botoes_render,
     )
     return {"ok": ok}
 
