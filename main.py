@@ -873,6 +873,8 @@ async def telegram_webhook(request: Request):
         from_user = join_req.get("from", {})
         canal_tg_id = chat.get("id")
         user_id_req = from_user.get("id")
+        # user_chat_id: janela de 5min pra DM mesmo sem /start
+        user_chat_id_req = join_req.get("user_chat_id") or user_id_req
         canal_nome_req = chat.get("title", "")
         first_name_req = from_user.get("first_name", "")
 
@@ -883,18 +885,36 @@ async def telegram_webhook(request: Request):
         except Exception:
             canal_id_interno = None
 
+        # Log: evento recebido
+        salvar_log_conversao(
+            "telegram", "JoinRequest", "sucesso", 200, f"user={user_id_req} canal={canal_nome_req}",
+            telegram_user_id=str(user_id_req), canal_nome=canal_nome_req, direcao="recebido",
+        )
+
         if canal_id_interno is not None:
+            bot_token_local = TELEGRAM_BOT_TOKEN
+            try:
+                r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+                if r2.data: bot_token_local = r2.data[0]["valor"]
+            except Exception:
+                pass
+
+            # ── Boas-vindas: enviar DM ANTES de aprovar (janela 5min do user_chat_id) ──
+            bv = _bv_cfg(canal_id_interno)
+            if bv.get("ativo") and bot_token_local and user_chat_id_req:
+                msg_renderizada = _render_msg(bv.get("mensagem", ""), from_user)
+                asyncio.create_task(_enviar_dm_boas_vindas(
+                    bot_token_local, user_chat_id_req, msg_renderizada,
+                    bv.get("parse_mode", "HTML"), canal_nome_req, str(user_id_req),
+                ))
+                print(f"[BOAS-VINDAS] disparado pra {first_name_req} (chat {user_chat_id_req})")
+
             cfg = _aprov_cfg(canal_id_interno)
             if cfg.get("auto_aprovar"):
-                bot_token_local = TELEGRAM_BOT_TOKEN
-                try:
-                    r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
-                    if r2.data: bot_token_local = r2.data[0]["valor"]
-                except Exception:
-                    pass
                 # Dispara aprovação em background (com delay configurado)
                 asyncio.create_task(_aprovar_join_request(
-                    bot_token_local, canal_tg_id, user_id_req, cfg.get("delay_seg", 0)
+                    bot_token_local, canal_tg_id, user_id_req, cfg.get("delay_seg", 0),
+                    canal_nome_req,
                 ))
                 print(f"[JOIN REQ] {first_name_req} (id {user_id_req}) — auto-aprovação em {cfg.get('delay_seg',0)}s")
             else:
@@ -1242,6 +1262,61 @@ def _aprov_cfg(canal_id: int) -> dict:
     return {"auto_aprovar": False, "delay_seg": 0}
 
 
+def _bv_cfg(canal_id: int) -> dict:
+    """Config de boas-vindas por canal."""
+    raw = _get_cfg(f"bv_{canal_id}")
+    if raw:
+        try: return json.loads(raw)
+        except Exception: pass
+    return {
+        "ativo": False,
+        "mensagem": "Olá {primeiro_nome}! 👋\n\nSeja muito bem-vindo(a)! Em instantes você será aprovado no canal.",
+        "parse_mode": "HTML",
+    }
+
+
+def _render_msg(template: str, user: dict) -> str:
+    """Substitui placeholders {nome}, {primeiro_nome}, {username} na mensagem."""
+    primeiro = user.get("first_name", "") or ""
+    ultimo   = user.get("last_name", "") or ""
+    nome_completo = (primeiro + " " + ultimo).strip() or "amigo(a)"
+    username = user.get("username", "") or ""
+    return (template
+            .replace("{nome}",          nome_completo)
+            .replace("{primeiro_nome}", primeiro or "amigo(a)")
+            .replace("{username}",      ("@" + username) if username else ""))
+
+
+async def _enviar_dm_boas_vindas(bot_token: str, user_chat_id, mensagem: str, parse_mode: str = "HTML",
+                                  canal_nome: str = "", user_id_log: str = ""):
+    """Envia DM de boas-vindas via user_chat_id (janela de 5min do join_request)."""
+    payload = {"chat_id": user_chat_id, "text": mensagem, "disable_web_page_preview": True}
+    if parse_mode in ("HTML", "Markdown", "MarkdownV2"):
+        payload["parse_mode"] = parse_mode
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json=payload,
+            )
+            d = r.json()
+        ok = bool(d.get("ok"))
+        status = "sucesso" if ok else "erro"
+        salvar_log_conversao(
+            "telegram", "WelcomeDM", status, r.status_code, json.dumps(d, ensure_ascii=False)[:500],
+            telegram_user_id=str(user_id_log), canal_nome=canal_nome, direcao="enviado",
+        )
+        print(f"[BOAS-VINDAS DM] user={user_id_log} ok={ok} resp={d}")
+        return ok
+    except Exception as e:
+        salvar_log_conversao(
+            "telegram", "WelcomeDM", "erro", 0, str(e)[:500],
+            telegram_user_id=str(user_id_log), canal_nome=canal_nome, direcao="enviado",
+        )
+        print(f"[BOAS-VINDAS DM ERRO] {e}")
+        return False
+
+
 @app.get("/canais/{canal_id}/aprovacao")
 def get_aprovacao_canal(canal_id: int):
     return _aprov_cfg(canal_id)
@@ -1256,6 +1331,46 @@ async def salvar_aprovacao_canal(canal_id: int, request: Request):
     }
     _set_cfg(f"aprov_{canal_id}", json.dumps(cfg))
     return {"ok": True, **cfg}
+
+
+@app.get("/canais/{canal_id}/boas-vindas")
+def get_boas_vindas(canal_id: int):
+    return _bv_cfg(canal_id)
+
+
+@app.post("/canais/{canal_id}/boas-vindas")
+async def salvar_boas_vindas(canal_id: int, request: Request):
+    body = await request.json()
+    cfg = {
+        "ativo":      bool(body.get("ativo")),
+        "mensagem":   (body.get("mensagem") or "").strip(),
+        "parse_mode": body.get("parse_mode") or "HTML",
+    }
+    _set_cfg(f"bv_{canal_id}", json.dumps(cfg, ensure_ascii=False))
+    return {"ok": True, **cfg}
+
+
+@app.post("/canais/{canal_id}/boas-vindas/testar")
+async def testar_boas_vindas(canal_id: int, request: Request):
+    """Envia uma DM de teste pra um user_id específico (deve ter dado /start no bot antes)."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id é obrigatório")
+    bv = _bv_cfg(canal_id)
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception:
+        pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado")
+    canal = db.table("telegram_canais").select("nome").eq("id", canal_id).execute()
+    canal_nome = canal.data[0]["nome"] if canal.data else ""
+    msg = _render_msg(bv.get("mensagem", ""), {"first_name": "Teste", "username": "teste"})
+    ok = await _enviar_dm_boas_vindas(bot_token, user_id, msg, bv.get("parse_mode","HTML"), canal_nome, str(user_id))
+    return {"ok": ok}
 
 
 @app.post("/canais/{canal_id}/gerar-link")
@@ -1295,7 +1410,7 @@ async def gerar_link_solicitacao(canal_id: int, request: Request):
     return {"ok": True, "invite_link": invite}
 
 
-async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int = 0):
+async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int = 0, canal_nome: str = ""):
     """Aprova um pedido de entrada após delay opcional."""
     if delay_seg > 0:
         await asyncio.sleep(delay_seg)
@@ -1306,8 +1421,18 @@ async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int
                 json={"chat_id": chat_id, "user_id": user_id},
             )
             d = r.json()
+            ok = bool(d.get("ok"))
+            salvar_log_conversao(
+                "telegram", "JoinApproved", "sucesso" if ok else "erro",
+                r.status_code, json.dumps(d, ensure_ascii=False)[:500],
+                telegram_user_id=str(user_id), canal_nome=canal_nome, direcao="enviado",
+            )
             print(f"[APROVAR JOIN] chat={chat_id} user={user_id} → {d}")
     except Exception as e:
+        salvar_log_conversao(
+            "telegram", "JoinApproved", "erro", 0, str(e)[:500],
+            telegram_user_id=str(user_id), canal_nome=canal_nome, direcao="enviado",
+        )
         print(f"[APROVAR JOIN ERRO] {e}")
 
 

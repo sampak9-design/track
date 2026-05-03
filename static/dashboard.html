@@ -399,6 +399,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.27 0 4.34.84 5.92 2.22"/></svg>
       Solicitações
     </div>
+    <div class="nav-item" onclick="mudarSecao('boasvindas',this)" id="nav-boasvindas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Boas-vindas
+    </div>
     <div class="nav-item" onclick="mudarSecao('configuracoes',this)" id="nav-configuracoes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
@@ -1675,6 +1679,31 @@
       <div id="lista-canais-solic"></div>
     </div>
 
+    <!-- ════ BOAS-VINDAS ════ -->
+    <div class="secao" id="sec-boasvindas">
+      <div style="margin-bottom:14px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Boas-vindas no Privado</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Envie mensagem privada automática quando o usuário solicitar entrada no canal — sem precisar de /start no bot</p>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:1.1rem">ℹ️</span>
+          <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
+            <b style="color:#e2e8f0">Como funciona:</b> quando alguém clica no link de solicitação, o Telegram libera uma janela de <b>5 minutos</b> em que o bot pode mandar DM mesmo sem o usuário ter dado /start.
+            A mensagem é enviada <b>antes</b> da aprovação (depois da aprovação, a janela fecha).
+            <br><br>
+            <b style="color:#e2e8f0">Placeholders disponíveis:</b>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{primeiro_nome}</code>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e;margin-right:6px">{nome}</code>
+            <code style="background:#0a1628;padding:2px 6px;border-radius:3px;color:#22c55e">{username}</code>
+          </div>
+        </div>
+      </div>
+
+      <div id="lista-canais-bv"></div>
+    </div>
+
     <!-- ════ CONFIGURAÇÕES ════ -->
     <div class="secao" id="sec-configuracoes">
       <div style="margin-bottom:14px">
@@ -1956,7 +1985,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", boasvindas: "Boas-vindas", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -2926,6 +2955,7 @@
     if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
+    if (id === "boasvindas") { carregarBoasVindas(); }
   }
 
   // ── Análise com IA ──
@@ -3154,6 +3184,132 @@
       if (!r.ok) throw new Error(d.detail || "Erro");
       alert("✓ Novo link gerado:\n" + d.invite_link);
       carregarSolicitacoes();
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
+    }
+  }
+
+  // ── Boas-vindas ──
+  async function carregarBoasVindas() {
+    const cont = document.getElementById("lista-canais-bv");
+    cont.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando canais...</p></div>';
+    try {
+      const r = await fetch("/config/telegram");
+      const cfg = await r.json();
+      const canais = cfg.canais || [];
+      if (!canais.length) {
+        cont.innerHTML = '<div class="panel"><div class="empty-state"><div class="empty-icon">📭</div><p>Nenhum canal cadastrado. Adicione o bot como admin de um canal primeiro.</p></div></div>';
+        return;
+      }
+      const cfgs = {};
+      await Promise.all(canais.map(async c => {
+        try {
+          const x = await (await fetch(`/canais/${c.id}/boas-vindas`)).json();
+          cfgs[c.id] = x;
+        } catch(e) {
+          cfgs[c.id] = {ativo:false, mensagem:"", parse_mode:"HTML"};
+        }
+      }));
+
+      cont.innerHTML = canais.map(c => {
+        const bv = cfgs[c.id] || {};
+        const msg = (bv.mensagem || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const pm = bv.parse_mode || "HTML";
+        return `<div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="width:32px;height:32px;background:#1a2440;border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#4f6ef7"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">${c.nome || "Canal"}</div>
+              <div style="font-size:0.72rem;color:#6b7280">${c.username || "Privado"} · ID ${c.telegram_id || c.id}</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:42px;height:22px">
+              <input type="checkbox" id="bv-ativo-${c.id}" ${bv.ativo ? 'checked' : ''}
+                onchange="salvarBoasVindas(${c.id})"
+                style="opacity:0;width:0;height:0">
+              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${bv.ativo ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
+                <span style="position:absolute;content:'';height:16px;width:16px;left:${bv.ativo ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
+              </span>
+            </label>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Mensagem de boas-vindas</div>
+            <textarea id="bv-msg-${c.id}" rows="6"
+              style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;line-height:1.5">${msg}</textarea>
+          </div>
+
+          <div style="margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+            <div>
+              <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Formatação</div>
+              <select id="bv-pm-${c.id}"
+                style="background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none;cursor:pointer">
+                <option value="HTML"        ${pm==="HTML"?"selected":""}>HTML (&lt;b&gt;, &lt;i&gt;, &lt;a&gt;)</option>
+                <option value="Markdown"    ${pm==="Markdown"?"selected":""}>Markdown</option>
+                <option value="MarkdownV2"  ${pm==="MarkdownV2"?"selected":""}>MarkdownV2</option>
+                <option value=""            ${pm===""?"selected":""}>Texto puro</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
+            <button onclick="salvarBoasVindas(${c.id})"
+              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              💾 Salvar
+            </button>
+            <button onclick="testarBoasVindas(${c.id})"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              🧪 Enviar teste
+            </button>
+            <span id="bv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
+          </div>
+
+          <div style="margin-top:12px;padding:10px 12px;background:#0f1117;border:1px solid #1e2235;border-radius:6px;font-size:0.7rem;color:#6b7280;line-height:1.6">
+            <b style="color:#c9d1e0">Atenção:</b> a DM só funciona se a aprovação automática estiver ativa em "Solicitações de Entrada" e o delay for ≤ 4 minutos (a janela fecha em 5min ou ao aprovar).
+          </div>
+        </div>`;
+      }).join("");
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  async function salvarBoasVindas(canalId) {
+    const ativo = document.getElementById("bv-ativo-" + canalId).checked;
+    const mensagem = document.getElementById("bv-msg-" + canalId).value;
+    const parse_mode = document.getElementById("bv-pm-" + canalId).value;
+    const status = document.getElementById("bv-msg-status-" + canalId);
+    try {
+      const r = await fetch(`/canais/${canalId}/boas-vindas`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ativo, mensagem, parse_mode}),
+      });
+      if (!r.ok) throw new Error("Erro ao salvar");
+      status.textContent = "✓ Salvo";
+      status.style.color = "#22c55e";
+      status.style.display = "inline";
+      setTimeout(() => { status.style.display = "none"; }, 2200);
+    } catch(e) {
+      status.textContent = "✗ " + e.message;
+      status.style.color = "#ef4444";
+      status.style.display = "inline";
+    }
+  }
+
+  async function testarBoasVindas(canalId) {
+    const userId = prompt("Digite o user_id do Telegram pra receber o teste.\n\n⚠️ A pessoa precisa ter dado /start no bot antes (limitação só do TESTE; no fluxo real do join_request não precisa).");
+    if (!userId) return;
+    // Salva antes pra garantir que vai testar a versão atual
+    await salvarBoasVindas(canalId);
+    try {
+      const r = await fetch(`/canais/${canalId}/boas-vindas/testar`, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({user_id: userId.trim()}),
+      });
+      const d = await r.json();
+      if (d.ok) alert("✓ DM enviada com sucesso");
+      else alert("✗ Falhou. Verifique se o usuário deu /start no bot e se o bot_token está correto.");
     } catch(e) {
       alert("✗ Erro: " + e.message);
     }
