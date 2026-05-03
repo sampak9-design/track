@@ -3190,6 +3190,13 @@
   }
 
   // ── Boas-vindas ──
+  // Estado em memória: botões por canal_id (pra renderizar lista dinâmica)
+  const _bvBotoes = {};
+
+  function _escHtml(s) {
+    return (s || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   async function carregarBoasVindas() {
     const cont = document.getElementById("lista-canais-bv");
     cont.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando canais...</p></div>';
@@ -3207,14 +3214,19 @@
           const x = await (await fetch(`/canais/${c.id}/boas-vindas`)).json();
           cfgs[c.id] = x;
         } catch(e) {
-          cfgs[c.id] = {ativo:false, mensagem:"", parse_mode:"HTML"};
+          cfgs[c.id] = {ativo:false, mensagem:"", parse_mode:"HTML", tipo:"texto", midia_url:"", botoes:[]};
         }
       }));
 
       cont.innerHTML = canais.map(c => {
         const bv = cfgs[c.id] || {};
-        const msg = (bv.mensagem || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const msg = _escHtml(bv.mensagem || "");
         const pm = bv.parse_mode || "HTML";
+        const tipo = bv.tipo || "texto";
+        const midia = _escHtml(bv.midia_url || "");
+        // Salva botões no estado
+        _bvBotoes[c.id] = Array.isArray(bv.botoes) ? bv.botoes.slice() : [];
+        const showMidia = tipo !== "texto" ? "" : "display:none";
         return `<div class="panel" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <div style="width:32px;height:32px;background:#1a2440;border-radius:8px;display:flex;align-items:center;justify-content:center">
@@ -3235,8 +3247,30 @@
           </div>
 
           <div style="margin-bottom:12px">
-            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Mensagem de boas-vindas</div>
-            <textarea id="bv-msg-${c.id}" rows="6"
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">Tipo de mensagem</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${["texto","foto","video","animacao"].map(t => `
+                <button type="button" onclick="bvSetTipo(${c.id},'${t}')"
+                  id="bv-tipo-${c.id}-${t}"
+                  style="background:${tipo===t?'#1877f2':'#0f1117'};border:1px solid ${tipo===t?'#1877f2':'#1e2235'};color:${tipo===t?'white':'#c9d1e0'};padding:7px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
+                  ${t==="texto"?"📝 Texto":t==="foto"?"🖼️ Foto":t==="video"?"🎬 Vídeo":"🎞️ GIF"}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <div id="bv-midia-row-${c.id}" style="margin-bottom:12px;${showMidia}">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">URL da mídia</div>
+            <input type="url" id="bv-midia-${c.id}" value="${midia}" placeholder="https://exemplo.com/imagem.jpg"
+              style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;font-family:inherit;outline:none">
+            <div style="font-size:0.68rem;color:#6b7280;margin-top:4px;line-height:1.5">
+              Cole a URL pública. Aceita formatos: foto (jpg/png), vídeo (mp4) ou GIF (gif/mp4).
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px">${tipo==='texto'?'Mensagem':'Legenda'}</div>
+            <textarea id="bv-msg-${c.id}" rows="5"
               style="width:100%;background:#0f1117;border:1px solid #1e2235;border-radius:7px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;line-height:1.5">${msg}</textarea>
           </div>
 
@@ -3250,6 +3284,20 @@
                 <option value="MarkdownV2"  ${pm==="MarkdownV2"?"selected":""}>MarkdownV2</option>
                 <option value=""            ${pm===""?"selected":""}>Texto puro</option>
               </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;border-top:1px solid #1e2235;padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0">🔘 Botões inline</div>
+              <button type="button" onclick="bvAddBotao(${c.id})"
+                style="background:#0f1117;border:1px solid #1e2235;color:#4f6ef7;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
+                + Adicionar botão
+              </button>
+            </div>
+            <div id="bv-botoes-${c.id}"></div>
+            <div style="font-size:0.68rem;color:#6b7280;margin-top:6px;line-height:1.5">
+              Botões abrem URL externa quando o usuário clica. Cada botão fica em uma linha separada.
             </div>
           </div>
 
@@ -3270,20 +3318,91 @@
           </div>
         </div>`;
       }).join("");
+
+      // Renderiza botões salvos de cada canal
+      canais.forEach(c => bvRenderBotoes(c.id));
     } catch(e) {
       cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
     }
+  }
+
+  function bvSetTipo(canalId, tipo) {
+    ["texto","foto","video","animacao"].forEach(t => {
+      const btn = document.getElementById(`bv-tipo-${canalId}-${t}`);
+      if (!btn) return;
+      const ativo = (t === tipo);
+      btn.style.background = ativo ? "#1877f2" : "#0f1117";
+      btn.style.borderColor = ativo ? "#1877f2" : "#1e2235";
+      btn.style.color = ativo ? "white" : "#c9d1e0";
+      btn.style.fontWeight = ativo ? "600" : "500";
+      btn.dataset.ativo = ativo ? "1" : "0";
+    });
+    const row = document.getElementById(`bv-midia-row-${canalId}`);
+    if (row) row.style.display = (tipo === "texto") ? "none" : "";
+  }
+
+  function bvGetTipo(canalId) {
+    for (const t of ["texto","foto","video","animacao"]) {
+      const btn = document.getElementById(`bv-tipo-${canalId}-${t}`);
+      if (btn && btn.dataset.ativo === "1") return t;
+    }
+    return "texto";
+  }
+
+  function bvAddBotao(canalId) {
+    if (!_bvBotoes[canalId]) _bvBotoes[canalId] = [];
+    _bvBotoes[canalId].push({texto: "", url: ""});
+    bvRenderBotoes(canalId);
+  }
+
+  function bvRemoveBotao(canalId, idx) {
+    _bvBotoes[canalId].splice(idx, 1);
+    bvRenderBotoes(canalId);
+  }
+
+  function bvSyncBotaoFromInputs(canalId) {
+    const lista = _bvBotoes[canalId] || [];
+    lista.forEach((_, idx) => {
+      const t = document.getElementById(`bv-bt-texto-${canalId}-${idx}`);
+      const u = document.getElementById(`bv-bt-url-${canalId}-${idx}`);
+      if (t) lista[idx].texto = t.value;
+      if (u) lista[idx].url = u.value;
+    });
+  }
+
+  function bvRenderBotoes(canalId) {
+    const cont = document.getElementById(`bv-botoes-${canalId}`);
+    if (!cont) return;
+    const lista = _bvBotoes[canalId] || [];
+    if (!lista.length) {
+      cont.innerHTML = '<div style="font-size:0.74rem;color:#6b7280;padding:8px 0;font-style:italic">Nenhum botão. Mensagem será enviada sem botões.</div>';
+      return;
+    }
+    cont.innerHTML = lista.map((b, idx) => `
+      <div style="display:flex;gap:6px;margin-bottom:6px;align-items:stretch">
+        <input type="text" id="bv-bt-texto-${canalId}-${idx}" value="${_escHtml(b.texto||'')}" placeholder="Texto do botão"
+          style="flex:1;min-width:120px;background:#0f1117;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:0.78rem;font-family:inherit;outline:none">
+        <input type="url" id="bv-bt-url-${canalId}-${idx}" value="${_escHtml(b.url||'')}" placeholder="https://..."
+          style="flex:2;min-width:160px;background:#0f1117;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:0.78rem;font-family:inherit;outline:none">
+        <button type="button" onclick="bvRemoveBotao(${canalId},${idx})"
+          style="background:#1a1d2e;border:1px solid #2d3148;color:#ef4444;padding:0 12px;border-radius:6px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
+      </div>
+    `).join("");
   }
 
   async function salvarBoasVindas(canalId) {
     const ativo = document.getElementById("bv-ativo-" + canalId).checked;
     const mensagem = document.getElementById("bv-msg-" + canalId).value;
     const parse_mode = document.getElementById("bv-pm-" + canalId).value;
+    const tipo = bvGetTipo(canalId);
+    const midia_url = (document.getElementById("bv-midia-" + canalId)?.value || "").trim();
+    bvSyncBotaoFromInputs(canalId);
+    const botoes = (_bvBotoes[canalId] || []).filter(b => (b.texto||"").trim() && (b.url||"").trim());
     const status = document.getElementById("bv-msg-status-" + canalId);
     try {
       const r = await fetch(`/canais/${canalId}/boas-vindas`, {
         method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ativo, mensagem, parse_mode}),
+        body: JSON.stringify({ativo, mensagem, parse_mode, tipo, midia_url, botoes}),
       });
       if (!r.ok) throw new Error("Erro ao salvar");
       status.textContent = "✓ Salvo";
@@ -3309,7 +3428,7 @@
       });
       const d = await r.json();
       if (d.ok) alert("✓ DM enviada com sucesso");
-      else alert("✗ Falhou. Verifique se o usuário deu /start no bot e se o bot_token está correto.");
+      else alert("✗ Falhou. Verifique se o usuário deu /start no bot, se o bot_token está correto e se a URL da mídia é acessível.");
     } catch(e) {
       alert("✗ Erro: " + e.message);
     }

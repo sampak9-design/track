@@ -903,11 +903,21 @@ async def telegram_webhook(request: Request):
             bv = _bv_cfg(canal_id_interno)
             if bv.get("ativo") and bot_token_local and user_chat_id_req:
                 msg_renderizada = _render_msg(bv.get("mensagem", ""), from_user)
+                # Renderiza placeholders também nos textos de botões (URL fica intacta)
+                botoes_render = []
+                for b in (bv.get("botoes") or []):
+                    botoes_render.append({
+                        "texto": _render_msg(b.get("texto", ""), from_user),
+                        "url":   b.get("url", ""),
+                    })
                 asyncio.create_task(_enviar_dm_boas_vindas(
                     bot_token_local, user_chat_id_req, msg_renderizada,
                     bv.get("parse_mode", "HTML"), canal_nome_req, str(user_id_req),
+                    tipo=bv.get("tipo", "texto"),
+                    midia_url=bv.get("midia_url", ""),
+                    botoes=botoes_render,
                 ))
-                print(f"[BOAS-VINDAS] disparado pra {first_name_req} (chat {user_chat_id_req})")
+                print(f"[BOAS-VINDAS] disparado pra {first_name_req} (chat {user_chat_id_req}) tipo={bv.get('tipo','texto')}")
 
             cfg = _aprov_cfg(canal_id_interno)
             if cfg.get("auto_aprovar"):
@@ -1266,13 +1276,39 @@ def _bv_cfg(canal_id: int) -> dict:
     """Config de boas-vindas por canal."""
     raw = _get_cfg(f"bv_{canal_id}")
     if raw:
-        try: return json.loads(raw)
-        except Exception: pass
+        try:
+            cfg = json.loads(raw)
+            # Defaults pra retrocompat
+            cfg.setdefault("tipo", "texto")
+            cfg.setdefault("midia_url", "")
+            cfg.setdefault("botoes", [])
+            return cfg
+        except Exception:
+            pass
     return {
         "ativo": False,
         "mensagem": "Olá {primeiro_nome}! 👋\n\nSeja muito bem-vindo(a)! Em instantes você será aprovado no canal.",
         "parse_mode": "HTML",
+        "tipo": "texto",       # texto | foto | video | animacao
+        "midia_url": "",
+        "botoes": [],          # [{"texto": "...", "url": "..."}, ...]
     }
+
+
+def _build_inline_keyboard(botoes: list) -> dict:
+    """Converte lista [{texto,url}, ...] em reply_markup do Telegram."""
+    if not botoes:
+        return None
+    rows = []
+    for b in botoes:
+        texto = (b.get("texto") or "").strip()
+        url = (b.get("url") or "").strip()
+        if not texto or not url:
+            continue
+        rows.append([{"text": texto, "url": url}])
+    if not rows:
+        return None
+    return {"inline_keyboard": rows}
 
 
 def _render_msg(template: str, user: dict) -> str:
@@ -1288,15 +1324,40 @@ def _render_msg(template: str, user: dict) -> str:
 
 
 async def _enviar_dm_boas_vindas(bot_token: str, user_chat_id, mensagem: str, parse_mode: str = "HTML",
-                                  canal_nome: str = "", user_id_log: str = ""):
-    """Envia DM de boas-vindas via user_chat_id (janela de 5min do join_request)."""
-    payload = {"chat_id": user_chat_id, "text": mensagem, "disable_web_page_preview": True}
+                                  canal_nome: str = "", user_id_log: str = "",
+                                  tipo: str = "texto", midia_url: str = "", botoes: list = None):
+    """Envia DM de boas-vindas via user_chat_id (janela de 5min do join_request).
+
+    Suporta texto, foto, vídeo, animação (GIF) e botões inline com URL.
+    """
+    tipo = (tipo or "texto").lower()
+    midia_url = (midia_url or "").strip()
+    reply_markup = _build_inline_keyboard(botoes or [])
+
+    # Determina endpoint + payload baseado no tipo
+    if tipo == "foto" and midia_url:
+        endpoint = "sendPhoto"
+        payload = {"chat_id": user_chat_id, "photo": midia_url, "caption": mensagem}
+    elif tipo == "video" and midia_url:
+        endpoint = "sendVideo"
+        payload = {"chat_id": user_chat_id, "video": midia_url, "caption": mensagem,
+                   "supports_streaming": True}
+    elif tipo == "animacao" and midia_url:
+        endpoint = "sendAnimation"
+        payload = {"chat_id": user_chat_id, "animation": midia_url, "caption": mensagem}
+    else:
+        endpoint = "sendMessage"
+        payload = {"chat_id": user_chat_id, "text": mensagem, "disable_web_page_preview": True}
+
     if parse_mode in ("HTML", "Markdown", "MarkdownV2"):
         payload["parse_mode"] = parse_mode
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=20) as client:
             r = await client.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                f"https://api.telegram.org/bot{bot_token}/{endpoint}",
                 json=payload,
             )
             d = r.json()
@@ -1306,7 +1367,7 @@ async def _enviar_dm_boas_vindas(bot_token: str, user_chat_id, mensagem: str, pa
             "telegram", "WelcomeDM", status, r.status_code, json.dumps(d, ensure_ascii=False)[:500],
             telegram_user_id=str(user_id_log), canal_nome=canal_nome, direcao="enviado",
         )
-        print(f"[BOAS-VINDAS DM] user={user_id_log} ok={ok} resp={d}")
+        print(f"[BOAS-VINDAS {endpoint}] user={user_id_log} ok={ok} resp={d}")
         return ok
     except Exception as e:
         salvar_log_conversao(
@@ -1341,10 +1402,24 @@ def get_boas_vindas(canal_id: int):
 @app.post("/canais/{canal_id}/boas-vindas")
 async def salvar_boas_vindas(canal_id: int, request: Request):
     body = await request.json()
+    # Sanitiza botões
+    botoes_in = body.get("botoes") or []
+    botoes = []
+    for b in botoes_in:
+        t = (b.get("texto") or "").strip()
+        u = (b.get("url") or "").strip()
+        if t and u:
+            botoes.append({"texto": t[:64], "url": u[:512]})
+    tipo = (body.get("tipo") or "texto").lower()
+    if tipo not in ("texto", "foto", "video", "animacao"):
+        tipo = "texto"
     cfg = {
         "ativo":      bool(body.get("ativo")),
         "mensagem":   (body.get("mensagem") or "").strip(),
         "parse_mode": body.get("parse_mode") or "HTML",
+        "tipo":       tipo,
+        "midia_url":  (body.get("midia_url") or "").strip(),
+        "botoes":     botoes,
     }
     _set_cfg(f"bv_{canal_id}", json.dumps(cfg, ensure_ascii=False))
     return {"ok": True, **cfg}
@@ -1368,8 +1443,16 @@ async def testar_boas_vindas(canal_id: int, request: Request):
         raise HTTPException(status_code=400, detail="Bot não configurado")
     canal = db.table("telegram_canais").select("nome").eq("id", canal_id).execute()
     canal_nome = canal.data[0]["nome"] if canal.data else ""
-    msg = _render_msg(bv.get("mensagem", ""), {"first_name": "Teste", "username": "teste"})
-    ok = await _enviar_dm_boas_vindas(bot_token, user_id, msg, bv.get("parse_mode","HTML"), canal_nome, str(user_id))
+    fake_user = {"first_name": "Teste", "username": "teste", "last_name": ""}
+    msg = _render_msg(bv.get("mensagem", ""), fake_user)
+    botoes_render = [
+        {"texto": _render_msg(b.get("texto",""), fake_user), "url": b.get("url","")}
+        for b in (bv.get("botoes") or [])
+    ]
+    ok = await _enviar_dm_boas_vindas(
+        bot_token, user_id, msg, bv.get("parse_mode","HTML"), canal_nome, str(user_id),
+        tipo=bv.get("tipo","texto"), midia_url=bv.get("midia_url",""), botoes=botoes_render,
+    )
     return {"ok": ok}
 
 
