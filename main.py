@@ -821,14 +821,65 @@ async def cadastro(request: Request):
     return {"status": "ok", "id": result.data[0]["id"]}
 
 
+_ultimos_depositos_raw = []  # cache em memória dos últimos 20 payloads brutos
+
+@app.get("/deposito/debug")
+def deposito_debug():
+    """Mostra os últimos 20 payloads que a corretora enviou (cru), pra debug."""
+    return {"payloads": list(reversed(_ultimos_depositos_raw))}
+
+
+def _extrair_valor_deposito(data: dict) -> float:
+    """Tenta extrair valor de várias chaves comuns que corretoras usam."""
+    # Tenta na raiz
+    for k in ("valor", "amount", "value", "total", "price", "deposit_amount",
+              "valor_deposito", "transaction_amount", "Valor", "Amount", "Value"):
+        v = data.get(k)
+        if v is not None and v != "":
+            try:
+                num = float(str(v).replace(",", ".").replace("R$", "").strip())
+                # Se vier em centavos (>1000 e formato inteiro grande), divide por 100
+                # Heurística: se > 100000 e não tem decimal, provavelmente centavos
+                return num
+            except Exception: pass
+    # Tenta em estruturas aninhadas comuns: data.amount, payload.value, etc.
+    for parent in ("data", "payload", "transaction", "order", "deposit"):
+        nested = data.get(parent)
+        if isinstance(nested, dict):
+            r = _extrair_valor_deposito(nested)
+            if r: return r
+    return 0.0
+
+
+def _extrair_email_deposito(data: dict) -> str:
+    """Tenta extrair email de várias chaves."""
+    for k in ("email", "user_email", "customer_email", "client_email", "Email"):
+        v = data.get(k)
+        if v: return str(v).strip()
+    for parent in ("data", "payload", "user", "customer", "client"):
+        nested = data.get(parent)
+        if isinstance(nested, dict):
+            r = _extrair_email_deposito(nested)
+            if r: return r
+    return ""
+
+
 @app.post("/deposito")
 async def deposito(request: Request):
     data = await request.json()
     print(f"[DEPOSITO PAYLOAD] {data}")
 
+    # Salva últimos 20 payloads pra debug
+    _ultimos_depositos_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(), "payload": data})
+    if len(_ultimos_depositos_raw) > 20:
+        _ultimos_depositos_raw.pop(0)
+
+    email = _extrair_email_deposito(data) or data.get("email")
+    valor = _extrair_valor_deposito(data) or data.get("valor")
+
     registro = {
-        "email": data.get("email"),
-        "valor": data.get("valor"),
+        "email": email,
+        "valor": valor,
         **extrair_utms(data),
     }
 
