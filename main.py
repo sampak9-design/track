@@ -2959,6 +2959,103 @@ async def booster_criar_campanha(request: Request):
     return {"ok": True, "campanha": (ins.data[0] if ins.data else new_row)}
 
 
+@app.post("/booster/campanhas/canal")
+async def booster_criar_campanha_canal(request: Request):
+    """Pega os últimos N posts de um canal via Telethon e cria 1 campanha pra cada."""
+    body = await request.json()
+    canal_link_raw = (body.get("canal_link") or "").strip()
+    qtd_posts = max(1, int(body.get("qtd_posts") or 5))
+    qtd_views = max(0, int(body.get("qtd_views") or 0))
+    qtd_reacoes = max(0, int(body.get("qtd_reacoes") or 0))
+    if qtd_views == 0 and qtd_reacoes == 0:
+        raise HTTPException(status_code=400, detail="Defina pelo menos qtd_views ou qtd_reacoes")
+    if not canal_link_raw:
+        raise HTTPException(status_code=400, detail="canal_link obrigatório")
+
+    # Normaliza pra @username ou id numérico
+    canal_target = canal_link_raw
+    m = re.match(r"https?://t\.me/c/(\d+)", canal_link_raw)
+    if m:
+        canal_target = int("-100" + m.group(1))
+    else:
+        m = re.match(r"https?://t\.me/([^/?\s]+)", canal_link_raw)
+        if m:
+            canal_target = m.group(1)
+            if not canal_target.startswith("@"):
+                canal_target = "@" + canal_target
+        elif canal_link_raw.startswith("@"):
+            canal_target = canal_link_raw
+        elif not canal_link_raw.lstrip("-").isdigit():
+            canal_target = "@" + canal_link_raw
+
+    contas = (db.table("booster_contas").select("*").eq("status", "ativa").limit(1).execute().data) or []
+    if not contas:
+        raise HTTPException(status_code=400, detail="Precisa pelo menos 1 conta ativa pra buscar os posts")
+    api_id, api_hash = _booster_api_creds()
+    if not api_id or not api_hash:
+        raise HTTPException(status_code=400, detail="Configure api_id/api_hash em Booster → Config")
+
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
+    from telethon.errors import ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError
+
+    conta = contas[0]
+    sess = _dec(conta.get("session_string") or "")
+    proxy = _parse_proxy(conta.get("proxy") or "")
+    client = TelegramClient(StringSession(sess), int(api_id), api_hash, proxy=proxy)
+
+    posts = []
+    canal_username = None
+    canal_title = ""
+    canal_id_tg = None
+    try:
+        await client.connect()
+        if not await client.is_user_authorized():
+            raise HTTPException(status_code=400, detail="Conta userbot não autorizada (sessão expirada)")
+        entity = await client.get_entity(canal_target)
+        msgs = await client.get_messages(entity, limit=qtd_posts)
+        canal_username = getattr(entity, "username", None)
+        canal_title = getattr(entity, "title", None) or canal_username or ""
+        canal_id_tg = entity.id
+        for msg in msgs:
+            if msg and getattr(msg, "id", None):
+                posts.append({"msg_id": msg.id, "text": (getattr(msg, "text", "") or "")[:60]})
+    except (ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError):
+        raise HTTPException(status_code=400, detail="Canal não encontrado ou privado. Se for privado, a conta userbot precisa ser membro.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:300])
+    finally:
+        try: await client.disconnect()
+        except Exception: pass
+
+    if not posts:
+        raise HTTPException(status_code=400, detail="Nenhum post encontrado no canal")
+
+    criadas = []
+    for p in posts:
+        if canal_username:
+            link = f"https://t.me/{canal_username}/{p['msg_id']}"
+        else:
+            id_simple = str(canal_id_tg).replace("-100", "")
+            link = f"https://t.me/c/{id_simple}/{p['msg_id']}"
+        new_row = {
+            "nome":             f"📌 {canal_title} #{p['msg_id']}",
+            "canal_link":       link,
+            "msg_id":           p["msg_id"],
+            "qtd_views":        qtd_views,
+            "qtd_reacoes":      qtd_reacoes,
+            "reacoes_emojis":   body.get("reacoes_emojis") or ["👍","❤️","🔥"],
+            "delay_min_seg":    max(1, int(body.get("delay_min_seg") or 2)),
+            "delay_max_seg":    max(2, int(body.get("delay_max_seg") or 30)),
+            "janela_min":       max(1, int(body.get("janela_min") or 30)),
+            "status":           "pendente",
+        }
+        ins = db.table("booster_campanhas").insert(new_row).execute()
+        criadas.append({"msg_id": p["msg_id"], "id": (ins.data[0]["id"] if ins.data else None), "preview": p["text"]})
+
+    return {"ok": True, "canal": canal_title, "qtd_criadas": len(criadas), "criadas": criadas}
+
+
 @app.post("/booster/campanhas/{camp_id}/iniciar")
 def booster_iniciar_campanha(camp_id: int):
     db.table("booster_campanhas").update({"status": "pendente"}).eq("id", camp_id).execute()
