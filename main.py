@@ -831,18 +831,16 @@ def deposito_debug():
 
 def _extrair_valor_deposito(data: dict) -> float:
     """Tenta extrair valor de várias chaves comuns que corretoras usam."""
-    # Tenta na raiz
-    for k in ("valor", "amount", "value", "total", "price", "deposit_amount",
-              "valor_deposito", "transaction_amount", "Valor", "Amount", "Value"):
+    # 'sum' é típico em brokers de opções binárias (Zyrooption, Quotex, etc.)
+    for k in ("valor", "amount", "value", "total", "price", "sum",
+              "deposit_amount", "valor_deposito", "transaction_amount",
+              "deposit_sum", "first_deposit", "Valor", "Amount", "Value", "Sum"):
         v = data.get(k)
         if v is not None and v != "":
             try:
-                num = float(str(v).replace(",", ".").replace("R$", "").strip())
-                # Se vier em centavos (>1000 e formato inteiro grande), divide por 100
-                # Heurística: se > 100000 e não tem decimal, provavelmente centavos
+                num = float(str(v).replace(",", ".").replace("R$", "").replace("$", "").strip())
                 return num
             except Exception: pass
-    # Tenta em estruturas aninhadas comuns: data.amount, payload.value, etc.
     for parent in ("data", "payload", "transaction", "order", "deposit"):
         nested = data.get(parent)
         if isinstance(nested, dict):
@@ -853,10 +851,11 @@ def _extrair_valor_deposito(data: dict) -> float:
 
 def _extrair_email_deposito(data: dict) -> str:
     """Tenta extrair email de várias chaves."""
-    for k in ("email", "user_email", "customer_email", "client_email", "Email"):
+    for k in ("email", "user_email", "customer_email", "client_email",
+              "trader_email", "Email"):
         v = data.get(k)
         if v: return str(v).strip()
-    for parent in ("data", "payload", "user", "customer", "client"):
+    for parent in ("data", "payload", "user", "customer", "client", "trader"):
         nested = data.get(parent)
         if isinstance(nested, dict):
             r = _extrair_email_deposito(nested)
@@ -864,10 +863,34 @@ def _extrair_email_deposito(data: dict) -> str:
     return ""
 
 
+async def _ler_payload_flex(request: Request) -> dict:
+    """Lê payload aceitando JSON, form-encoded ou query params (postback brokers)."""
+    ct = (request.headers.get("content-type") or "").lower()
+    # Tenta JSON
+    try:
+        if "application/json" in ct or not ct:
+            body = await request.body()
+            if body:
+                import json as _json
+                return _json.loads(body)
+    except Exception: pass
+    # Tenta form
+    try:
+        if "form" in ct or "urlencoded" in ct or "multipart" in ct:
+            form = await request.form()
+            return dict(form)
+    except Exception: pass
+    # Fallback: query params
+    try:
+        return dict(request.query_params) or {}
+    except Exception: pass
+    return {}
+
+
 @app.post("/deposito")
 async def deposito(request: Request):
-    data = await request.json()
-    print(f"[DEPOSITO PAYLOAD] {data}")
+    data = await _ler_payload_flex(request)
+    print(f"[DEPOSITO PAYLOAD] content-type={request.headers.get('content-type')} data={data}")
 
     # Salva últimos 20 payloads pra debug
     _ultimos_depositos_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(), "payload": data})
@@ -893,6 +916,33 @@ async def deposito(request: Request):
 
     print(f"[DEPOSITO] {registro['email']} - R$ {registro['valor']}")
     return {"status": "ok", "id": result.data[0]["id"]}
+
+
+@app.get("/deposito")
+async def deposito_get(request: Request):
+    """Aceita postback via GET (alguns brokers usam só GET)."""
+    data = dict(request.query_params)
+    print(f"[DEPOSITO GET PAYLOAD] {data}")
+    _ultimos_depositos_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(),
+                                    "metodo": "GET", "payload": data})
+    if len(_ultimos_depositos_raw) > 20:
+        _ultimos_depositos_raw.pop(0)
+
+    email = _extrair_email_deposito(data) or data.get("email")
+    valor = _extrair_valor_deposito(data) or 0
+    if not email:
+        return {"status": "erro", "motivo": "email não encontrado no payload"}
+
+    registro = {"email": email, "valor": valor, **extrair_utms(data)}
+    result = db.table("depositos").insert(registro).execute()
+
+    if registro["valor"]:
+        await enviar_meta("track_deposito", email=email, value=valor)
+        await enviar_kwai("Purchase", email=email, value=valor)
+        await enviar_tiktok("PlaceAnOrder", email=email, value=valor)
+
+    print(f"[DEPOSITO GET] {email} - R$ {valor}")
+    return {"status": "ok", "id": (result.data[0]["id"] if result.data else None)}
 
 
 # ── Telegram ─────────────────────────────────────────────────────
