@@ -3147,6 +3147,74 @@ def booster_auto_deletar(auto_id: int):
     return {"ok": True}
 
 
+@app.get("/booster/auto/diag")
+async def booster_auto_diag():
+    """Diagnóstico completo do Auto-Boost: webhook, configs, contas, últimas campanhas auto."""
+    out = {}
+    # 1. WebhookInfo
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception: pass
+    if bot_token:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(f"https://api.telegram.org/bot{bot_token}/getWebhookInfo")
+            d = resp.json()
+            if d.get("ok"):
+                info = d["result"]
+                out["webhook"] = {
+                    "url": info.get("url",""),
+                    "allowed_updates": info.get("allowed_updates", []),
+                    "tem_channel_post": "channel_post" in (info.get("allowed_updates") or []),
+                    "pending_update_count": info.get("pending_update_count", 0),
+                    "last_error_date": info.get("last_error_date"),
+                    "last_error_message": info.get("last_error_message"),
+                }
+        except Exception as e:
+            out["webhook"] = {"erro": str(e)}
+    else:
+        out["webhook"] = {"erro": "bot_token não configurado"}
+
+    # 2. Configs ativas
+    try:
+        cfgs = (db.table("booster_auto").select("*").eq("ativo", True).execute().data) or []
+        out["auto_configs_ativas"] = [
+            {"canal_nome": c.get("canal_nome"), "canal_telegram_id": c.get("canal_telegram_id"),
+             "qtd_views": c.get("qtd_views"), "qtd_reacoes": c.get("qtd_reacoes")}
+            for c in cfgs
+        ]
+    except Exception as e:
+        out["auto_configs_ativas"] = {"erro": str(e)}
+
+    # 3. Contas ativas
+    try:
+        contas = db.table("booster_contas").select("status,phone,first_name").execute().data or []
+        out["contas"] = {
+            "total": len(contas),
+            "ativas": sum(1 for c in contas if c.get("status") == "ativa"),
+            "banidas": sum(1 for c in contas if c.get("status") == "banida"),
+            "cooldown": sum(1 for c in contas if c.get("status") == "cooldown"),
+        }
+    except Exception as e:
+        out["contas"] = {"erro": str(e)}
+
+    # 4. Últimas 5 campanhas (foca em auto)
+    try:
+        camps = (db.table("booster_campanhas").select("id,nome,canal_link,status,views_entregues,reacoes_entregues,qtd_views,qtd_reacoes,erro_msg,criado_em")
+                 .order("criado_em", desc=True).limit(10).execute().data) or []
+        out["ultimas_campanhas"] = camps
+    except Exception as e:
+        out["ultimas_campanhas"] = {"erro": str(e)}
+
+    # 5. Worker
+    out["worker_iniciado"] = _worker_iniciado
+    out["campanhas_em_execucao"] = list(_campanhas_tasks.keys())
+
+    return out
+
+
 @app.get("/booster/status-resumo")
 def booster_status_resumo():
     """Resumo geral pra aba Status."""
