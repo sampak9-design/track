@@ -265,9 +265,7 @@ def get_tiktok_config():
 async def enviar_kwai(event_name: str, email: str = None, phone: str = None, value: float = None, telegram_user_id: str = None, canal_nome: str = None):
     pixel_id, token = get_kwai_config()
     if not pixel_id or not token:
-        print(f"[KWAI ✗] Pixel ID ou Token não configurado")
-        salvar_log_conversao("kwai", event_name, "erro", 0, "Pixel/Token não configurado",
-                             email, phone, value, telegram_user_id, canal_nome)
+        # Não loga erro se a plataforma simplesmente não foi configurada — silencia
         return
 
     user_info = {}
@@ -311,9 +309,7 @@ async def enviar_kwai(event_name: str, email: str = None, phone: str = None, val
 async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, value: float = None, telegram_user_id: str = None, canal_nome: str = None):
     pixel_code, token = get_tiktok_config()
     if not pixel_code or not token:
-        print(f"[TIKTOK ✗] Pixel Code ou Token não configurado")
-        salvar_log_conversao("tiktok", event_name, "erro", 0, "Pixel/Token não configurado",
-                             email, phone, value, telegram_user_id, canal_nome)
+        # Não loga erro se a plataforma simplesmente não foi configurada — silencia
         return
 
     user = {}
