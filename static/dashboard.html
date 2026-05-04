@@ -1971,14 +1971,26 @@
       <!-- TAB: Auto-Boost -->
       <div id="b-tab-auto" style="display:none">
         <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
-          <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
             <span style="font-size:1.1rem">🔄</span>
             <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
-              <b style="color:#e2e8f0">Auto-Boost:</b> impulsiona <b>todo post novo</b> dos canais selecionados automaticamente. Quando você publica, o bot recebe o evento <code>channel_post</code> via webhook e cria uma campanha sozinho.
+              <b style="color:#e2e8f0">Auto-Boost:</b> impulsiona <b>todo post novo</b> dos canais selecionados automaticamente. Quando você publica, o bot recebe <code>channel_post</code> via webhook e cria campanha sozinho.
               <br><br>
-              <b style="color:#e2e8f0">Pré-requisito:</b> o bot precisa estar como admin do canal (com permissão "postar mensagens").
+              <b style="color:#e2e8f0">Pré-requisito:</b> bot como admin do canal com permissão "postar mensagens".
             </div>
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="atualizarWebhookBooster()" id="btn-wh-update"
+              style="background:#1877f2;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
+              🔌 Atualizar webhook do bot
+            </button>
+            <button onclick="verDiagBooster()"
+              style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit">
+              🔍 Diagnóstico
+            </button>
+            <span id="wh-msg" style="font-size:0.74rem;align-self:center;display:none"></span>
+          </div>
+          <pre id="diag-output" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:6px;padding:10px;margin-top:10px;font-size:0.7rem;color:#a8c5ed;overflow:auto;max-height:300px;font-family:monospace"></pre>
         </div>
 
         <!-- Adicionar canal via link -->
@@ -4822,6 +4834,37 @@
 
   // ── Booster: Auto-Boost (todos os posts novos) ──
   const _autoEmojis = {};   // canal_id -> [emojis]
+
+  async function atualizarWebhookBooster() {
+    const btn = document.getElementById("btn-wh-update");
+    const msg = document.getElementById("wh-msg");
+    btn.disabled = true; btn.textContent = "Atualizando...";
+    try {
+      const r = await fetch("/booster/webhook/atualizar", {method:"POST"});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      const tem = (d.webhook?.allowed_updates || []).includes("channel_post");
+      msg.innerHTML = tem ? "✓ Webhook atualizado · channel_post ativo" : "⚠ Webhook ok mas sem channel_post";
+      msg.style.color = tem ? "#22c55e" : "#f59e0b";
+      msg.style.display = "inline";
+    } catch(e) {
+      msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
+    } finally {
+      btn.disabled = false; btn.textContent = "🔌 Atualizar webhook do bot";
+    }
+  }
+
+  async function verDiagBooster() {
+    const out = document.getElementById("diag-output");
+    out.style.display = "block";
+    out.textContent = "Carregando...";
+    try {
+      const d = await (await fetch("/booster/auto/diag")).json();
+      out.textContent = JSON.stringify(d, null, 2);
+    } catch(e) {
+      out.textContent = "Erro: " + e.message;
+    }
+  }
 
   async function adicionarCanalAuto() {
     const inp = document.getElementById("auto-add-link");

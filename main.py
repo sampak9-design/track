@@ -3244,6 +3244,40 @@ def booster_auto_deletar(auto_id: int):
     return {"ok": True}
 
 
+@app.post("/booster/webhook/atualizar")
+async def booster_atualizar_webhook(request: Request):
+    """Força reconfiguração do webhook com channel_post incluído (pra Auto-Boost)."""
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception: pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="bot_token não configurado em Pixels → Telegram")
+    webhook_url = str(request.base_url).rstrip("/").replace("http://","https://") + "/telegram/webhook"
+    secret = _get_telegram_secret_token()
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/setWebhook",
+                json={"url": webhook_url,
+                      "allowed_updates": ["chat_member","my_chat_member","chat_join_request","message","channel_post"],
+                      "secret_token": secret},
+            )
+        d = resp.json()
+        if not d.get("ok"):
+            raise HTTPException(status_code=400, detail=d.get("description","erro"))
+        # Verifica
+        async with httpx.AsyncClient(timeout=10) as client:
+            info = await client.get(f"https://api.telegram.org/bot{bot_token}/getWebhookInfo")
+        info_d = info.json()
+        return {"ok": True, "webhook": info_d.get("result", {})}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/booster/auto/diag")
 async def booster_auto_diag():
     """Diagnóstico completo do Auto-Boost: webhook, configs, contas, últimas campanhas auto."""
