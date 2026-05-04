@@ -958,7 +958,7 @@
         <button class="ia-sugestao" onclick="iaSugestao('Quais UTM sources estão trazendo mais conversão e quais estão queimando dinheiro?')">🎯 Análise por fonte</button>
         <button class="ia-sugestao" onclick="iaSugestao('Meu CPL e CPA estão saudáveis comparados à receita gerada? Recomende ajustes.')">💰 Saúde do funil</button>
         <button class="ia-sugestao" onclick="iaSugestao('Compare entradas vs saídas no Telegram. A retenção está OK?')">👥 Retenção Telegram</button>
-        <button class="ia-sugestao" onclick="iaSugestao('Os pixels Meta/Kwai/TikTok estão recebendo eventos corretamente? Há erros?')">🔌 Status dos pixels</button>
+        <button class="ia-sugestao" onclick="iaSugestao('Os pixels Meta/Kwai/TikTok estão recebendo eventos corretamente? Há erros?')">Status dos pixels</button>
       </div>
 
       <!-- Chat -->
@@ -1048,11 +1048,11 @@
       <div style="display:flex;gap:0;border-bottom:1px solid #1e2235;margin-bottom:16px">
         <button class="tab-trafego ativo" onclick="mudarTabTrafego('resumo',this)"
           style="padding:9px 18px;background:#1e2235;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
-          📊 Resumo
+          Resumo
         </button>
         <button class="tab-trafego" onclick="mudarTabTrafego('campanhas',this)"
           style="padding:9px 18px;background:none;border:none;color:#6b7280;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit">
-          🎯 Campanhas
+          Campanhas
         </button>
       </div>
 
@@ -1693,16 +1693,19 @@
       <!-- Sub-abas horizontais -->
       <div style="display:flex;gap:4px;border-bottom:1px solid #1e2235;margin-bottom:18px;overflow-x:auto">
         <button onclick="abrirAutomacaoTab('boasvindas')" id="autotab-boasvindas"
-          style="background:none;border:none;border-bottom:2px solid #4f6ef7;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          👋 Boas-vindas
+          style="background:none;border:none;border-bottom:2px solid #4f6ef7;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Boas-vindas
         </button>
         <button onclick="abrirAutomacaoTab('saida')" id="autotab-saida"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          🚪 Saída
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Saída
         </button>
         <button onclick="abrirAutomacaoTab('inbox')" id="autotab-inbox"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          💬 Inbox
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          Inbox
         </button>
       </div>
 
@@ -1776,15 +1779,15 @@
     <!-- ════ BOOSTER (userbots / views / reações) ════ -->
     <div class="secao" id="sec-booster">
       <div style="margin-bottom:14px">
-        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">⚡ Booster</h2>
-        <p style="font-size:0.82rem;color:#6b7280">Pool de contas Telegram pra impulsionar views e reações nas postagens dos seus canais</p>
+        <h2 style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Booster</h2>
+        <p style="font-size:0.82rem;color:#6b7280">Pool de contas pra impulsionar views e reações nas postagens dos seus canais</p>
       </div>
 
-      <div class="panel" style="margin-bottom:14px;background:#2a1810;border:1px solid #5f3a1e">
+      <div class="panel" style="margin-bottom:14px;background:#1a1408;border:1px solid #3a2a10">
         <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:1.1rem">⚠️</span>
-          <div style="font-size:0.78rem;color:#edc5a8;line-height:1.6">
-            <b style="color:#e2e8f0">Importante:</b> esse recurso usa userbots (contas reais via MTProto). Viola os ToS do Telegram e pode resultar em ban da conta. Use com moderação e de preferência em canais não vinculados a anúncios pagos (Meta detecta engajamento falso).
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style="font-size:0.78rem;color:#c9a87a;line-height:1.6">
+            Esse recurso usa userbots (contas reais via MTProto). Viola os ToS do Telegram e pode resultar em ban da conta. Use com moderação e de preferência em canais não vinculados a anúncios pagos (Meta detecta engajamento falso).
           </div>
         </div>
       </div>
@@ -1792,24 +1795,29 @@
       <!-- Sub-abas -->
       <div style="display:flex;gap:4px;border-bottom:1px solid #1e2235;margin-bottom:18px;overflow-x:auto">
         <button onclick="abrirBoosterTab('contas')" id="btab-contas"
-          style="background:none;border:none;border-bottom:2px solid #f59e0b;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          👥 Contas
+          style="background:none;border:none;border-bottom:2px solid #f59e0b;color:#e2e8f0;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Contas
         </button>
         <button onclick="abrirBoosterTab('campanhas')" id="btab-campanhas"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          🎯 Campanhas
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Campanhas
         </button>
         <button onclick="abrirBoosterTab('auto')" id="btab-auto"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          🔄 Auto
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Auto
         </button>
         <button onclick="abrirBoosterTab('status')" id="btab-status"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          📊 Status
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Status
         </button>
         <button onclick="abrirBoosterTab('config')" id="btab-config"
-          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
-          ⚙️ Config
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Config
         </button>
       </div>
 
@@ -1819,12 +1827,14 @@
           <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Pool de Contas</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="abrirModalUploadSession()"
-              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              📂 Upload .session
+              style="background:#0f1117;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:7px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload .session
             </button>
             <button onclick="abrirModalLogin()"
-              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              📱 Login via SMS
+              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:7px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              Adicionar via SMS
             </button>
           </div>
         </div>
@@ -1840,9 +1850,14 @@
       <!-- TAB: Campanhas -->
       <div id="b-tab-campanhas" style="display:none">
         <!-- Form: boost canal inteiro (últimos N posts) -->
-        <div class="panel" style="margin-bottom:14px;border:1px solid #f59e0b">
-          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">🚀 Boost por Canal (últimos posts)</div>
-          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole só o <b>link do canal</b>. O sistema busca os últimos N posts via userbot e cria uma campanha pra cada.</p>
+        <div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div style="width:28px;height:28px;background:#1a2440;border-radius:7px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Boost por Canal</div>
+          </div>
+          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole o link do canal. O sistema busca os últimos N posts via userbot e cria uma campanha pra cada.</p>
 
           <div style="display:grid;grid-template-columns:1fr;gap:12px;max-width:680px">
             <div>
@@ -1858,12 +1873,12 @@
                   style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
               </div>
               <div>
-                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">👁 Views/post</label>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Views por post</label>
                 <input type="number" id="campc-views" min="0" value="50"
                   style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
               </div>
               <div>
-                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">❤️ Reações/post</label>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Reações por post</label>
                 <input type="number" id="campc-reacoes" min="0" value="10"
                   style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
               </div>
@@ -1894,8 +1909,8 @@
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
               <button onclick="criarCampanhaCanal()" id="btn-criar-campc"
-                style="background:#f59e0b;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
-                🚀 Buscar posts e impulsionar
+                style="background:#1877f2;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
+                Buscar posts e impulsionar
               </button>
               <span id="campc-msg" style="font-size:0.78rem;display:none"></span>
             </div>
@@ -1904,8 +1919,13 @@
 
         <!-- Form criar campanha (post específico) -->
         <div class="panel" style="margin-bottom:14px">
-          <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">🎯 Nova Campanha (post específico)</div>
-          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole o link completo do post no canal. Ex: <code>https://t.me/seucanal/123</code></p>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div style="width:28px;height:28px;background:#1a2440;border-radius:7px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">Post Específico</div>
+          </div>
+          <p style="font-size:0.78rem;color:#6b7280;margin-bottom:14px">Cole o link completo do post. Ex: <code>https://t.me/seucanal/123</code></p>
 
           <div style="display:grid;grid-template-columns:1fr;gap:12px;max-width:680px">
             <div>
@@ -1916,12 +1936,12 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div>
-                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">👁 Views</label>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Views</label>
                 <input type="number" id="camp-views" min="0" value="50"
                   style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
               </div>
               <div>
-                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">❤️ Reações</label>
+                <label style="font-size:0.74rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Reações</label>
                 <input type="number" id="camp-reacoes" min="0" value="10"
                   style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
               </div>
@@ -1952,8 +1972,8 @@
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
               <button onclick="criarCampanha()" id="btn-criar-camp"
-                style="background:#22c55e;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
-                🚀 Criar e iniciar
+                style="background:#1877f2;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
+                Criar e iniciar
               </button>
               <span id="camp-msg" style="font-size:0.78rem;display:none"></span>
             </div>
@@ -1972,9 +1992,9 @@
       <div id="b-tab-auto" style="display:none">
         <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
           <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
-            <span style="font-size:1.1rem">🔄</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="2" style="flex-shrink:0;margin-top:2px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
-              <b style="color:#e2e8f0">Auto-Boost:</b> impulsiona <b>todo post novo</b> dos canais selecionados automaticamente. Quando você publica, o bot recebe <code>channel_post</code> via webhook e cria campanha sozinho.
+              <b style="color:#e2e8f0">Auto-Boost</b> impulsiona todo post novo dos canais selecionados automaticamente. Quando você publica, o bot recebe <code>channel_post</code> via webhook e cria campanha sozinho.
               <br><br>
               <b style="color:#e2e8f0">Pré-requisito:</b> bot como admin do canal com permissão "postar mensagens".
             </div>
@@ -1982,11 +2002,11 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="atualizarWebhookBooster()" id="btn-wh-update"
               style="background:#1877f2;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
-              🔌 Atualizar webhook do bot
+              Atualizar webhook do bot
             </button>
             <button onclick="verDiagBooster()"
               style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit">
-              🔍 Diagnóstico
+              Diagnóstico
             </button>
             <span id="wh-msg" style="font-size:0.74rem;align-self:center;display:none"></span>
           </div>
@@ -2444,7 +2464,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster ⚡", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster", configuracoes: "Configurações"
   };
 
   // ── Stats / Resumo ──
@@ -3567,7 +3587,7 @@
 
           <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
             <button onclick="gerarLinkSolicitacao(${c.id})" style="background:#a855f7;color:white;border:none;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
-              ✨ Gerar novo link com solicitação
+              Gerar novo link com solicitação
             </button>
           </div>
           <div style="font-size:0.7rem;color:#6b7280;margin-bottom:14px;line-height:1.5">
@@ -3764,11 +3784,11 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
             <button onclick="salvarBoasVindas(${c.id})"
               style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              💾 Salvar
+              Salvar
             </button>
             <button onclick="testarBoasVindas(${c.id})"
               style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              🧪 Enviar teste
+              Enviar teste
             </button>
             <span id="bv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
           </div>
@@ -3997,11 +4017,11 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
             <button onclick="salvarSaida(${c.id})"
               style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              💾 Salvar
+              Salvar
             </button>
             <button onclick="testarSaida(${c.id})"
               style="background:#1a1d2e;border:1px solid #2d3148;color:#c9d1e0;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              🧪 Enviar teste
+              Enviar teste
             </button>
             <span id="sv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
           </div>
@@ -4206,7 +4226,7 @@
               <div style="font-size:0.66rem;color:#6b7280;flex-shrink:0">${_formatTempo(t.ultima_em)}</div>
             </div>
             <div style="font-size:0.72rem;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${dirIcon} ${_escHtml(preview)}</div>
-            <div style="font-size:0.62rem;color:#4b5563;margin-top:2px">${_escHtml(t.canal_nome||'')} · ${t.total} msgs ${t.tem_resposta?'· 💬 respondeu':''}</div>
+            <div style="font-size:0.62rem;color:#4b5563;margin-top:2px">${_escHtml(t.canal_nome||'')} · ${t.total} msgs ${t.tem_resposta?'· respondeu':''}</div>
           </div>
         </div>`;
       }).join("");
@@ -4239,10 +4259,10 @@
         const out = (m.direcao === "out");
         const ts = m.created_at ? new Date(m.created_at).toLocaleString("pt-BR") : "";
         const evento = m.evento || "";
-        const eventoLabel = evento === "welcome" ? "👋 Boas-vindas"
-                          : evento === "leave"   ? "🚪 Saída"
-                          : evento === "manual"  ? "✏️ Manual"
-                          : evento === "user_reply" ? "📨 Resposta"
+        const eventoLabel = evento === "welcome" ? "Boas-vindas"
+                          : evento === "leave"   ? "Saída"
+                          : evento === "manual"  ? "Manual"
+                          : evento === "user_reply" ? "Resposta"
                           : evento;
         const conteudo = (m.conteudo || "").replace(/\n/g,"<br>");
         const midia = m.midia_url ? `<div style="margin-bottom:6px"><img src="${_escHtml(m.midia_url)}" style="max-width:100%;max-height:220px;border-radius:6px" onerror="this.style.display='none'"></div>` : "";
@@ -4358,14 +4378,16 @@
 
   function _statusBadge(status) {
     const map = {
-      ativa:    {cor:"#22c55e", bg:"#0d2818", txt:"✓ Ativa"},
-      cooldown: {cor:"#f59e0b", bg:"#2a1d05", txt:"⏸ Cooldown"},
-      banida:   {cor:"#ef4444", bg:"#2a0d0d", txt:"⛔ Banida"},
-      erro:     {cor:"#ef4444", bg:"#2a0d0d", txt:"⚠ Erro"},
-      pendente: {cor:"#6b7280", bg:"#1a1d2e", txt:"⏳ Pendente"},
+      ativa:    {cor:"#22c55e", bg:"#0d2818", txt:"Ativa"},
+      cooldown: {cor:"#f59e0b", bg:"#2a1d05", txt:"Cooldown"},
+      banida:   {cor:"#ef4444", bg:"#2a0d0d", txt:"Banida"},
+      erro:     {cor:"#ef4444", bg:"#2a0d0d", txt:"Erro"},
+      pendente: {cor:"#6b7280", bg:"#1a1d2e", txt:"Pendente"},
     };
     const s = map[status] || {cor:"#6b7280", bg:"#1a1d2e", txt:status};
-    return `<span style="background:${s.bg};color:${s.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">${s.txt}</span>`;
+    return `<span style="background:${s.bg};color:${s.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:5px">
+      <span style="width:6px;height:6px;border-radius:50%;background:${s.cor};display:inline-block"></span>${s.txt}
+    </span>`;
   }
 
   async function carregarBoosterContas() {
@@ -4377,7 +4399,7 @@
       if (!contas.length) {
         cont.innerHTML = `<div class="panel"><div class="empty-state" style="padding:40px 20px;text-align:center;color:#6b7280">
           <div style="font-size:2rem;margin-bottom:10px">👥</div>
-          <p>Nenhuma conta ainda. Clique em <b style="color:#e2e8f0">📂 Upload .session</b> pra começar.</p>
+          <p>Nenhuma conta ainda. Clique em <b style="color:#e2e8f0">Upload .session</b> pra começar.</p>
           <p style="font-size:0.74rem;margin-top:8px">Se ainda não configurou API ID/Hash, vá em <b>Config</b> primeiro.</p>
         </div></div>`;
         return;
@@ -4410,7 +4432,9 @@
                   <button onclick="testarConta(${c.id})" title="Testar conexão"
                     style="background:#0f1117;border:1px solid #1e2235;color:#4f6ef7;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit;margin-right:4px">↻ Testar</button>
                   <button onclick="deletarConta(${c.id}, '${_escHtml(c.phone||c.username||c.id)}')" title="Excluir"
-                    style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">🗑</button>
+                    style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
                 </td>
               </tr>
             `).join("")}
@@ -4715,7 +4739,7 @@
     } catch(e) {
       msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
     } finally {
-      btn.disabled = false; btn.textContent = "🚀 Buscar posts e impulsionar";
+      btn.disabled = false; btn.textContent = "Buscar posts e impulsionar";
     }
   }
 
@@ -4754,21 +4778,23 @@
     } catch(e) {
       msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
     } finally {
-      btn.disabled = false; btn.textContent = "🚀 Criar e iniciar";
+      btn.disabled = false; btn.textContent = "Criar e iniciar";
     }
   }
 
   function _campStatusBadge(s) {
     const map = {
-      pendente:  {bg:"#1a1d2e",cor:"#9ca3af",txt:"⏳ Pendente"},
-      rodando:   {bg:"#0f2e1a",cor:"#22c55e",txt:"▶ Rodando"},
-      pausada:   {bg:"#2a1d05",cor:"#f59e0b",txt:"⏸ Pausada"},
-      concluida: {bg:"#0f1d34",cor:"#4f6ef7",txt:"✓ Concluída"},
-      cancelada: {bg:"#1a1d2e",cor:"#6b7280",txt:"✕ Cancelada"},
-      erro:      {bg:"#2a0d0d",cor:"#ef4444",txt:"⚠ Erro"},
+      pendente:  {bg:"#1a1d2e",cor:"#9ca3af",txt:"Pendente"},
+      rodando:   {bg:"#0f2e1a",cor:"#22c55e",txt:"Rodando"},
+      pausada:   {bg:"#2a1d05",cor:"#f59e0b",txt:"Pausada"},
+      concluida: {bg:"#0f1d34",cor:"#4f6ef7",txt:"Concluída"},
+      cancelada: {bg:"#1a1d2e",cor:"#6b7280",txt:"Cancelada"},
+      erro:      {bg:"#2a0d0d",cor:"#ef4444",txt:"Erro"},
     };
     const m = map[s] || {bg:"#1a1d2e",cor:"#6b7280",txt:s};
-    return `<span style="background:${m.bg};color:${m.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">${m.txt}</span>`;
+    return `<span style="background:${m.bg};color:${m.cor};padding:3px 8px;border-radius:4px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:5px">
+      <span style="width:6px;height:6px;border-radius:50%;background:${m.cor};display:inline-block"></span>${m.txt}
+    </span>`;
   }
 
   async function carregarCampanhas() {
@@ -4794,15 +4820,17 @@
             </div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               ${_campStatusBadge(c.status)}
-              ${podeCancelar ? `<button onclick="cancelarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#f59e0b;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">✕ Cancelar</button>` : ""}
-              <button onclick="deletarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">🗑</button>
+              ${podeCancelar ? `<button onclick="cancelarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#f59e0b;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">Cancelar</button>` : ""}
+              <button onclick="deletarCampanha(${c.id})" style="background:#0f1117;border:1px solid #1e2235;color:#ef4444;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit" title="Excluir">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
             </div>
           </div>
 
           <div style="display:flex;gap:14px;font-size:0.78rem;color:#c9d1e0;margin-bottom:8px;flex-wrap:wrap">
-            <div>👁 <b>${c.views_entregues||0}</b> / ${c.qtd_views||0}</div>
-            <div>❤️ <b>${c.reacoes_entregues||0}</b> / ${c.qtd_reacoes||0}</div>
-            <div style="color:#6b7280">⏱ ${c.janela_min||0}min</div>
+            <div><span style="color:#6b7280">Views</span> <b>${c.views_entregues||0}</b><span style="color:#6b7280">/${c.qtd_views||0}</span></div>
+            <div><span style="color:#6b7280">Reações</span> <b>${c.reacoes_entregues||0}</b><span style="color:#6b7280">/${c.qtd_reacoes||0}</span></div>
+            <div style="color:#6b7280">Janela ${c.janela_min||0}min</div>
           </div>
 
           <div style="background:#0f1117;border:1px solid #1e2235;border-radius:5px;height:6px;overflow:hidden">
@@ -4850,7 +4878,7 @@
     } catch(e) {
       msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
     } finally {
-      btn.disabled = false; btn.textContent = "🔌 Atualizar webhook do bot";
+      btn.disabled = false; btn.textContent = "Atualizar webhook do bot";
     }
   }
 
@@ -4926,12 +4954,12 @@
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
             <div>
-              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">👁 Views por post</label>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Views por post</label>
               <input type="number" id="auto-views-${c.canal_id}" min="0" value="${c.qtd_views}"
                 style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
             </div>
             <div>
-              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">❤️ Reações por post</label>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Reações por post</label>
               <input type="number" id="auto-reacoes-${c.canal_id}" min="0" value="${c.qtd_reacoes}"
                 style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
             </div>
@@ -4967,11 +4995,11 @@
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
             <button onclick="salvarBoosterAuto(${c.canal_id})"
-              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
-              💾 Salvar
+              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              Salvar
             </button>
             ${c.auto_id ? `<button onclick="deletarBoosterAuto(${c.auto_id})"
-              style="background:#1a1d2e;border:1px solid #2d3148;color:#ef4444;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">🗑 Remover</button>` : ""}
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#ef4444;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Remover</button>` : ""}
             <span id="auto-msg-${c.canal_id}" style="font-size:0.74rem;align-self:center;display:none"></span>
           </div>
         </div>`;
@@ -5067,8 +5095,8 @@
             <div style="font-size:1.6rem;font-weight:700;color:${cor}">${valor}</div>
           </div>`;
         cardsEl.innerHTML =
-          card("Contas Ativas", c.ativa||0, "#22c55e") +
-          card("Cooldown", c.cooldown||0, "#f59e0b") +
+          card("Contas ativas", c.ativa||0, "#22c55e") +
+          card("Em cooldown", c.cooldown||0, "#f59e0b") +
           card("Banidas", c.banida||0, "#ef4444") +
           card("Rodando", p.rodando||0, "#22c55e") +
           card("Views entregues", t.views_entregues||0, "#4f6ef7") +
@@ -5105,7 +5133,7 @@
             const corStatus = a.status==="sucesso"?"#22c55e":a.status==="flood"?"#f59e0b":"#ef4444";
             const conta = a.booster_contas || {};
             const contaNome = conta.first_name || conta.username || conta.phone || ("id "+a.conta_id);
-            const tipoTxt = a.tipo === "view" ? "👁 view" : `${a.emoji||"❤️"} reação`;
+            const tipoTxt = a.tipo === "view" ? "view" : `${a.emoji||"reação"}`;
             return `<tr style="border-top:1px solid #1e2235">
               <td style="padding:7px 10px;color:#9ca3af;font-family:monospace;font-size:0.7rem">${_formatTempo(a.executado_em)}</td>
               <td style="padding:7px 10px;color:#e2e8f0">${tipoTxt}</td>
