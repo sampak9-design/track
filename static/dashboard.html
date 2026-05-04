@@ -4755,9 +4755,10 @@
             </div>
             <label style="position:relative;display:inline-block;width:42px;height:22px">
               <input type="checkbox" id="auto-ativo-${c.canal_id}" ${c.ativo ? 'checked' : ''}
+                onchange="toggleAutoAtivo(${c.canal_id}, this)"
                 style="opacity:0;width:0;height:0">
-              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${c.ativo ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
-                <span style="position:absolute;content:'';height:16px;width:16px;left:${c.ativo ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
+              <span id="auto-track-${c.canal_id}" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${c.ativo ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
+                <span id="auto-knob-${c.canal_id}" style="position:absolute;content:'';height:16px;width:16px;left:${c.ativo ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
               </span>
             </label>
           </div>
@@ -4839,6 +4840,17 @@
     if (!lista.length) lista = ["👍"];
     _autoEmojis[canalId] = lista;
     renderAutoEmojis(canalId);
+  }
+
+  function toggleAutoAtivo(canalId, inputEl) {
+    const ativo = inputEl.checked;
+    // Atualiza visual imediatamente
+    const track = document.getElementById("auto-track-" + canalId);
+    const knob = document.getElementById("auto-knob-" + canalId);
+    if (track) track.style.background = ativo ? "#22c55e" : "#2d3148";
+    if (knob) knob.style.left = ativo ? "23px" : "3px";
+    // Salva direto
+    salvarBoosterAuto(canalId);
   }
 
   async function salvarBoosterAuto(canalId) {
