@@ -51,14 +51,53 @@ def extrair_utms(data: dict) -> dict:
     }
 
 def get_meta_config():
-    """Lê pixel_id e token salvos no Supabase."""
+    """Lê pixel_id e token salvos no Supabase. Retrocompat: pega o primeiro pixel ativo da lista."""
     try:
+        # Tenta primeiro a lista nova
+        pixels = get_meta_pixels(somente_ativos=True)
+        if pixels:
+            return pixels[0]["pixel_id"], pixels[0]["access_token"]
+        # Fallback: config antiga
         result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         return cfg.get("meta_pixel_id"), cfg.get("meta_token")
     except Exception as e:
         print(f"[CFG] Erro ao ler config: {e}")
         return None, None
+
+
+def get_meta_pixels(somente_ativos: bool = False) -> list:
+    """Lê lista de pixels Meta. Retorna [{nome, pixel_id, access_token, ativo, id}, ...].
+    Faz auto-migração da config antiga (pixel único) pra lista, mantendo retrocompat."""
+    try:
+        raw = _get_cfg("meta_pixels")
+        if raw:
+            try:
+                lista = json.loads(raw)
+                if isinstance(lista, list):
+                    if somente_ativos:
+                        lista = [p for p in lista if p.get("ativo")]
+                    return lista
+            except Exception:
+                pass
+        # Auto-migra config antiga (pixel_id + token)
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).execute()
+        cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
+        pid, tok = cfg.get("meta_pixel_id"), cfg.get("meta_token")
+        if pid and tok:
+            migrated = [{"id": "p1", "nome": "Pixel principal", "pixel_id": pid, "access_token": tok, "ativo": True}]
+            _set_cfg("meta_pixels", json.dumps(migrated))
+            print("[META] config antiga migrada pra lista de pixels")
+            return migrated if not somente_ativos or migrated[0]["ativo"] else []
+        return []
+    except Exception as e:
+        print(f"[META pixels CFG ERRO] {e}")
+        return []
+
+
+def save_meta_pixels(lista: list):
+    """Persiste a lista de pixels."""
+    _set_cfg("meta_pixels", json.dumps(lista, ensure_ascii=False))
 
 def salvar_log_conversao(plataforma: str, event_name: str, status: str, code: int, response: str,
                           email: str = None, phone: str = None, value: float = None,
@@ -113,10 +152,10 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
                       fbc: str = None, fbp: str = None, client_ip: str = None,
                       user_agent: str = None, external_id: str = None,
                       event_source_url: str = None, action_source: str = "website"):
-    pixel_id, token = get_meta_config()
-    if not pixel_id or not token:
-        print(f"[META ✗] Pixel ID ou Token não configurado")
-        salvar_log_conversao("meta", event_name, "erro", 0, "Pixel/Token não configurado",
+    pixels = get_meta_pixels(somente_ativos=True)
+    if not pixels:
+        print(f"[META ✗] Nenhum pixel ativo configurado")
+        salvar_log_conversao("meta", event_name, "erro", 0, "Nenhum pixel ativo configurado",
                              email, phone, value, telegram_user_id, canal_nome)
         return
 
@@ -181,19 +220,26 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
     if custom_data:
         evento["custom_data"] = custom_data
 
-    url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
+    # Envia pra cada pixel ativo (em paralelo)
+    async def _enviar_um(p):
+        pid = p.get("pixel_id"); tok = p.get("access_token"); nome = p.get("nome") or pid
+        url = f"https://graph.facebook.com/v19.0/{pid}/events"
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.post(url, params={"access_token": tok}, json={"data": [evento]})
+            status = "sucesso" if resp.status_code == 200 else "erro"
+            salvar_log_conversao("meta", event_name, status, resp.status_code,
+                                 f"[{nome}] {resp.text}", email, phone, value, telegram_user_id, canal_nome)
+            if resp.status_code == 200:
+                print(f"[META ✓ {nome}] {event_name} | fbc={'✓' if fbc else '✗'} fbp={'✓' if fbp else '✗'} ip={'✓' if client_ip else '✗'}")
+            else:
+                print(f"[META ✗ {nome}] {resp.status_code} — {resp.text[:200]}")
+        except Exception as e:
+            salvar_log_conversao("meta", event_name, "erro", 0, f"[{nome}] {str(e)[:300]}",
+                                 email, phone, value, telegram_user_id, canal_nome)
+            print(f"[META ✗ {nome}] {e}")
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(url, params={"access_token": token}, json={"data": [evento]})
-
-    status = "sucesso" if resp.status_code == 200 else "erro"
-    salvar_log_conversao("meta", event_name, status, resp.status_code, resp.text,
-                         email, phone, value, telegram_user_id, canal_nome)
-
-    if resp.status_code == 200:
-        print(f"[META ✓] {event_name} | fbc={'✓' if fbc else '✗'} fbp={'✓' if fbp else '✗'} ip={'✓' if client_ip else '✗'} ua={'✓' if user_agent else '✗'}")
-    else:
-        print(f"[META ✗] {resp.status_code} — {resp.text}")
+    await asyncio.gather(*[_enviar_um(p) for p in pixels], return_exceptions=True)
 
 
 def get_kwai_config():
@@ -307,6 +353,7 @@ async def enviar_tiktok(event_name: str, email: str = None, phone: str = None, v
 # ── Config ───────────────────────────────────────────────────────
 @app.get("/config/meta")
 def ler_config_meta():
+    """Retrocompat: retorna o primeiro pixel ativo. Use /config/meta/pixels pra lista completa."""
     pixel_id, token = get_meta_config()
     return {
         "pixel_id": pixel_id or "",
@@ -314,8 +361,88 @@ def ler_config_meta():
         "configurado": bool(pixel_id and token),
     }
 
+
+@app.get("/config/meta/pixels")
+def listar_meta_pixels():
+    """Lista todos os pixels Meta cadastrados (com tokens mascarados)."""
+    pixels = get_meta_pixels()
+    out = []
+    for p in pixels:
+        tok = p.get("access_token", "") or ""
+        out.append({
+            "id":        p.get("id"),
+            "nome":      p.get("nome", ""),
+            "pixel_id":  p.get("pixel_id", ""),
+            "ativo":     bool(p.get("ativo", True)),
+            "has_token": bool(tok),
+            "token_mask": (tok[:6] + "..." + tok[-4:]) if len(tok) > 12 else "",
+        })
+    return {"pixels": out}
+
+
+@app.post("/config/meta/pixels")
+async def adicionar_meta_pixel(request: Request):
+    """Adiciona ou atualiza um pixel Meta na lista."""
+    body = await request.json()
+    nome = (body.get("nome") or "").strip() or "Pixel"
+    pixel_id = (body.get("pixel_id") or "").strip()
+    access_token = (body.get("access_token") or "").strip()
+    ativo = bool(body.get("ativo", True))
+    pixel_uid = body.get("id")  # se vier, é update
+
+    if not pixel_id:
+        raise HTTPException(status_code=400, detail="pixel_id obrigatório")
+    if not pixel_uid and not access_token:
+        raise HTTPException(status_code=400, detail="access_token obrigatório no cadastro novo")
+
+    pixels = get_meta_pixels()
+    if pixel_uid:
+        # Update
+        for p in pixels:
+            if p.get("id") == pixel_uid:
+                p["nome"] = nome
+                p["pixel_id"] = pixel_id
+                if access_token: p["access_token"] = access_token
+                p["ativo"] = ativo
+                break
+        else:
+            raise HTTPException(status_code=404, detail="pixel não encontrado")
+    else:
+        # Insert
+        import secrets
+        new_id = "p" + secrets.token_urlsafe(6)
+        pixels.append({
+            "id": new_id, "nome": nome, "pixel_id": pixel_id,
+            "access_token": access_token, "ativo": ativo,
+        })
+    save_meta_pixels(pixels)
+    return {"ok": True, "total": len(pixels)}
+
+
+@app.post("/config/meta/pixels/{pixel_uid}/toggle")
+async def toggle_meta_pixel(pixel_uid: str):
+    pixels = get_meta_pixels()
+    for p in pixels:
+        if p.get("id") == pixel_uid:
+            p["ativo"] = not bool(p.get("ativo"))
+            save_meta_pixels(pixels)
+            return {"ok": True, "ativo": p["ativo"]}
+    raise HTTPException(status_code=404, detail="pixel não encontrado")
+
+
+@app.delete("/config/meta/pixels/{pixel_uid}")
+def deletar_meta_pixel(pixel_uid: str):
+    pixels = get_meta_pixels()
+    novos = [p for p in pixels if p.get("id") != pixel_uid]
+    if len(novos) == len(pixels):
+        raise HTTPException(status_code=404, detail="pixel não encontrado")
+    save_meta_pixels(novos)
+    return {"ok": True}
+
+
 @app.post("/config/meta")
 async def salvar_config_meta(request: Request):
+    """Compatibilidade com formato antigo (pixel único)."""
     data = await request.json()
     pixel_id = data.get("pixel_id", "").strip()
     token = data.get("token", "").strip()
@@ -323,18 +450,16 @@ async def salvar_config_meta(request: Request):
     if not pixel_id or not token:
         raise HTTPException(status_code=400, detail="pixel_id e token são obrigatórios")
 
-    try:
-        for chave, valor in [("meta_pixel_id", pixel_id), ("meta_token", token)]:
-            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
-            if existing.data:
-                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
-            else:
-                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
-    except Exception as e:
-        print(f"[CONFIG ERRO] {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-    print(f"[CONFIG] Meta Pixel atualizado: {pixel_id}")
+    pixels = get_meta_pixels()
+    if pixels:
+        # Atualiza o primeiro pixel da lista
+        pixels[0]["pixel_id"] = pixel_id
+        pixels[0]["access_token"] = token
+        pixels[0]["ativo"] = True
+    else:
+        pixels = [{"id": "p1", "nome": "Pixel principal", "pixel_id": pixel_id, "access_token": token, "ativo": True}]
+    save_meta_pixels(pixels)
+    print(f"[CONFIG] Meta Pixel atualizado (legacy): {pixel_id}")
     return {"status": "ok"}
 
 @app.get("/config/kwai")
