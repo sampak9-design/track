@@ -786,16 +786,28 @@ async def metaads_insights(account_id: str, since: str = None, until: str = None
 # ── Endpoints ────────────────────────────────────────────────────
 @app.post("/cadastro")
 async def cadastro(request: Request):
-    data = await request.json()
-    print(f"[CADASTRO PAYLOAD] {data}")
+    # Aceita JSON, form-encoded, multipart e query (mesmo que /deposito)
+    try:
+        data = await _ler_payload_flex(request)
+    except NameError:
+        data = await request.json()
+    print(f"[CADASTRO PAYLOAD] content-type={request.headers.get('content-type')} data={data}")
 
     inner = data.get("data") or data
     utm   = inner.get("utm") or {}
 
+    # Nome: aceita firstName/lastName (formato antigo) OU name único (Zyrooption)
+    nome_completo = (inner.get("firstName","") + " " + inner.get("lastName","")).strip()
+    if not nome_completo:
+        nome_completo = inner.get("name") or inner.get("nome") or ""
+
+    email_in = inner.get("email") or data.get("email")
+    telefone_in = inner.get("phone") or inner.get("telefone") or data.get("telefone")
+
     registro = {
-        "nome":     (inner.get("firstName","") + " " + inner.get("lastName","")).strip() or inner.get("nome"),
-        "email":    inner.get("email")    or data.get("email"),
-        "telefone": inner.get("phone")    or inner.get("telefone") or data.get("telefone"),
+        "nome":     nome_completo or None,
+        "email":    email_in,
+        "telefone": telefone_in,
         "utm_source":   utm.get("source")   or data.get("utm_source"),
         "utm_medium":   utm.get("medium")   or data.get("utm_medium"),
         "utm_campaign": utm.get("campaign") or data.get("utm_campaign"),
@@ -803,22 +815,47 @@ async def cadastro(request: Request):
         "utm_term":     utm.get("term")     or data.get("utm_term"),
     }
 
-    result = db.table("cadastros").insert(registro).execute()
-    if not result.data:
-        raise HTTPException(status_code=500, detail="Erro ao salvar cadastro")
+    # Se o email já existe (cadastro veio do tracker.js antes), atualiza preservando UTMs
+    if email_in:
+        existing = db.table("cadastros").select("*").eq("email", email_in).execute()
+        if existing.data:
+            row = existing.data[0]
+            # Mantém UTMs antigos se os novos forem null (postback do broker geralmente não traz)
+            for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term"):
+                if not registro.get(k) and row.get(k):
+                    registro[k] = row[k]
+            # Atualiza só campos não-nulos
+            update_data = {k: v for k, v in registro.items() if v is not None}
+            db.table("cadastros").update(update_data).eq("id", row["id"]).execute()
+            result_id = row["id"]
+        else:
+            result = db.table("cadastros").insert(registro).execute()
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Erro ao salvar cadastro")
+            result_id = result.data[0]["id"]
+    else:
+        result = db.table("cadastros").insert(registro).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Erro ao salvar cadastro")
+        result_id = result.data[0]["id"]
+
+    # Extrai firstName/lastName pra Meta CAPI
+    parts = nome_completo.split(" ", 1)
+    first_name = inner.get("firstName") or (parts[0] if parts else "")
+    last_name = inner.get("lastName") or (parts[1] if len(parts) > 1 else "")
 
     await enviar_meta(
         "track_cadastro",
         email=registro["email"],
         phone=registro["telefone"],
-        first_name=inner.get("firstName"),
-        last_name=inner.get("lastName"),
+        first_name=first_name,
+        last_name=last_name,
     )
     await enviar_kwai("Registration", email=registro["email"], phone=registro["telefone"])
     await enviar_tiktok("CompleteRegistration", email=registro["email"], phone=registro["telefone"])
 
-    print(f"[CADASTRO] {registro['email']} salvo")
-    return {"status": "ok", "id": result.data[0]["id"]}
+    print(f"[CADASTRO] {registro['email']} salvo (id={result_id})")
+    return {"status": "ok", "id": result_id}
 
 
 _ultimos_depositos_raw = []  # cache em memória dos últimos 20 payloads brutos
@@ -900,10 +937,28 @@ async def deposito(request: Request):
     email = _extrair_email_deposito(data) or data.get("email")
     valor = _extrair_valor_deposito(data) or data.get("valor")
 
+    utms = extrair_utms(data)
+    # Se o postback do broker não trouxe UTMs, busca no cadastro do mesmo email
+    if email and not any(utms.values()):
+        try:
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            if cad.data:
+                row = cad.data[0]
+                utms = {
+                    "utm_source":   row.get("utm_source"),
+                    "utm_medium":   row.get("utm_medium"),
+                    "utm_campaign": row.get("utm_campaign"),
+                    "utm_content":  row.get("utm_content"),
+                    "utm_term":     row.get("utm_term"),
+                }
+                print(f"[DEPOSITO] UTMs herdados do cadastro de {email}: {utms}")
+        except Exception as e:
+            print(f"[DEPOSITO ERRO buscar UTMs] {e}")
+
     registro = {
         "email": email,
         "valor": valor,
-        **extrair_utms(data),
+        **utms,
     }
 
     result = db.table("depositos").insert(registro).execute()
@@ -933,7 +988,14 @@ async def deposito_get(request: Request):
     if not email:
         return {"status": "erro", "motivo": "email não encontrado no payload"}
 
-    registro = {"email": email, "valor": valor, **extrair_utms(data)}
+    utms = extrair_utms(data)
+    if not any(utms.values()):
+        try:
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            if cad.data:
+                utms = {k: cad.data[0].get(k) for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
+        except Exception: pass
+    registro = {"email": email, "valor": valor, **utms}
     result = db.table("depositos").insert(registro).execute()
 
     if registro["valor"]:
