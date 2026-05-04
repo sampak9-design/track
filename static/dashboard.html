@@ -1913,9 +1913,22 @@
             <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
               <b style="color:#e2e8f0">Auto-Boost:</b> impulsiona <b>todo post novo</b> dos canais selecionados automaticamente. Quando você publica, o bot recebe o evento <code>channel_post</code> via webhook e cria uma campanha sozinho.
               <br><br>
-              <b style="color:#e2e8f0">Pré-requisito:</b> o bot precisa estar como admin do canal (com permissão "ler mensagens").
+              <b style="color:#e2e8f0">Pré-requisito:</b> o bot precisa estar como admin do canal (com permissão "postar mensagens").
             </div>
           </div>
+        </div>
+
+        <!-- Adicionar canal via link -->
+        <div class="panel" style="margin-bottom:14px">
+          <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">+ Adicionar canal pelo link</div>
+          <p style="font-size:0.74rem;color:#6b7280;margin-bottom:10px">Cole o link do canal (<code>https://t.me/canal</code>, <code>@canal</code> ou <code>t.me/c/123...</code>). O bot precisa <b>já estar como admin</b> ou membro.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="auto-add-link" placeholder="https://t.me/seucanal"
+              style="flex:1;min-width:240px;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:monospace;outline:none">
+            <button onclick="adicionarCanalAuto()" id="btn-add-canal-auto"
+              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap">Adicionar</button>
+          </div>
+          <div id="auto-add-msg" style="font-size:0.74rem;margin-top:8px;display:none"></div>
         </div>
 
         <div id="b-lista-auto"></div>
@@ -4669,6 +4682,33 @@
 
   // ── Booster: Auto-Boost (todos os posts novos) ──
   const _autoEmojis = {};   // canal_id -> [emojis]
+
+  async function adicionarCanalAuto() {
+    const inp = document.getElementById("auto-add-link");
+    const link = inp.value.trim();
+    const msg = document.getElementById("auto-add-msg");
+    const btn = document.getElementById("btn-add-canal-auto");
+    if (!link) { msg.textContent = "✗ Cole o link do canal"; msg.style.color="#ef4444"; msg.style.display="block"; return; }
+    btn.disabled = true; btn.textContent = "Validando...";
+    try {
+      const r = await fetch("/booster/canal/adicionar-via-link", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({link}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      msg.innerHTML = `✓ Canal <b>${_escHtml(d.nome)}</b>${d.username ? ' (@'+_escHtml(d.username)+')' : ''} ${d.criado ? 'cadastrado' : 'atualizado'}. Configure embaixo.`;
+      msg.style.color = "#22c55e"; msg.style.display = "block";
+      inp.value = "";
+      carregarBoosterAuto();
+      setTimeout(() => { msg.style.display = "none"; }, 5000);
+    } catch(e) {
+      msg.textContent = "✗ " + e.message;
+      msg.style.color = "#ef4444"; msg.style.display = "block";
+    } finally {
+      btn.disabled = false; btn.textContent = "Adicionar";
+    }
+  }
 
   async function carregarBoosterAuto() {
     const cont = document.getElementById("b-lista-auto");

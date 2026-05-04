@@ -2987,6 +2987,80 @@ def booster_acoes_campanha(camp_id: int, limit: int = 200):
         return {"acoes": [], "erro": str(e)}
 
 
+# ── Cadastro manual de canal via link (precisa do bot admin) ─────────
+@app.post("/booster/canal/adicionar-via-link")
+async def booster_adicionar_canal_via_link(request: Request):
+    """Resolve um canal via link/username, valida que o bot tem acesso, salva em telegram_canais."""
+    body = await request.json()
+    link = (body.get("link") or "").strip()
+    if not link:
+        raise HTTPException(status_code=400, detail="link obrigatório")
+    # Normaliza pra @username ou -100... id
+    chat_id_param = None
+    m = re.match(r"https?://t\.me/c/(\d+)", link)
+    if m:
+        chat_id_param = "-100" + m.group(1)
+    else:
+        m = re.match(r"https?://t\.me/(\+[\w-]+)", link)  # link de invite (joinchat)
+        if m:
+            raise HTTPException(status_code=400, detail="Link de convite (joinchat) não funciona aqui. Use o link público @canal ou t.me/canal")
+        m = re.match(r"https?://t\.me/([^/?\s]+)", link)
+        if m:
+            chat_id_param = "@" + m.group(1)
+        elif link.startswith("@"):
+            chat_id_param = link
+        else:
+            chat_id_param = "@" + link
+    bot_token = TELEGRAM_BOT_TOKEN
+    try:
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        if r.data: bot_token = r.data[0]["valor"]
+    except Exception:
+        pass
+    if not bot_token:
+        raise HTTPException(status_code=400, detail="Bot não configurado em Pixels → Telegram")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"https://api.telegram.org/bot{bot_token}/getChat",
+                params={"chat_id": chat_id_param},
+            )
+        d = resp.json()
+        if not d.get("ok"):
+            desc = d.get("description") or "erro"
+            if "chat not found" in desc.lower():
+                raise HTTPException(status_code=400, detail="Canal não encontrado. O bot precisa ser admin (ou membro) do canal — adicione e tente de novo.")
+            raise HTTPException(status_code=400, detail=desc)
+        result = d["result"]
+        chat_id = result.get("id")
+        title = result.get("title") or result.get("username", "")
+        uname = result.get("username")
+        chat_type = result.get("type")
+        if chat_type not in ("channel", "supergroup", "group"):
+            raise HTTPException(status_code=400, detail=f"Tipo de chat '{chat_type}' não suportado (precisa ser canal ou grupo)")
+        # Insere/atualiza em telegram_canais
+        existing = db.table("telegram_canais").select("id").eq("telegram_id", str(chat_id)).execute()
+        if existing.data:
+            db.table("telegram_canais").update({
+                "nome": title, "username": ("@"+uname) if uname else "", "link": link,
+            }).eq("id", existing.data[0]["id"]).execute()
+            canal_id = existing.data[0]["id"]
+            criado = False
+        else:
+            ins = db.table("telegram_canais").insert({
+                "nome": title, "username": ("@"+uname) if uname else "",
+                "telegram_id": str(chat_id), "link": link,
+            }).execute()
+            canal_id = ins.data[0]["id"] if ins.data else None
+            criado = True
+        return {"ok": True, "canal_id": canal_id, "nome": title, "username": uname, "telegram_id": str(chat_id), "criado": criado}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[BOOSTER add canal ERRO] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── Auto-Boost: configuração por canal pra todos os posts novos ──────
 @app.get("/booster/auto")
 def booster_auto_listar():
