@@ -975,6 +975,54 @@ async def telegram_webhook(request: Request):
 
         return {"ok": True}
 
+    # ── Post novo no canal (auto-boost) ──
+    channel_post = update.get("channel_post")
+    if channel_post:
+        try:
+            chat = channel_post.get("chat", {})
+            chat_id_raw = chat.get("id")
+            chat_id = str(chat_id_raw) if chat_id_raw is not None else ""
+            msg_id = channel_post.get("message_id")
+            chat_title = chat.get("title", "")
+            chat_uname = chat.get("username")
+            cfg_rows = (db.table("booster_auto").select("*")
+                        .eq("canal_telegram_id", chat_id)
+                        .eq("ativo", True).execute().data) or []
+            if cfg_rows and msg_id:
+                cfg = cfg_rows[0]
+                # Constrói link
+                if chat_uname:
+                    link = f"https://t.me/{chat_uname}/{msg_id}"
+                else:
+                    id_for_link = chat_id.replace("-100", "") if chat_id.startswith("-100") else chat_id
+                    link = f"https://t.me/c/{id_for_link}/{msg_id}"
+
+                async def _agendar_campanha_auto():
+                    aguardar = int(cfg.get("aguardar_min_antes") or 0)
+                    if aguardar > 0:
+                        await asyncio.sleep(aguardar * 60)
+                    try:
+                        db.table("booster_campanhas").insert({
+                            "nome":             f"🔄 Auto: {chat_title} #{msg_id}",
+                            "canal_link":       link,
+                            "msg_id":           msg_id,
+                            "qtd_views":        cfg.get("qtd_views") or 0,
+                            "qtd_reacoes":      cfg.get("qtd_reacoes") or 0,
+                            "reacoes_emojis":   cfg.get("reacoes_emojis") or ["👍"],
+                            "delay_min_seg":    cfg.get("delay_min_seg") or 2,
+                            "delay_max_seg":    cfg.get("delay_max_seg") or 30,
+                            "janela_min":       cfg.get("janela_min") or 30,
+                            "status":           "pendente",
+                        }).execute()
+                        print(f"[BOOSTER AUTO] campanha criada pra {chat_title} #{msg_id}")
+                    except Exception as e:
+                        print(f"[BOOSTER AUTO ERRO insert] {e}")
+
+                asyncio.create_task(_agendar_campanha_auto())
+        except Exception as e:
+            print(f"[BOOSTER AUTO ERRO] {e}")
+        return {"ok": True}
+
     # ── Mensagem privada recebida (resposta do usuário no DM do bot) ──
     msg_in = update.get("message")
     if msg_in and msg_in.get("chat", {}).get("type") == "private":
@@ -1125,7 +1173,7 @@ async def salvar_config_telegram(request: Request):
         async with httpx.AsyncClient(timeout=15) as client:
             wh_resp = await client.post(
                 f"https://api.telegram.org/bot{token}/setWebhook",
-                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
+                json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message", "channel_post"],
                       "secret_token": secret_token}
             )
             print(f"[CONFIG] Webhook setup: {wh_resp.json()}")
@@ -2155,7 +2203,7 @@ async def detectar_canais(request: Request):
         # 3. Reativar webhook imediatamente
         await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message", "channel_post"],
                   "secret_token": _get_telegram_secret_token()}
         )
 
@@ -2242,7 +2290,7 @@ async def telegram_setup(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"https://api.telegram.org/bot{bot_token}/setWebhook",
-            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message"],
+            json={"url": webhook_url, "allowed_updates": ["chat_member", "my_chat_member", "chat_join_request", "message", "channel_post"],
                   "secret_token": _get_telegram_secret_token()},
         )
 
@@ -2937,6 +2985,81 @@ def booster_acoes_campanha(camp_id: int, limit: int = 200):
         return {"acoes": rows}
     except Exception as e:
         return {"acoes": [], "erro": str(e)}
+
+
+# ── Auto-Boost: configuração por canal pra todos os posts novos ──────
+@app.get("/booster/auto")
+def booster_auto_listar():
+    """Lista canais cadastrados + config de auto-boost (se houver)."""
+    try:
+        canais = (db.table("telegram_canais").select("id,nome,username,telegram_id").execute().data) or []
+        autos = (db.table("booster_auto").select("*").execute().data) or []
+        by_tgid = {a.get("canal_telegram_id"): a for a in autos}
+        merged = []
+        for c in canais:
+            tgid = str(c.get("telegram_id") or "")
+            cfg = by_tgid.get(tgid)
+            merged.append({
+                "canal_id":          c.get("id"),
+                "nome":              c.get("nome"),
+                "username":          c.get("username"),
+                "telegram_id":       tgid,
+                "tem_config":        bool(cfg),
+                "ativo":             bool(cfg and cfg.get("ativo")),
+                "qtd_views":         (cfg or {}).get("qtd_views") or 0,
+                "qtd_reacoes":       (cfg or {}).get("qtd_reacoes") or 0,
+                "reacoes_emojis":    (cfg or {}).get("reacoes_emojis") or ["👍","❤️","🔥"],
+                "delay_min_seg":     (cfg or {}).get("delay_min_seg") or 2,
+                "delay_max_seg":     (cfg or {}).get("delay_max_seg") or 30,
+                "janela_min":        (cfg or {}).get("janela_min") or 30,
+                "aguardar_min_antes":(cfg or {}).get("aguardar_min_antes") or 0,
+                "auto_id":           (cfg or {}).get("id"),
+            })
+        return {"canais": merged}
+    except Exception as e:
+        return {"canais": [], "erro": str(e)}
+
+
+@app.post("/booster/auto")
+async def booster_auto_salvar(request: Request):
+    """Salva (insert/update) config de auto-boost pra um canal."""
+    body = await request.json()
+    canal_id = body.get("canal_id")
+    if not canal_id:
+        raise HTTPException(status_code=400, detail="canal_id obrigatório")
+    canal = db.table("telegram_canais").select("*").eq("id", canal_id).execute()
+    if not canal.data:
+        raise HTTPException(status_code=404, detail="Canal não encontrado")
+    canal_tgid = str(canal.data[0].get("telegram_id") or "")
+    if not canal_tgid:
+        raise HTTPException(status_code=400, detail="Canal sem telegram_id (bot precisa estar admin lá)")
+
+    payload = {
+        "canal_id":           canal_id,
+        "canal_telegram_id":  canal_tgid,
+        "canal_nome":         canal.data[0].get("nome"),
+        "ativo":              bool(body.get("ativo")),
+        "qtd_views":          max(0, int(body.get("qtd_views") or 0)),
+        "qtd_reacoes":        max(0, int(body.get("qtd_reacoes") or 0)),
+        "reacoes_emojis":     body.get("reacoes_emojis") or ["👍","❤️","🔥"],
+        "delay_min_seg":      max(1, int(body.get("delay_min_seg") or 2)),
+        "delay_max_seg":      max(2, int(body.get("delay_max_seg") or 30)),
+        "janela_min":         max(1, int(body.get("janela_min") or 30)),
+        "aguardar_min_antes": max(0, int(body.get("aguardar_min_antes") or 0)),
+        "atualizado_em":      datetime.now(timezone.utc).isoformat(),
+    }
+    existing = db.table("booster_auto").select("id").eq("canal_telegram_id", canal_tgid).execute()
+    if existing.data:
+        db.table("booster_auto").update(payload).eq("id", existing.data[0]["id"]).execute()
+    else:
+        db.table("booster_auto").insert(payload).execute()
+    return {"ok": True}
+
+
+@app.delete("/booster/auto/{auto_id}")
+def booster_auto_deletar(auto_id: int):
+    db.table("booster_auto").delete().eq("id", auto_id).execute()
+    return {"ok": True}
 
 
 @app.get("/booster/status-resumo")

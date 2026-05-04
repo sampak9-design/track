@@ -1799,6 +1799,10 @@
           style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
           🎯 Campanhas
         </button>
+        <button onclick="abrirBoosterTab('auto')" id="btab-auto"
+          style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
+          🔄 Auto
+        </button>
         <button onclick="abrirBoosterTab('status')" id="btab-status"
           style="background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;padding:10px 16px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;white-space:nowrap">
           📊 Status
@@ -1899,6 +1903,22 @@
             style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻ Atualizar</button>
         </div>
         <div id="b-lista-campanhas"></div>
+      </div>
+
+      <!-- TAB: Auto-Boost -->
+      <div id="b-tab-auto" style="display:none">
+        <div class="panel" style="margin-bottom:14px;background:#0f1d34;border:1px solid #1e3a5f">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="font-size:1.1rem">🔄</span>
+            <div style="font-size:0.78rem;color:#a8c5ed;line-height:1.6">
+              <b style="color:#e2e8f0">Auto-Boost:</b> impulsiona <b>todo post novo</b> dos canais selecionados automaticamente. Quando você publica, o bot recebe o evento <code>channel_post</code> via webhook e cria uma campanha sozinho.
+              <br><br>
+              <b style="color:#e2e8f0">Pré-requisito:</b> o bot precisa estar como admin do canal (com permissão "ler mensagens").
+            </div>
+          </div>
+        </div>
+
+        <div id="b-lista-auto"></div>
       </div>
 
       <!-- TAB: Status -->
@@ -4170,7 +4190,7 @@
   }
   function abrirBoosterTab(tab) {
     _boosterTab = tab;
-    ["contas","campanhas","status","config"].forEach(t => {
+    ["contas","campanhas","auto","status","config"].forEach(t => {
       const btn = document.getElementById("btab-" + t);
       const pane = document.getElementById("b-tab-" + t);
       if (btn) {
@@ -4183,6 +4203,7 @@
     if (tab === "contas") carregarBoosterContas();
     if (tab === "config") carregarBoosterConfig();
     if (tab === "campanhas") { renderEmojisCampanha(); carregarCampanhas(); }
+    if (tab === "auto") carregarBoosterAuto();
     if (tab === "status") carregarStatusBooster();
   }
 
@@ -4643,6 +4664,157 @@
     try {
       await fetch(`/booster/campanhas/${id}`, {method:"DELETE"});
       carregarCampanhas();
+    } catch(e) { alert("✗ " + e.message); }
+  }
+
+  // ── Booster: Auto-Boost (todos os posts novos) ──
+  const _autoEmojis = {};   // canal_id -> [emojis]
+
+  async function carregarBoosterAuto() {
+    const cont = document.getElementById("b-lista-auto");
+    try {
+      const r = await fetch("/booster/auto");
+      const d = await r.json();
+      const canais = d.canais || [];
+      if (!canais.length) {
+        cont.innerHTML = '<div class="panel"><div class="empty-state" style="padding:30px 20px;text-align:center;color:#6b7280">Nenhum canal cadastrado. Adicione o bot como admin de um canal primeiro.</div></div>';
+        return;
+      }
+      cont.innerHTML = canais.map(c => {
+        _autoEmojis[c.canal_id] = c.reacoes_emojis || ["👍","❤️","🔥"];
+        return `<div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="width:32px;height:32px;background:#3a1f0f;border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.95rem;font-weight:700;color:#e2e8f0">${_escHtml(c.nome || "Canal")}</div>
+              <div style="font-size:0.72rem;color:#6b7280">${_escHtml(c.username || "Privado")} · ID ${c.telegram_id || c.canal_id}</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:42px;height:22px">
+              <input type="checkbox" id="auto-ativo-${c.canal_id}" ${c.ativo ? 'checked' : ''}
+                style="opacity:0;width:0;height:0">
+              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:${c.ativo ? '#22c55e' : '#2d3148'};border-radius:22px;transition:0.2s">
+                <span style="position:absolute;content:'';height:16px;width:16px;left:${c.ativo ? '23px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.2s;display:block"></span>
+              </span>
+            </label>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">👁 Views por post</label>
+              <input type="number" id="auto-views-${c.canal_id}" min="0" value="${c.qtd_views}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">❤️ Reações por post</label>
+              <input type="number" id="auto-reacoes-${c.canal_id}" min="0" value="${c.qtd_reacoes}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:8px 12px;border-radius:7px;font-size:0.85rem;font-family:inherit;outline:none">
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:6px">Emojis das reações</label>
+            <div id="auto-emojis-${c.canal_id}" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Janela (min)</label>
+              <input type="number" id="auto-janela-${c.canal_id}" min="1" value="${c.janela_min}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:0.8rem;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Delay min (s)</label>
+              <input type="number" id="auto-dmin-${c.canal_id}" min="1" value="${c.delay_min_seg}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:0.8rem;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px">Delay max (s)</label>
+              <input type="number" id="auto-dmax-${c.canal_id}" min="2" value="${c.delay_max_seg}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:0.8rem;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:0.72rem;color:#9ca3af;font-weight:500;display:block;margin-bottom:4px" title="Espera N min após o post antes de começar (parece mais natural)">⏱ Aguardar (min)</label>
+              <input type="number" id="auto-esperar-${c.canal_id}" min="0" value="${c.aguardar_min_antes}"
+                style="width:100%;background:#0f1117;border:1px solid #1e2235;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:0.8rem;font-family:inherit;outline:none">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #1e2235;padding-top:12px">
+            <button onclick="salvarBoosterAuto(${c.canal_id})"
+              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              💾 Salvar
+            </button>
+            ${c.auto_id ? `<button onclick="deletarBoosterAuto(${c.auto_id})"
+              style="background:#1a1d2e;border:1px solid #2d3148;color:#ef4444;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">🗑 Remover</button>` : ""}
+            <span id="auto-msg-${c.canal_id}" style="font-size:0.74rem;align-self:center;display:none"></span>
+          </div>
+        </div>`;
+      }).join("");
+
+      canais.forEach(c => renderAutoEmojis(c.canal_id));
+    } catch(e) {
+      cont.innerHTML = `<div class="panel" style="color:#ef4444">Erro: ${e.message}</div>`;
+    }
+  }
+
+  function renderAutoEmojis(canalId) {
+    const cont = document.getElementById("auto-emojis-" + canalId);
+    if (!cont) return;
+    const sel = _autoEmojis[canalId] || [];
+    cont.innerHTML = EMOJIS_DISPONIVEIS.map(e => {
+      const ativo = sel.includes(e);
+      return `<button type="button" onclick="toggleAutoEmoji(${canalId},'${e}')"
+        style="background:${ativo?'#1877f2':'#0f1117'};border:1px solid ${ativo?'#1877f2':'#1e2235'};color:#e2e8f0;padding:6px 11px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
+    }).join("");
+  }
+
+  function toggleAutoEmoji(canalId, emoji) {
+    let lista = _autoEmojis[canalId] || [];
+    if (lista.includes(emoji)) lista = lista.filter(x => x !== emoji);
+    else lista.push(emoji);
+    if (!lista.length) lista = ["👍"];
+    _autoEmojis[canalId] = lista;
+    renderAutoEmojis(canalId);
+  }
+
+  async function salvarBoosterAuto(canalId) {
+    const ativo = document.getElementById("auto-ativo-" + canalId).checked;
+    const qtd_views = parseInt(document.getElementById("auto-views-" + canalId).value) || 0;
+    const qtd_reacoes = parseInt(document.getElementById("auto-reacoes-" + canalId).value) || 0;
+    const janela_min = parseInt(document.getElementById("auto-janela-" + canalId).value) || 30;
+    const delay_min_seg = parseInt(document.getElementById("auto-dmin-" + canalId).value) || 2;
+    const delay_max_seg = parseInt(document.getElementById("auto-dmax-" + canalId).value) || 30;
+    const aguardar_min_antes = parseInt(document.getElementById("auto-esperar-" + canalId).value) || 0;
+    const reacoes_emojis = _autoEmojis[canalId] || ["👍"];
+    const msg = document.getElementById("auto-msg-" + canalId);
+
+    try {
+      const r = await fetch("/booster/auto", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          canal_id: canalId, ativo,
+          qtd_views, qtd_reacoes, reacoes_emojis,
+          janela_min, delay_min_seg, delay_max_seg,
+          aguardar_min_antes,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      msg.textContent = "✓ Salvo"; msg.style.color = "#22c55e"; msg.style.display = "inline";
+      setTimeout(() => { msg.style.display = "none"; }, 2200);
+      carregarBoosterAuto();
+    } catch(e) {
+      msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
+    }
+  }
+
+  async function deletarBoosterAuto(autoId) {
+    if (!confirm("Remover config de auto-boost desse canal?")) return;
+    try {
+      await fetch(`/booster/auto/${autoId}`, {method:"DELETE"});
+      carregarBoosterAuto();
     } catch(e) { alert("✗ " + e.message); }
   }
 
