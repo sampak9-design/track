@@ -2156,8 +2156,8 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         except Exception as ex:
             print(f"[TM ERRO] {ex}")
 
-        # Registros (cadastros)
-        q_ca = db.table("cadastros").select("id,email,created_at", count="exact")
+        # Registros (cadastros) - traz UTMs também pra correlacionar com entradas
+        q_ca = db.table("cadastros").select("id,email,created_at,utm_source,utm_medium,utm_campaign", count="exact")
         q_ca = aplicar_datas(q_ca, data_inicio, data_fim)
         r_ca = q_ca.execute()
         registros = r_ca.count or 0
@@ -2183,6 +2183,124 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             else:
                 redep_count += 1
                 redep_valor += valor
+
+        # ── Tempo médio: Registro → FTD (por email) ──
+        tm_reg_ftd = None
+        try:
+            cad_data = r_ca.data or []
+            cad_por_email = {}
+            for c in cad_data:
+                email = c.get("email","")
+                ts = c.get("created_at","")
+                if email and ts:
+                    if email not in cad_por_email or ts < cad_por_email[email]:
+                        cad_por_email[email] = ts
+            # Pega o primeiro depósito por email
+            ftd_por_email = {}
+            for d in sorted_deps:
+                email = d.get("email","")
+                ts = d.get("created_at","")
+                if email and ts and email not in ftd_por_email:
+                    ftd_por_email[email] = ts
+            diffs = []
+            for email, ts_dep in ftd_por_email.items():
+                ts_cad = cad_por_email.get(email)
+                if ts_cad and ts_dep > ts_cad:
+                    t1 = dt.datetime.fromisoformat(ts_cad.replace("Z","+00:00"))
+                    t2 = dt.datetime.fromisoformat(ts_dep.replace("Z","+00:00"))
+                    diffs.append((t2 - t1).total_seconds())
+            if diffs:
+                avg_sec = sum(diffs) / len(diffs)
+                if avg_sec < 3600:
+                    tm_reg_ftd = f"{int(avg_sec//60)} min"
+                elif avg_sec < 86400:
+                    tm_reg_ftd = f"{int(avg_sec//3600)} h"
+                else:
+                    tm_reg_ftd = f"{int(avg_sec//86400)} dias"
+        except Exception as ex:
+            print(f"[TM REG→FTD ERRO] {ex}")
+
+        # ── Tempo médio: Entrada → Registro (heurística por UTMs+tempo) ──
+        # Pra cada cadastro, busca a entrada mais recente nas últimas 24h com UTMs compatíveis.
+        tm_entrada_reg = None
+        try:
+            entradas_full = (db.table("tracker_entradas").select("created_at,utm_source,utm_medium,utm_campaign")
+                             .order("created_at", desc=True).limit(2000).execute().data) or []
+            diffs = []
+            JANELA_SEG = 24*3600
+            for c in cad_data:
+                ts_cad = c.get("created_at","")
+                if not ts_cad: continue
+                cad_src = (c.get("utm_source") or "").lower()
+                cad_camp = (c.get("utm_campaign") or "").lower()
+                t_cad = dt.datetime.fromisoformat(ts_cad.replace("Z","+00:00"))
+                # busca entrada mais recente antes do cadastro com UTMs iguais (ou sem UTM se cad também não tem)
+                melhor = None
+                for e in entradas_full:
+                    ts_ent = e.get("created_at","")
+                    if not ts_ent: continue
+                    if ts_ent >= ts_cad: continue
+                    e_src = (e.get("utm_source") or "").lower()
+                    e_camp = (e.get("utm_campaign") or "").lower()
+                    # Match: ou ambos sem UTM, ou source/campaign batem
+                    if (cad_src == e_src) and (cad_camp == e_camp or not cad_camp or not e_camp):
+                        t_ent = dt.datetime.fromisoformat(ts_ent.replace("Z","+00:00"))
+                        delta = (t_cad - t_ent).total_seconds()
+                        if 0 < delta <= JANELA_SEG:
+                            if melhor is None or delta < melhor:
+                                melhor = delta
+                            break  # já é a mais recente (lista está desc)
+                if melhor is not None:
+                    diffs.append(melhor)
+            if diffs:
+                avg_sec = sum(diffs) / len(diffs)
+                if avg_sec < 3600:
+                    tm_entrada_reg = f"{int(avg_sec//60)} min"
+                elif avg_sec < 86400:
+                    tm_entrada_reg = f"{int(avg_sec//3600)} h"
+                else:
+                    tm_entrada_reg = f"{int(avg_sec//86400)} dias"
+        except Exception as ex:
+            print(f"[TM ENT→REG ERRO] {ex}")
+
+        # ── Tempo médio: Entrada → FTD (combina entrada→registro + registro→ftd via email) ──
+        tm_entrada_ftd = None
+        try:
+            diffs = []
+            for email, ts_dep in ftd_por_email.items():
+                ts_cad = cad_por_email.get(email)
+                if not ts_cad or ts_dep <= ts_cad: continue
+                # Acha cadastro do email pra pegar UTMs
+                cad_match = next((c for c in cad_data if c.get("email") == email), None)
+                if not cad_match: continue
+                cad_src = (cad_match.get("utm_source") or "").lower()
+                cad_camp = (cad_match.get("utm_campaign") or "").lower()
+                t_cad = dt.datetime.fromisoformat(ts_cad.replace("Z","+00:00"))
+                t_dep = dt.datetime.fromisoformat(ts_dep.replace("Z","+00:00"))
+                # Busca entrada antes do cadastro
+                entrada_ts = None
+                for e in entradas_full:
+                    ts_ent = e.get("created_at","")
+                    if not ts_ent or ts_ent >= ts_cad: continue
+                    e_src = (e.get("utm_source") or "").lower()
+                    e_camp = (e.get("utm_campaign") or "").lower()
+                    if (cad_src == e_src) and (cad_camp == e_camp or not cad_camp or not e_camp):
+                        t_ent = dt.datetime.fromisoformat(ts_ent.replace("Z","+00:00"))
+                        if (t_cad - t_ent).total_seconds() <= 24*3600:
+                            entrada_ts = t_ent
+                            break
+                if entrada_ts is not None:
+                    diffs.append((t_dep - entrada_ts).total_seconds())
+            if diffs:
+                avg_sec = sum(diffs) / len(diffs)
+                if avg_sec < 3600:
+                    tm_entrada_ftd = f"{int(avg_sec//60)} min"
+                elif avg_sec < 86400:
+                    tm_entrada_ftd = f"{int(avg_sec//3600)} h"
+                else:
+                    tm_entrada_ftd = f"{int(avg_sec//86400)} dias"
+        except Exception as ex:
+            print(f"[TM ENT→FTD ERRO] {ex}")
 
         # Rates
         ctr = round(cliques / pageviews * 100, 2) if pageviews > 0 else 0
@@ -2283,6 +2401,9 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             "conv_pagina": conv_pagina,
             "retencao": retencao,
             "tm_entrada_saida": tm_entrada_saida,
+            "tm_entrada_reg":   tm_entrada_reg,
+            "tm_entrada_ftd":   tm_entrada_ftd,
+            "tm_reg_ftd":       tm_reg_ftd,
             "evolucao": evolucao,
         }
     except Exception as e:

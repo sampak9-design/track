@@ -2529,6 +2529,9 @@
       setText("fc-taxa-ftd",   (pctFtd       !== null ? pctFtd       : 0) + "%");
       setText("fc-retencao",   s.retencao + "%");
       setText("tm-entrada-saida", s.tm_entrada_saida || "—");
+      setText("tm-entrada-reg",   s.tm_entrada_reg   || "—");
+      setText("tm-entrada-ftd",   s.tm_entrada_ftd   || "—");
+      setText("tm-reg-ftd",       s.tm_reg_ftd       || "—");
 
       // Evolução chart
       renderEvolucao(s.evolucao || []);
