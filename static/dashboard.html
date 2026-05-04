@@ -1258,9 +1258,16 @@
 
     <!-- ════ LOGS DE CONVERSÃO ════ -->
     <div class="secao" id="sec-logs">
-      <div style="margin-bottom:14px">
-        <h2 style="font-size:1.4rem;font-weight:700;color:#4f6ef7;margin-bottom:4px">Logs de Conversão</h2>
-        <p style="font-size:0.82rem;color:#6b7280">Acompanhe todas as conversões enviadas para Meta / Kwai / TikTok</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="font-size:1.4rem;font-weight:700;color:#4f6ef7;margin-bottom:4px">Logs de Conversão</h2>
+          <p style="font-size:0.82rem;color:#6b7280">Acompanhe todas as conversões enviadas para Meta / Kwai / TikTok</p>
+        </div>
+        <button onclick="limparErrosFake()" id="btn-limpar-fakes"
+          style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit"
+          title="Remove logs antigos de Kwai/TikTok 'Pixel não configurado'">
+          Limpar erros falsos
+        </button>
       </div>
 
       <!-- Tabs Enviados/Recebidos -->
@@ -5914,6 +5921,23 @@
     btn.style.background = "#1e2235";
     btn.style.color = "#fff";
     carregarLogs();
+  }
+
+  async function limparErrosFake() {
+    if (!confirm("Remover logs antigos de Kwai/TikTok 'Pixel não configurado'?\n\nEles eram falsos (de quando essas plataformas não estavam configuradas e não eram um erro real). Logs reais de erro continuam preservados.")) return;
+    const btn = document.getElementById("btn-limpar-fakes");
+    btn.disabled = true; btn.textContent = "Limpando...";
+    try {
+      const r = await fetch("/conversion-logs/limpar-erros-fake", {method:"POST"});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "erro");
+      alert(`✓ ${d.deletados} logs removidos`);
+      carregarLogs();
+    } catch(e) {
+      alert("✗ Erro: " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Limpar erros falsos";
+    }
   }
 
   function mudarTabMembros(tab, btn) {

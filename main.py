@@ -2145,6 +2145,22 @@ async def inbox_reply(request: Request):
     return {"ok": ok}
 
 
+@app.post("/conversion-logs/limpar-erros-fake")
+def limpar_erros_fake():
+    """Remove logs antigos de Kwai/TikTok que falharam por 'Pixel/Token não configurado'
+    (eram logs falsos quando a plataforma simplesmente não foi cadastrada)."""
+    try:
+        r = (db.table("conversion_logs")
+             .delete()
+             .in_("plataforma", ["kwai","tiktok"])
+             .eq("response_body", "Pixel/Token não configurado")
+             .execute())
+        deletados = len(r.data or [])
+        return {"ok": True, "deletados": deletados}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/conversion-logs")
 def conversion_logs(
     plataforma: str = None,
