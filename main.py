@@ -1763,6 +1763,17 @@ async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int
 
 
 # ── Inbox: histórico de mensagens trocadas com usuários ──────────
+@app.get("/inbox/diag")
+def inbox_diag():
+    """Diagnóstico: verifica se a tabela existe e quantos registros tem."""
+    try:
+        r = db.table("bot_messages").select("id", count="exact").limit(1).execute()
+        total = getattr(r, "count", None) or 0
+        return {"ok": True, "tabela_existe": True, "total_registros": total}
+    except Exception as e:
+        return {"ok": False, "tabela_existe": False, "erro": str(e)}
+
+
 @app.get("/inbox/threads")
 def inbox_threads(canal_id: int = None, limit: int = 100):
     """Lista threads (1 por usuário) com a última mensagem e contagem total."""

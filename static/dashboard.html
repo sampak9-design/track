@@ -4091,7 +4091,29 @@
       const d = await r.json();
       const threads = d.threads || [];
       if (!threads.length) {
-        cont.innerHTML = '<div style="padding:24px 16px;text-align:center;color:#6b7280;font-size:0.8rem;line-height:1.6">📭<br>Nenhuma conversa ainda.<br><span style="font-size:0.7rem">Crie a tabela <code>bot_messages</code> no Supabase ou aguarde uma boas-vindas ser enviada.</span></div>';
+        // Roda diagnóstico pra entender o motivo
+        let diag = null;
+        try { diag = await (await fetch("/inbox/diag")).json(); } catch(e) {}
+        if (diag && !diag.tabela_existe) {
+          cont.innerHTML = `<div style="padding:24px 16px;text-align:center;color:#fbbf24;font-size:0.78rem;line-height:1.6">
+            ⚠️<br><b>Tabela <code>bot_messages</code> não existe</b><br>
+            <div style="background:#2a1810;border:1px solid #5f3a1e;border-radius:6px;padding:10px;margin:10px 6px;text-align:left;color:#edc5a8">
+              <b>Crie a tabela no Supabase:</b><br>
+              SQL Editor → cole o SQL → Run<br>
+              <span style="color:#6b7280;font-size:0.7rem">Erro: ${_escHtml((diag.erro||"").slice(0,200))}</span>
+            </div>
+          </div>`;
+        } else {
+          cont.innerHTML = `<div style="padding:24px 16px;text-align:center;color:#6b7280;font-size:0.8rem;line-height:1.6">
+            📭<br>Nenhuma conversa ainda.<br>
+            <div style="text-align:left;background:#0f1117;border:1px solid #1e2235;border-radius:6px;padding:10px;margin:10px 6px;font-size:0.7rem;line-height:1.5">
+              Pra aparecer mensagens aqui:<br>
+              ✓ Tabela <code>bot_messages</code> existe (${diag?.total_registros || 0} registros)<br>
+              ${diag?.total_registros === 0 ? '⚠️ Nenhum registro ainda. Ative <b>Boas-vindas</b>, peça pra alguém entrar no canal pra disparar a primeira DM.' : ''}<br>
+              💡 Reconecte o bot em <b>Pixels → Telegram</b> pra garantir que <code>message</code> está nos allowed_updates
+            </div>
+          </div>`;
+        }
         return;
       }
       cont.innerHTML = threads.map(t => {
