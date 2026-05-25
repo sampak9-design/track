@@ -1204,8 +1204,8 @@ async def _processar_ftd(data: dict, metodo: str = "POST"):
     if not result.data:
         raise HTTPException(status_code=500, detail="Erro ao salvar FTD")
 
-    # Mesmos eventos do /deposito (Facebook trata FTD como Purchase comum)
-    await enviar_meta("track_deposito", email=email, value=valor)
+    # Evento próprio do FTD pro Meta (separado de track_deposito recorrente)
+    await enviar_meta("track_ftd", email=email, value=valor)
     await enviar_kwai("Purchase", email=email, value=valor)
     await enviar_tiktok("PlaceAnOrder", email=email, value=valor)
 
