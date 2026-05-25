@@ -1055,6 +1055,12 @@ async def deposito(request: Request):
     if len(_ultimos_depositos_raw) > 20:
         _ultimos_depositos_raw.pop(0)
 
+    # Se vier event=="ftd" por engano, redireciona pro handler correto
+    event = (data.get("event") or "").lower().strip()
+    if event == "ftd":
+        print(f"[DEPOSITO] event=ftd recebido em /deposito — redirecionando pra /ftd")
+        return await _processar_ftd(data, metodo="POST")
+
     email = _extrair_email_deposito(data) or data.get("email")
     valor = _extrair_valor_deposito(data) or data.get("valor")
 
@@ -1076,13 +1082,41 @@ async def deposito(request: Request):
         except Exception as e:
             print(f"[DEPOSITO ERRO buscar UTMs] {e}")
 
+    # Dedup: se já existe FTD do mesmo email nas últimas 24h, ignora (proteção contra
+    # corretora mandar o mesmo evento nos dois endpoints durante transição)
+    if email:
+        try:
+            limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+            dup = (db.table("depositos").select("id")
+                   .eq("email", email).eq("tipo", "ftd")
+                   .gte("created_at", limite).limit(1).execute())
+            if dup.data:
+                print(f"[DEPOSITO DEDUP] {email} já tem FTD nas últimas 24h — ignorando como recorrente duplicado")
+                return {"status": "ignorado", "motivo": "ftd_recente_existente", "ftd_id": dup.data[0]["id"]}
+        except Exception as e:
+            # Se coluna 'tipo' não existe ainda, segue sem dedup
+            if "tipo" not in str(e).lower():
+                print(f"[DEPOSITO DEDUP ERRO] {e}")
+
     registro = {
         "email": email,
         "valor": valor,
+        "tipo": "recorrente",
         **utms,
     }
 
-    result = db.table("depositos").insert(registro).execute()
+    try:
+        result = db.table("depositos").insert(registro).execute()
+    except Exception as e:
+        # Fallback se coluna "tipo" ainda não foi criada no banco
+        msg = str(e).lower()
+        if "tipo" in msg and ("column" in msg or "schema" in msg):
+            print(f"[DEPOSITO AVISO] Coluna 'tipo' não existe em depositos — rode a migration. Salvando sem tipo.")
+            registro.pop("tipo", None)
+            result = db.table("depositos").insert(registro).execute()
+        else:
+            raise
+
     if not result.data:
         raise HTTPException(status_code=500, detail="Erro ao salvar deposito")
 
@@ -1104,6 +1138,12 @@ async def deposito_get(request: Request):
     if len(_ultimos_depositos_raw) > 20:
         _ultimos_depositos_raw.pop(0)
 
+    # Se vier event=="ftd" por engano, redireciona pro handler correto
+    event = (data.get("event") or "").lower().strip()
+    if event == "ftd":
+        print(f"[DEPOSITO GET] event=ftd recebido em /deposito — redirecionando pra /ftd")
+        return await _processar_ftd(data, metodo="GET")
+
     email = _extrair_email_deposito(data) or data.get("email")
     valor = _extrair_valor_deposito(data) or 0
     if not email:
@@ -1116,8 +1156,30 @@ async def deposito_get(request: Request):
             if cad.data:
                 utms = {k: cad.data[0].get(k) for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
         except Exception: pass
-    registro = {"email": email, "valor": valor, **utms}
-    result = db.table("depositos").insert(registro).execute()
+
+    # Dedup: se já existe FTD do mesmo email nas últimas 24h, ignora
+    try:
+        limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        dup = (db.table("depositos").select("id")
+               .eq("email", email).eq("tipo", "ftd")
+               .gte("created_at", limite).limit(1).execute())
+        if dup.data:
+            print(f"[DEPOSITO GET DEDUP] {email} já tem FTD nas últimas 24h — ignorando")
+            return {"status": "ignorado", "motivo": "ftd_recente_existente", "ftd_id": dup.data[0]["id"]}
+    except Exception as e:
+        if "tipo" not in str(e).lower():
+            print(f"[DEPOSITO GET DEDUP ERRO] {e}")
+
+    registro = {"email": email, "valor": valor, "tipo": "recorrente", **utms}
+    try:
+        result = db.table("depositos").insert(registro).execute()
+    except Exception as e:
+        msg = str(e).lower()
+        if "tipo" in msg and ("column" in msg or "schema" in msg):
+            registro.pop("tipo", None)
+            result = db.table("depositos").insert(registro).execute()
+        else:
+            raise
 
     if registro["valor"]:
         await enviar_meta("track_deposito", email=email, value=valor)
@@ -1126,6 +1188,86 @@ async def deposito_get(request: Request):
 
     print(f"[DEPOSITO GET] {email} - R$ {valor}")
     return {"status": "ok", "id": (result.data[0]["id"] if result.data else None)}
+
+
+_ultimos_ftds_raw = []  # cache em memória dos últimos 20 payloads brutos de FTD
+
+@app.get("/ftd/debug")
+def ftd_debug():
+    """Mostra os últimos 20 payloads de FTD recebidos (cru), pra debug."""
+    return {"payloads": list(reversed(_ultimos_ftds_raw))}
+
+
+async def _processar_ftd(data: dict, metodo: str = "POST"):
+    """Lógica compartilhada entre POST e GET de /ftd."""
+    _ultimos_ftds_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(),
+                              "metodo": metodo, "payload": data})
+    if len(_ultimos_ftds_raw) > 20:
+        _ultimos_ftds_raw.pop(0)
+
+    # Validação event=="ftd" (tolerante: se vier vazio, aceita pra brokers que não mandam o campo)
+    event = (data.get("event") or "").lower().strip()
+    if event and event != "ftd":
+        raise HTTPException(status_code=400,
+                            detail=f"Endpoint /ftd só aceita event='ftd', recebido: '{event}'")
+
+    email = _extrair_email_deposito(data) or data.get("email")
+    valor = _extrair_valor_deposito(data) or data.get("valor") or 0
+    if not email:
+        return {"status": "erro", "motivo": "email não encontrado no payload"}
+
+    utms = extrair_utms(data)
+    # Se o postback do broker não trouxe UTMs, herda do cadastro do mesmo email
+    if not any(utms.values()):
+        try:
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            if cad.data:
+                utms = {k: cad.data[0].get(k) for k in
+                        ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
+                print(f"[FTD] UTMs herdados do cadastro de {email}: {utms}")
+        except Exception as e:
+            print(f"[FTD ERRO buscar UTMs] {e}")
+
+    registro = {"email": email, "valor": valor, "tipo": "ftd", **utms}
+
+    try:
+        result = db.table("depositos").insert(registro).execute()
+    except Exception as e:
+        # Fallback se coluna "tipo" ainda não foi criada no banco
+        msg = str(e).lower()
+        if "tipo" in msg and ("column" in msg or "schema" in msg):
+            print(f"[FTD AVISO] Coluna 'tipo' não existe em depositos — rode a migration. Salvando sem tipo.")
+            registro.pop("tipo", None)
+            result = db.table("depositos").insert(registro).execute()
+        else:
+            raise
+
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Erro ao salvar FTD")
+
+    # Mesmos eventos do /deposito (Facebook trata FTD como Purchase comum)
+    await enviar_meta("track_deposito", email=email, value=valor)
+    await enviar_kwai("Purchase", email=email, value=valor)
+    await enviar_tiktok("PlaceAnOrder", email=email, value=valor)
+
+    print(f"[FTD {metodo}] {email} - R$ {valor}")
+    return {"status": "ok", "id": result.data[0]["id"], "tipo": "ftd"}
+
+
+@app.post("/ftd")
+async def ftd_post(request: Request):
+    """Recebe webhook de Primeiro Depósito (FTD) da corretora."""
+    data = await _ler_payload_flex(request)
+    print(f"[FTD PAYLOAD] content-type={request.headers.get('content-type')} data={data}")
+    return await _processar_ftd(data, metodo="POST")
+
+
+@app.get("/ftd")
+async def ftd_get(request: Request):
+    """Aceita FTD via GET (alguns brokers usam só GET)."""
+    data = dict(request.query_params)
+    print(f"[FTD GET PAYLOAD] {data}")
+    return await _processar_ftd(data, metodo="GET")
 
 
 # ── Telegram ─────────────────────────────────────────────────────
@@ -3097,7 +3239,7 @@ async def booster_testar_conta(conta_id: int):
 
 # ── Campanhas: parser de URL + helpers Telethon ─────────────────────
 import re, random
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 def _parse_post_url(url: str):
     """Extrai (peer, msg_id) de uma URL do Telegram. Aceita t.me/canal/123, t.me/c/12345/123, @canal/123."""
