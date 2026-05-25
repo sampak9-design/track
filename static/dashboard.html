@@ -1386,7 +1386,15 @@
           </div>
 
           <div class="webhook-row">
-            <div class="webhook-label-row">Evento: Depósito (Purchase)</div>
+            <div class="webhook-label-row">Evento: Primeiro Depósito — FTD (First Time Deposit)</div>
+            <div class="webhook-url-box">
+              <span class="webhook-url-text" id="url-ftd"></span>
+              <button class="btn-copy" onclick="copiar('url-ftd', this)">Copiar</button>
+            </div>
+          </div>
+
+          <div class="webhook-row">
+            <div class="webhook-label-row">Evento: Depósito Recorrente (Purchase)</div>
             <div class="webhook-url-box">
               <span class="webhook-url-text" id="url-deposito"></span>
               <button class="btn-copy" onclick="copiar('url-deposito', this)">Copiar</button>
@@ -1404,6 +1412,27 @@
   "utm_medium": "cpc",
   "utm_campaign": "campanha-1"
 }</pre>
+          </div>
+
+          <div style="margin-top:10px;padding:12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+            <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Exemplo de payload (FTD)</div>
+            <pre style="font-size:0.72rem;color:#10b981;font-family:'Courier New',monospace;line-height:1.6">POST /ftd
+{
+  "event": "ftd",
+  "user_id": 252,
+  "email": "joao@email.com",
+  "amount": 100.00,
+  "method": "pix"
+}</pre>
+          </div>
+
+          <div style="margin-top:10px;padding:10px 12px;background:#0f1117;border-radius:7px;border:1px solid #1e2235">
+            <div style="font-size:0.72rem;color:#f59e0b;font-weight:600;margin-bottom:4px">Como usar FTD vs Depósito Recorrente</div>
+            <div style="font-size:0.72rem;color:#9ca3af;line-height:1.5">
+              A corretora deve disparar <strong style="color:#10b981">/ftd</strong> apenas no <strong>primeiro depósito</strong> de cada usuário.
+              Depósitos seguintes (2º em diante) devem ir pra <strong style="color:#4f6ef7">/deposito</strong>.
+              Se um FTD chegar por engano em /deposito, ele é redirecionado automaticamente.
+            </div>
           </div>
         </div>
 
@@ -2651,6 +2680,7 @@
   function preencherWebhookURLs() {
     const base = window.location.origin;
     document.getElementById("url-cadastro").textContent = base + "/cadastro";
+    document.getElementById("url-ftd").textContent = base + "/ftd";
     document.getElementById("url-deposito").textContent = base + "/deposito";
   }
 
