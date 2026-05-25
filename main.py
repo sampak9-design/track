@@ -1082,19 +1082,19 @@ async def deposito(request: Request):
         except Exception as e:
             print(f"[DEPOSITO ERRO buscar UTMs] {e}")
 
-    # Dedup: se já existe FTD do mesmo email nas últimas 24h, ignora (proteção contra
-    # corretora mandar o mesmo evento nos dois endpoints durante transição)
-    if email:
+    # Dedup: só ignora se for o MESMO evento (mesmo email + mesmo valor) chegando em
+    # ambos endpoints na mesma transação (janela de 60s). Não bloqueia depósitos
+    # recorrentes legítimos do mesmo dia.
+    if email and valor:
         try:
-            limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+            limite = (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat()
             dup = (db.table("depositos").select("id")
-                   .eq("email", email).eq("tipo", "ftd")
+                   .eq("email", email).eq("tipo", "ftd").eq("valor", valor)
                    .gte("created_at", limite).limit(1).execute())
             if dup.data:
-                print(f"[DEPOSITO DEDUP] {email} já tem FTD nas últimas 24h — ignorando como recorrente duplicado")
-                return {"status": "ignorado", "motivo": "ftd_recente_existente", "ftd_id": dup.data[0]["id"]}
+                print(f"[DEPOSITO DEDUP] {email} R${valor} já gravado como FTD nos últimos 60s — ignorando duplicação")
+                return {"status": "ignorado", "motivo": "ftd_recente_mesmo_valor", "ftd_id": dup.data[0]["id"]}
         except Exception as e:
-            # Se coluna 'tipo' não existe ainda, segue sem dedup
             if "tipo" not in str(e).lower():
                 print(f"[DEPOSITO DEDUP ERRO] {e}")
 
@@ -1157,18 +1157,20 @@ async def deposito_get(request: Request):
                 utms = {k: cad.data[0].get(k) for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
         except Exception: pass
 
-    # Dedup: se já existe FTD do mesmo email nas últimas 24h, ignora
-    try:
-        limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-        dup = (db.table("depositos").select("id")
-               .eq("email", email).eq("tipo", "ftd")
-               .gte("created_at", limite).limit(1).execute())
-        if dup.data:
-            print(f"[DEPOSITO GET DEDUP] {email} já tem FTD nas últimas 24h — ignorando")
-            return {"status": "ignorado", "motivo": "ftd_recente_existente", "ftd_id": dup.data[0]["id"]}
-    except Exception as e:
-        if "tipo" not in str(e).lower():
-            print(f"[DEPOSITO GET DEDUP ERRO] {e}")
+    # Dedup: só ignora se mesmo email + mesmo valor nos últimos 60s (proteção contra
+    # corretora disparar o mesmo evento nos dois endpoints na mesma transação)
+    if valor:
+        try:
+            limite = (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat()
+            dup = (db.table("depositos").select("id")
+                   .eq("email", email).eq("tipo", "ftd").eq("valor", valor)
+                   .gte("created_at", limite).limit(1).execute())
+            if dup.data:
+                print(f"[DEPOSITO GET DEDUP] {email} R${valor} já gravado como FTD nos últimos 60s — ignorando")
+                return {"status": "ignorado", "motivo": "ftd_recente_mesmo_valor", "ftd_id": dup.data[0]["id"]}
+        except Exception as e:
+            if "tipo" not in str(e).lower():
+                print(f"[DEPOSITO GET DEDUP ERRO] {e}")
 
     registro = {"email": email, "valor": valor, "tipo": "recorrente", **utms}
     try:
