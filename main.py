@@ -1055,12 +1055,6 @@ async def deposito(request: Request):
     if len(_ultimos_depositos_raw) > 20:
         _ultimos_depositos_raw.pop(0)
 
-    # Se vier event=="ftd" por engano, redireciona pro handler correto
-    event = (data.get("event") or "").lower().strip()
-    if event == "ftd":
-        print(f"[DEPOSITO] event=ftd recebido em /deposito — redirecionando pra /ftd")
-        return await _processar_ftd(data, metodo="POST")
-
     email = _extrair_email_deposito(data) or data.get("email")
     valor = _extrair_valor_deposito(data) or data.get("valor")
 
@@ -1081,22 +1075,6 @@ async def deposito(request: Request):
                 print(f"[DEPOSITO] UTMs herdados do cadastro de {email}: {utms}")
         except Exception as e:
             print(f"[DEPOSITO ERRO buscar UTMs] {e}")
-
-    # Dedup: só ignora se for o MESMO evento (mesmo email + mesmo valor) chegando em
-    # ambos endpoints na mesma transação (janela de 60s). Não bloqueia depósitos
-    # recorrentes legítimos do mesmo dia.
-    if email and valor:
-        try:
-            limite = (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat()
-            dup = (db.table("depositos").select("id")
-                   .eq("email", email).eq("tipo", "ftd").eq("valor", valor)
-                   .gte("created_at", limite).limit(1).execute())
-            if dup.data:
-                print(f"[DEPOSITO DEDUP] {email} R${valor} já gravado como FTD nos últimos 60s — ignorando duplicação")
-                return {"status": "ignorado", "motivo": "ftd_recente_mesmo_valor", "ftd_id": dup.data[0]["id"]}
-        except Exception as e:
-            if "tipo" not in str(e).lower():
-                print(f"[DEPOSITO DEDUP ERRO] {e}")
 
     registro = {
         "email": email,
@@ -1138,12 +1116,6 @@ async def deposito_get(request: Request):
     if len(_ultimos_depositos_raw) > 20:
         _ultimos_depositos_raw.pop(0)
 
-    # Se vier event=="ftd" por engano, redireciona pro handler correto
-    event = (data.get("event") or "").lower().strip()
-    if event == "ftd":
-        print(f"[DEPOSITO GET] event=ftd recebido em /deposito — redirecionando pra /ftd")
-        return await _processar_ftd(data, metodo="GET")
-
     email = _extrair_email_deposito(data) or data.get("email")
     valor = _extrair_valor_deposito(data) or 0
     if not email:
@@ -1156,21 +1128,6 @@ async def deposito_get(request: Request):
             if cad.data:
                 utms = {k: cad.data[0].get(k) for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
         except Exception: pass
-
-    # Dedup: só ignora se mesmo email + mesmo valor nos últimos 60s (proteção contra
-    # corretora disparar o mesmo evento nos dois endpoints na mesma transação)
-    if valor:
-        try:
-            limite = (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat()
-            dup = (db.table("depositos").select("id")
-                   .eq("email", email).eq("tipo", "ftd").eq("valor", valor)
-                   .gte("created_at", limite).limit(1).execute())
-            if dup.data:
-                print(f"[DEPOSITO GET DEDUP] {email} R${valor} já gravado como FTD nos últimos 60s — ignorando")
-                return {"status": "ignorado", "motivo": "ftd_recente_mesmo_valor", "ftd_id": dup.data[0]["id"]}
-        except Exception as e:
-            if "tipo" not in str(e).lower():
-                print(f"[DEPOSITO GET DEDUP ERRO] {e}")
 
     registro = {"email": email, "valor": valor, "tipo": "recorrente", **utms}
     try:
@@ -3241,7 +3198,7 @@ async def booster_testar_conta(conta_id: int):
 
 # ── Campanhas: parser de URL + helpers Telethon ─────────────────────
 import re, random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 def _parse_post_url(url: str):
     """Extrai (peer, msg_id) de uma URL do Telegram. Aceita t.me/canal/123, t.me/c/12345/123, @canal/123."""
