@@ -10,6 +10,8 @@ import json
 import time
 import asyncio
 import os
+import uuid
+import contextvars
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,6 +30,52 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+
+# ── Multi-tenant: projeto_id resolvido por requisição ────────────
+# Dashboard/config → vem do JWT do login (app_metadata.projeto_id).
+# Rastreamento (/cadastro, /deposito, /ftd, /tracker/*) → vem do ?projeto= na URL.
+_ctx_projeto = contextvars.ContextVar("projeto_id", default=None)
+DEFAULT_PROJETO_ID = os.environ.get("DEFAULT_PROJETO_ID", "")
+_token_cache: dict = {}   # access_token -> (projeto_id, expira_em)
+
+
+def _pid() -> str:
+    """projeto_id do contexto atual (login ou tracking); cai no default se ausente."""
+    return _ctx_projeto.get() or DEFAULT_PROJETO_ID
+
+
+def _projeto_do_token(token: str) -> str:
+    agora = time.time()
+    cache = _token_cache.get(token)
+    if cache and cache[1] > agora:
+        return cache[0]
+    try:
+        resp = db.auth.get_user(token)
+        user = getattr(resp, "user", None)
+        meta = getattr(user, "app_metadata", None) or {}
+        pid  = meta.get("projeto_id") or ""
+    except Exception:
+        pid = ""
+    _token_cache[token] = (pid, agora + 60)
+    return pid
+
+
+@app.middleware("http")
+async def resolver_projeto(request: Request, call_next):
+    pid = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        pid = await asyncio.get_running_loop().run_in_executor(
+            None, _projeto_do_token, auth[7:]
+        ) or None
+    if not pid:
+        pid = request.query_params.get("projeto") or None
+    tok = _ctx_projeto.set(pid)
+    try:
+        return await call_next(request)
+    finally:
+        _ctx_projeto.reset(tok)
 
 
 @app.get("/")
@@ -115,6 +163,7 @@ def salvar_log_conversao(plataforma: str, event_name: str, status: str, code: in
             "telegram_user_id": telegram_user_id,
             "canal_nome":       canal_nome,
             "direcao":          direcao,
+            "projeto_id":       _pid(),
         }).execute()
     except Exception as e:
         print(f"[LOG ERRO] {e}")
@@ -524,15 +573,17 @@ async def salvar_config_tiktok(request: Request):
 
 
 # ── Meta Ads (Marketing API) ──────────────────────────────────────
-def _set_cfg(chave: str, valor: str):
-    existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+def _set_cfg(chave: str, valor: str, projeto_id: str = None):
+    pid = projeto_id or _pid()
+    existing = db.table("configuracoes").select("chave").eq("chave", chave).eq("projeto_id", pid).execute()
     if existing.data:
-        db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+        db.table("configuracoes").update({"valor": valor}).eq("chave", chave).eq("projeto_id", pid).execute()
     else:
-        db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+        db.table("configuracoes").insert({"chave": chave, "valor": valor, "projeto_id": pid}).execute()
 
-def _get_cfg(chave: str) -> str:
-    r = db.table("configuracoes").select("valor").eq("chave", chave).execute()
+def _get_cfg(chave: str, projeto_id: str = None) -> str:
+    pid = projeto_id or _pid()
+    r = db.table("configuracoes").select("valor").eq("chave", chave).eq("projeto_id", pid).execute()
     return r.data[0]["valor"] if r.data else ""
 
 
@@ -574,6 +625,7 @@ async def ia_analisar(request: Request):
     try:
         # Cadastros
         r = (db.table("cadastros").select("id,utm_source,utm_campaign,utm_medium,created_at", count="exact")
+             .eq("projeto_id", _pid())
              .gte("created_at", data_inicio + "T00:00:00" + tz_str)
              .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
         contexto["cadastros_total"] = r.count
@@ -583,6 +635,7 @@ async def ia_analisar(request: Request):
 
         # Depósitos
         r2 = (db.table("depositos").select("id,email,valor,utm_source,created_at")
+              .eq("projeto_id", _pid())
               .gte("created_at", data_inicio + "T00:00:00" + tz_str)
               .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
         deps = r2.data or []
@@ -601,6 +654,7 @@ async def ia_analisar(request: Request):
 
         # Telegram members
         r3 = (db.table("telegram_members").select("event", count="exact")
+              .eq("projeto_id", _pid())
               .gte("created_at", data_inicio + "T00:00:00" + tz_str)
               .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
         contexto["telegram_joins"]  = sum(1 for x in (r3.data or []) if x.get("event") == "join")
@@ -608,12 +662,14 @@ async def ia_analisar(request: Request):
 
         # PageViews
         r4 = (db.table("tracker_pageviews").select("id", count="exact")
+              .eq("projeto_id", _pid())
               .gte("created_at", data_inicio + "T00:00:00" + tz_str)
               .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
         contexto["pageviews"] = r4.count
 
         # Conversões enviadas
         r5 = (db.table("conversion_logs").select("plataforma,event_name,status", count="exact")
+              .eq("projeto_id", _pid())
               .gte("created_at", data_inicio + "T00:00:00" + tz_str)
               .lte("created_at", data_fim + "T23:59:59" + tz_str).execute())
         cl_data = r5.data or []
@@ -704,6 +760,41 @@ async def salvar_config_geral(request: Request):
     if "timezone_offset" in data:
         _set_cfg("timezone_offset", str(data["timezone_offset"]))
     return {"status": "ok"}
+
+
+# ── Cadastro de novo login (email + senha) = novo projeto isolado ─
+@app.post("/auth/cadastrar")
+async def cadastrar_usuario(request: Request):
+    """Cria um novo usuário de login já confirmado, com um projeto_id próprio
+    (dados totalmente isolados dos demais projetos)."""
+    data = await request.json()
+    email = (data.get("email") or "").strip().lower()
+    senha = (data.get("senha") or data.get("password") or "").strip()
+
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Email inválido")
+    if len(senha) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter no mínimo 6 caracteres")
+
+    projeto_id = str(uuid.uuid4())
+    try:
+        res = db.auth.admin.create_user({
+            "email": email,
+            "password": senha,
+            "email_confirm": True,
+            "app_metadata": {"projeto_id": projeto_id},
+        })
+    except Exception as e:
+        msg = str(e)
+        if "already" in msg.lower() or "registered" in msg.lower() or "exists" in msg.lower():
+            raise HTTPException(status_code=409, detail="Este email já está cadastrado")
+        print(f"[CADASTRO USUARIO ERRO] {msg}")
+        raise HTTPException(status_code=500, detail="Erro ao criar usuário")
+
+    user = getattr(res, "user", None)
+    uid = getattr(user, "id", None) if user else None
+    print(f"[CADASTRO USUARIO] {email} criado (id={uid}, projeto={projeto_id})")
+    return {"status": "ok", "email": email, "id": uid, "projeto_id": projeto_id}
 
 
 @app.get("/config/metaads")
@@ -917,6 +1008,10 @@ async def cadastro(request: Request):
     inner = data.get("data") or data
     utm   = inner.get("utm") or {}
 
+    # projeto_id: do ?projeto= (middleware) ou do corpo, com fallback pro projeto default
+    pid = _ctx_projeto.get() or (data.get("projeto") if isinstance(data, dict) else None) or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
+
     # Nome: aceita firstName/lastName (formato antigo) OU name único (Zyrooption)
     nome_completo = (inner.get("firstName","") + " " + inner.get("lastName","")).strip()
     if not nome_completo:
@@ -929,6 +1024,7 @@ async def cadastro(request: Request):
         "nome":     nome_completo or None,
         "email":    email_in,
         "telefone": telefone_in,
+        "projeto_id":   pid,
         "utm_source":   utm.get("source")   or data.get("utm_source"),
         "utm_medium":   utm.get("medium")   or data.get("utm_medium"),
         "utm_campaign": utm.get("campaign") or data.get("utm_campaign"),
@@ -938,7 +1034,7 @@ async def cadastro(request: Request):
 
     # Se o email já existe (cadastro veio do tracker.js antes), atualiza preservando UTMs
     if email_in:
-        existing = db.table("cadastros").select("*").eq("email", email_in).execute()
+        existing = db.table("cadastros").select("*").eq("email", email_in).eq("projeto_id", pid).execute()
         if existing.data:
             row = existing.data[0]
             # Mantém UTMs antigos se os novos forem null (postback do broker geralmente não traz)
@@ -1050,6 +1146,9 @@ async def deposito(request: Request):
     data = await _ler_payload_flex(request)
     print(f"[DEPOSITO PAYLOAD] content-type={request.headers.get('content-type')} data={data}")
 
+    pid = _ctx_projeto.get() or (data.get("projeto") if isinstance(data, dict) else None) or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
+
     # Salva últimos 20 payloads pra debug
     _ultimos_depositos_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(), "payload": data})
     if len(_ultimos_depositos_raw) > 20:
@@ -1062,7 +1161,7 @@ async def deposito(request: Request):
     # Se o postback do broker não trouxe UTMs, busca no cadastro do mesmo email
     if email and not any(utms.values()):
         try:
-            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).eq("projeto_id", pid).limit(1).execute()
             if cad.data:
                 row = cad.data[0]
                 utms = {
@@ -1080,6 +1179,7 @@ async def deposito(request: Request):
         "email": email,
         "valor": valor,
         "tipo": "recorrente",
+        "projeto_id": pid,
         **utms,
     }
 
@@ -1111,6 +1211,8 @@ async def deposito_get(request: Request):
     """Aceita postback via GET (alguns brokers usam só GET)."""
     data = dict(request.query_params)
     print(f"[DEPOSITO GET PAYLOAD] {data}")
+    pid = _ctx_projeto.get() or data.get("projeto") or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
     _ultimos_depositos_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(),
                                     "metodo": "GET", "payload": data})
     if len(_ultimos_depositos_raw) > 20:
@@ -1124,12 +1226,12 @@ async def deposito_get(request: Request):
     utms = extrair_utms(data)
     if not any(utms.values()):
         try:
-            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).eq("projeto_id", pid).limit(1).execute()
             if cad.data:
                 utms = {k: cad.data[0].get(k) for k in ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
         except Exception: pass
 
-    registro = {"email": email, "valor": valor, "tipo": "recorrente", **utms}
+    registro = {"email": email, "valor": valor, "tipo": "recorrente", "projeto_id": pid, **utms}
     try:
         result = db.table("depositos").insert(registro).execute()
     except Exception as e:
@@ -1159,6 +1261,8 @@ def ftd_debug():
 
 async def _processar_ftd(data: dict, metodo: str = "POST"):
     """Lógica compartilhada entre POST e GET de /ftd."""
+    pid = _ctx_projeto.get() or (data.get("projeto") if isinstance(data, dict) else None) or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
     _ultimos_ftds_raw.append({"recebido_em": datetime.now(timezone.utc).isoformat(),
                               "metodo": metodo, "payload": data})
     if len(_ultimos_ftds_raw) > 20:
@@ -1179,7 +1283,7 @@ async def _processar_ftd(data: dict, metodo: str = "POST"):
     # Se o postback do broker não trouxe UTMs, herda do cadastro do mesmo email
     if not any(utms.values()):
         try:
-            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).limit(1).execute()
+            cad = db.table("cadastros").select("utm_source,utm_medium,utm_campaign,utm_content,utm_term").eq("email", email).eq("projeto_id", pid).limit(1).execute()
             if cad.data:
                 utms = {k: cad.data[0].get(k) for k in
                         ("utm_source","utm_medium","utm_campaign","utm_content","utm_term")}
@@ -1187,7 +1291,7 @@ async def _processar_ftd(data: dict, metodo: str = "POST"):
         except Exception as e:
             print(f"[FTD ERRO buscar UTMs] {e}")
 
-    registro = {"email": email, "valor": valor, "tipo": "ftd", **utms}
+    registro = {"email": email, "valor": valor, "tipo": "ftd", "projeto_id": pid, **utms}
 
     try:
         result = db.table("depositos").insert(registro).execute()
@@ -1469,6 +1573,7 @@ async def telegram_webhook(request: Request):
         "first_name": first_name,
         "last_name":  last_name,
         "event":      event,
+        "projeto_id": _pid(),
     }
 
     try:
@@ -1608,6 +1713,8 @@ async def tracker_pageview(request: Request):
         data = await request.json()
     except Exception:
         return {"ok": True}
+    pid = _ctx_projeto.get() or data.get("projeto") or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
     canal_id = data.get("channel_id")
     page_url = data.get("page_url", "")
     utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
@@ -1615,6 +1722,7 @@ async def tracker_pageview(request: Request):
         db.table("tracker_pageviews").insert({
             "canal_id": canal_id,
             "page_url": page_url,
+            "projeto_id": pid,
             **utms
         }).execute()
     except Exception as e:
@@ -1627,6 +1735,8 @@ async def tracker_entrada(request: Request):
         data = await request.json()
     except Exception:
         return {"ok": True}
+    pid = _ctx_projeto.get() or data.get("projeto") or DEFAULT_PROJETO_ID
+    _ctx_projeto.set(pid)
     canal_id = data.get("channel_id")
     page_url = data.get("page_url", "")
     utms = {k: data.get(k) for k in ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"] if data.get(k)}
@@ -1653,7 +1763,7 @@ async def tracker_entrada(request: Request):
         print(f"[ENTRADA SNAP ERRO] {e}")
 
     try:
-        registro = {"canal_id": canal_id, "page_url": page_url, **utms}
+        registro = {"canal_id": canal_id, "page_url": page_url, "projeto_id": pid, **utms}
         # Tenta salvar campos extras (vão falhar silenciosamente se a coluna não existir)
         for k, v in [("fbc", fbc), ("fbp", fbp), ("external_id", external_id),
                      ("client_ip", client_ip), ("user_agent", user_agent), ("referrer", referrer)]:
@@ -1662,7 +1772,7 @@ async def tracker_entrada(request: Request):
     except Exception as e:
         # Fallback se faltar coluna nova: só insere campos antigos
         try:
-            db.table("tracker_entradas").insert({"canal_id": canal_id, "page_url": page_url, **utms}).execute()
+            db.table("tracker_entradas").insert({"canal_id": canal_id, "page_url": page_url, "projeto_id": pid, **utms}).execute()
         except Exception as e2:
             print(f"[ENTRADA ERRO] {e2}")
         print(f"[ENTRADA EXTRA ERRO] {e}")
@@ -1672,11 +1782,11 @@ async def tracker_entrada(request: Request):
 def get_leads():
     try:
         # 1. Cadastros como fonte principal
-        cads = db.table("cadastros").select("*").execute().data or []
+        cads = db.table("cadastros").select("*").eq("projeto_id", _pid()).execute().data or []
         cads.sort(key=lambda x: x.get("created_at") or "", reverse=True)
 
         # 2. Telegram members: status mais recente por primeiro nome
-        all_events = db.table("telegram_members").select("*").execute().data or []
+        all_events = db.table("telegram_members").select("*").eq("projeto_id", _pid()).execute().data or []
         all_events.sort(key=lambda x: x.get("created_at") or "")
         first_join_by_name = {}   # primeiro_nome -> created_at do primeiro join
         latest_by_name = {}       # primeiro_nome -> evento mais recente
@@ -1688,7 +1798,7 @@ def get_leads():
             latest_by_name[first] = ev
 
         # 3. Depósitos indexados por email
-        deps = db.table("depositos").select("*").execute().data or []
+        deps = db.table("depositos").select("*").eq("projeto_id", _pid()).execute().data or []
         deps.sort(key=lambda x: x.get("created_at") or "")
         dep_by_email = {}
         for d in deps:
@@ -1745,7 +1855,7 @@ def get_leads():
 def telegram_members_status():
     """Retorna o status atual (join/leave mais recente) por user_id."""
     try:
-        r = db.table("telegram_members").select("user_id,first_name,last_name,username,event,created_at").execute()
+        r = db.table("telegram_members").select("user_id,first_name,last_name,username,event,created_at").eq("projeto_id", _pid()).execute()
         rows = sorted(r.data or [], key=lambda x: x.get("created_at") or "", reverse=True)
         # Pega o evento mais recente por user_id
         by_user = {}
@@ -2253,6 +2363,7 @@ def limpar_erros_fake():
     try:
         r = (db.table("conversion_logs")
              .delete()
+             .eq("projeto_id", _pid())
              .in_("plataforma", ["kwai","tiktok"])
              .eq("response_body", "Pixel/Token não configurado")
              .execute())
@@ -2276,7 +2387,7 @@ def conversion_logs(
 ):
     """Lista logs de conversão com filtros."""
     try:
-        q = db.table("conversion_logs").select("*").order("created_at", desc=True).limit(limit)
+        q = db.table("conversion_logs").select("*").eq("projeto_id", _pid()).order("created_at", desc=True).limit(limit)
         if plataforma:    q = q.eq("plataforma", plataforma)
         if event_name:    q = q.eq("event_name", event_name)
         if status:        q = q.eq("status", status)
@@ -2301,7 +2412,7 @@ def conversion_logs(
 def telegram_members_historico():
     """Retorna todos os eventos de entrada/saída com data, separados."""
     try:
-        r = db.table("telegram_members").select("*").order("created_at", desc=True).execute()
+        r = db.table("telegram_members").select("*").eq("projeto_id", _pid()).order("created_at", desc=True).execute()
         rows = r.data or []
         entradas = [x for x in rows if x.get("event") == "join"]
         saidas   = [x for x in rows if x.get("event") == "leave"]
@@ -2331,7 +2442,7 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             return q
 
         # PageViews
-        q_pv = db.table("tracker_pageviews").select("id,created_at", count="exact")
+        q_pv = db.table("tracker_pageviews").select("id,created_at", count="exact").eq("projeto_id", _pid())
         if canal_id:
             q_pv = q_pv.eq("canal_id", canal_id)
         q_pv = aplicar_datas(q_pv, data_inicio, data_fim)
@@ -2339,7 +2450,7 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         pageviews = r_pv.count or 0
 
         # Cliques no link t.me (tracker.js)
-        q_en = db.table("tracker_entradas").select("id,created_at", count="exact")
+        q_en = db.table("tracker_entradas").select("id,created_at", count="exact").eq("projeto_id", _pid())
         if canal_id:
             q_en = q_en.eq("canal_id", canal_id)
         q_en = aplicar_datas(q_en, data_inicio, data_fim)
@@ -2347,14 +2458,14 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         cliques = r_en.count or 0
 
         # Entradas = joins no canal Telegram (telegram_members event=join)
-        q_jo = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "join")
+        q_jo = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "join").eq("projeto_id", _pid())
         q_jo = aplicar_datas(q_jo, data_inicio, data_fim)
         r_jo = q_jo.execute()
         joins = r_jo.count or 0
         entradas = joins
 
         # Saídas (telegram_members event=leave)
-        q_sa = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "leave")
+        q_sa = db.table("telegram_members").select("user_id,created_at", count="exact").eq("event", "leave").eq("projeto_id", _pid())
         q_sa = aplicar_datas(q_sa, data_inicio, data_fim)
         r_sa = q_sa.execute()
         saidas = r_sa.count or 0
@@ -2395,13 +2506,13 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
             print(f"[TM ERRO] {ex}")
 
         # Registros (cadastros) - traz UTMs também pra correlacionar com entradas
-        q_ca = db.table("cadastros").select("id,email,created_at,utm_source,utm_medium,utm_campaign", count="exact")
+        q_ca = db.table("cadastros").select("id,email,created_at,utm_source,utm_medium,utm_campaign", count="exact").eq("projeto_id", _pid())
         q_ca = aplicar_datas(q_ca, data_inicio, data_fim)
         r_ca = q_ca.execute()
         registros = r_ca.count or 0
 
         # Depósitos para FTD e redep
-        q_dep = db.table("depositos").select("id,email,valor,created_at")
+        q_dep = db.table("depositos").select("id,email,valor,created_at").eq("projeto_id", _pid())
         q_dep = aplicar_datas(q_dep, data_inicio, data_fim)
         r_dep = q_dep.execute()
         deps = r_dep.data or []
@@ -2463,6 +2574,7 @@ async def tracker_stats(canal_id: str = None, data_inicio: str = None, data_fim:
         tm_entrada_reg = None
         try:
             entradas_full = (db.table("tracker_entradas").select("created_at,utm_source,utm_medium,utm_campaign")
+                             .eq("projeto_id", _pid())
                              .order("created_at", desc=True).limit(2000).execute().data) or []
             diffs = []
             JANELA_SEG = 24*3600

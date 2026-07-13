@@ -5,6 +5,7 @@
   })();
 
   var channelId = script.getAttribute('data-channel-id') || '';
+  var projeto   = script.getAttribute('data-projeto') || '';
 
   // Capture UTM params + fbclid from URL
   var params = new URLSearchParams(window.location.search);
@@ -60,6 +61,7 @@
     try { savedUtms = JSON.parse(localStorage.getItem('_trk_utms') || '{}'); } catch (ex) {}
     var base = {
       channel_id: channelId,
+      projeto: projeto,
       page_url: location.href,
       referrer: document.referrer || '',
       fbc: getFbc(),

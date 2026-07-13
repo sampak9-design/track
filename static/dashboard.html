@@ -2482,6 +2482,30 @@
   const SUPABASE_ANON_KEY = "sb_publishable_FoecAw-1cgx_cBqTOrG_AQ_Z0AiMa8s";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // ── Multi-tenant: projeto do login atual ──
+  let PROJETO_ID = "";
+
+  // Anexa o token JWT automaticamente em toda chamada pra API do backend (mesma origem),
+  // pra ele resolver o projeto_id do usuário logado.
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = async (input, init = {}) => {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    const sameOrigin = url.startsWith("/") || url.startsWith(window.location.origin);
+    if (sameOrigin) {
+      try {
+        const { data } = await sb.auth.getSession();
+        const token = data?.session?.access_token;
+        if (token) {
+          init = { ...init };
+          const h = new Headers(init.headers || {});
+          h.set("Authorization", "Bearer " + token);
+          init.headers = h;
+        }
+      } catch (e) {}
+    }
+    return _origFetch(input, init);
+  };
+
   let allCadastros = [], allDepositos = [], allTelegramMembers = [];
   let graficos = {};
 
@@ -2660,8 +2684,10 @@
   sb.auth.getSession().then(({ data }) => {
     if (!data.session) { window.location.href = "index.html"; return; }
     const email = data.session.user.email || "";
+    PROJETO_ID = data.session.user.app_metadata?.projeto_id || "";
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
+    preencherWebhookURLs();
     definirDatasPadraoMes();
     carregar();
     popularCanalSelect();
@@ -2679,9 +2705,10 @@
   // ── Webhooks ──
   function preencherWebhookURLs() {
     const base = window.location.origin;
-    document.getElementById("url-cadastro").textContent = base + "/cadastro";
-    document.getElementById("url-ftd").textContent = base + "/ftd";
-    document.getElementById("url-deposito").textContent = base + "/deposito";
+    const p = PROJETO_ID ? "?projeto=" + encodeURIComponent(PROJETO_ID) : "";
+    document.getElementById("url-cadastro").textContent = base + "/cadastro" + p;
+    document.getElementById("url-ftd").textContent = base + "/ftd" + p;
+    document.getElementById("url-deposito").textContent = base + "/deposito" + p;
   }
 
   // ── Aplicar filtros (sem barra global - cada aba tem suas próprias datas) ──
@@ -2698,8 +2725,8 @@
 
     try {
       const [cRes, dRes, tmRes] = await Promise.all([
-        sb.from("cadastros").select("*").order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
-        sb.from("depositos").select("*").order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
+        sb.from("cadastros").select("*").eq("projeto_id", PROJETO_ID).order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
+        sb.from("depositos").select("*").eq("projeto_id", PROJETO_ID).order("created_at", { ascending: false }).then(r => r).catch(() => ({ data: [] })),
         fetch("/telegram/members-status").then(r => r.json()).catch(() => ({ members: [] })),
       ]);
 
@@ -6053,12 +6080,13 @@
     // Code block
     const appUrl = window.location.origin;
     const username = canal.username ? canal.username.replace("@","") : "";
-    const code = `<script\n  src="${appUrl}/static/tracker.js"\n  data-channel-id="${canal.id}"\n  data-channel-username="${username}"\n><\/script>`;
+    const code = `<script\n  src="${appUrl}/static/tracker.js"\n  data-channel-id="${canal.id}"\n  data-channel-username="${username}"\n  data-projeto="${PROJETO_ID}"\n><\/script>`;
     codeBlock.innerHTML =
       '<span style="color:#6b7280">&lt;script</span>\n' +
       '  <span style="color:#a855f7">src</span>=<span style="color:#22c55e">"' + appUrl + '/static/tracker.js"</span>\n' +
       '  <span style="color:#a855f7">data-channel-id</span>=<span style="color:#22c55e">"' + canal.id + '"</span>\n' +
       '  <span style="color:#a855f7">data-channel-username</span>=<span style="color:#22c55e">"' + username + '"</span>\n' +
+      '  <span style="color:#a855f7">data-projeto</span>=<span style="color:#22c55e">"' + PROJETO_ID + '"</span>\n' +
       '<span style="color:#6b7280">&gt;&lt;/script&gt;</span>';
     codeBlock._rawCode = code;
 
