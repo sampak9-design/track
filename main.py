@@ -706,6 +706,39 @@ async def salvar_config_geral(request: Request):
     return {"status": "ok"}
 
 
+# ── Cadastro de novo login (email + senha) via Supabase Auth ──────
+@app.post("/auth/cadastrar")
+async def cadastrar_usuario(request: Request):
+    """Cria um novo usuário de login (email + senha) já confirmado.
+    Usado para liberar acesso ao painel para outro projeto/pessoa."""
+    data = await request.json()
+    email = (data.get("email") or "").strip().lower()
+    senha = (data.get("senha") or data.get("password") or "").strip()
+
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Email inválido")
+    if len(senha) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter no mínimo 6 caracteres")
+
+    try:
+        res = db.auth.admin.create_user({
+            "email": email,
+            "password": senha,
+            "email_confirm": True,
+        })
+    except Exception as e:
+        msg = str(e)
+        if "already" in msg.lower() or "registered" in msg.lower() or "exists" in msg.lower():
+            raise HTTPException(status_code=409, detail="Este email já está cadastrado")
+        print(f"[CADASTRO USUARIO ERRO] {msg}")
+        raise HTTPException(status_code=500, detail="Erro ao criar usuário")
+
+    user = getattr(res, "user", None)
+    uid = getattr(user, "id", None) if user else None
+    print(f"[CADASTRO USUARIO] {email} criado (id={uid})")
+    return {"status": "ok", "email": email, "id": uid}
+
+
 @app.get("/config/metaads")
 def get_metaads_config(request: Request):
     redirect_uri = str(request.base_url).rstrip("/").replace("http://", "https://") + "/metaads/callback"
