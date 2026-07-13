@@ -66,9 +66,7 @@
     <label>Senha</label>
     <input type="password" id="senha" placeholder="••••••••">
     <button onclick="login()">Entrar</button>
-    <button onclick="cadastrar()" style="background:transparent;color:#94a3b8;border:1px solid #2d3148;margin-top:10px">Criar conta</button>
     <div class="erro" id="erro"></div>
-    <div id="ok" style="color:#4ade80;font-size:0.85rem;margin-top:12px;display:none"></div>
   </div>
 
   <script>
@@ -94,36 +92,6 @@
       } else {
         window.location.href = "dashboard.html";
       }
-    }
-
-    async function cadastrar() {
-      const email = document.getElementById("email").value.trim();
-      const senha = document.getElementById("senha").value;
-      const erro = document.getElementById("erro");
-      const ok = document.getElementById("ok");
-      erro.style.display = "none";
-      ok.style.display = "none";
-
-      if (!email || senha.length < 6) {
-        erro.textContent = "Informe email e senha (mín. 6 caracteres).";
-        erro.style.display = "block";
-        return;
-      }
-
-      const resp = await fetch("/auth/cadastrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
-      });
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        erro.textContent = data.detail || "Erro ao criar conta.";
-        erro.style.display = "block";
-        return;
-      }
-      ok.textContent = "Conta criada! Já pode entrar.";
-      ok.style.display = "block";
     }
 
     document.addEventListener("keydown", e => {
