@@ -14,6 +14,11 @@ alter table tracker_pageviews add column if not exists projeto_id text;
 alter table conversion_logs   add column if not exists projeto_id text;
 alter table telegram_members  add column if not exists projeto_id text;
 alter table telegram_canais   add column if not exists projeto_id text;
+alter table booster_contas    add column if not exists projeto_id text;
+alter table booster_campanhas add column if not exists projeto_id text;
+alter table booster_acoes     add column if not exists projeto_id text;
+alter table booster_auto      add column if not exists projeto_id text;
+alter table bot_messages      add column if not exists projeto_id text;
 
 -- config: cada projeto tem sua própria chave (remove unique só-em-chave e cria composto)
 alter table configuracoes drop constraint if exists configuracoes_chave_key;
@@ -28,6 +33,11 @@ create index if not exists tracker_pageviews_projeto_idx on tracker_pageviews (p
 create index if not exists conversion_logs_projeto_idx   on conversion_logs (projeto_id);
 create index if not exists telegram_members_projeto_idx  on telegram_members (projeto_id);
 create index if not exists telegram_canais_projeto_idx   on telegram_canais (projeto_id);
+create index if not exists booster_contas_projeto_idx    on booster_contas (projeto_id);
+create index if not exists booster_campanhas_projeto_idx on booster_campanhas (projeto_id);
+create index if not exists booster_acoes_projeto_idx     on booster_acoes (projeto_id);
+create index if not exists booster_auto_projeto_idx      on booster_auto (projeto_id);
+create index if not exists bot_messages_projeto_idx      on bot_messages (projeto_id);
 
 -- >>> AGORA rode o script de backfill (backfill_multitenant.py) <<<
 
@@ -56,3 +66,8 @@ alter table tracker_pageviews enable row level security;
 alter table conversion_logs   enable row level security;
 alter table telegram_members  enable row level security;
 alter table telegram_canais   enable row level security;
+alter table booster_contas    enable row level security;
+alter table booster_campanhas enable row level security;
+alter table booster_acoes     enable row level security;
+alter table booster_auto      enable row level security;
+alter table bot_messages      enable row level security;

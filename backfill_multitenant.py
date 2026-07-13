@@ -20,7 +20,8 @@ MAIN_EMAIL = "masantos102514@gmail.com"
 
 # 1. Carimba todas as linhas antigas (projeto_id nulo) com o projeto principal
 tabelas = ["cadastros", "depositos", "configuracoes", "tracker_entradas",
-           "tracker_pageviews", "conversion_logs", "telegram_members", "telegram_canais"]
+           "tracker_pageviews", "conversion_logs", "telegram_members", "telegram_canais",
+           "booster_contas", "booster_campanhas", "booster_acoes", "booster_auto", "bot_messages"]
 for t in tabelas:
     try:
         r = db.table(t).update({"projeto_id": MAIN}).is_("projeto_id", "null").execute()

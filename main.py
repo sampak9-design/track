@@ -1503,6 +1503,7 @@ async def telegram_webhook(request: Request):
                             "delay_max_seg":    cfg.get("delay_max_seg") or 30,
                             "janela_min":       cfg.get("janela_min") or 30,
                             "status":           "pendente",
+                            "projeto_id":       cfg.get("projeto_id") or _pid(),
                         }).execute()
                         print(f"[BOOSTER AUTO] campanha criada pra {chat_title} #{msg_id}")
                     except Exception as e:
@@ -1947,6 +1948,7 @@ def salvar_msg_bot(direcao: str, user: dict, canal_id: int = None, canal_nome: s
             "status":        status,
             "response_code": response_code,
             "response_body": (response_body or "")[:500],
+            "projeto_id":    _pid(),
         }).execute()
     except Exception as e:
         print(f"[BOT_MSG ERRO] {e}")
@@ -2263,7 +2265,7 @@ async def _aprovar_join_request(bot_token: str, chat_id, user_id, delay_seg: int
 def inbox_diag():
     """Diagnóstico: verifica se a tabela existe e quantos registros tem."""
     try:
-        r = db.table("bot_messages").select("id", count="exact").limit(1).execute()
+        r = db.table("bot_messages").select("id", count="exact").eq("projeto_id", _pid()).limit(1).execute()
         total = getattr(r, "count", None) or 0
         return {"ok": True, "tabela_existe": True, "total_registros": total}
     except Exception as e:
@@ -2274,7 +2276,7 @@ def inbox_diag():
 def inbox_threads(canal_id: int = None, limit: int = 100):
     """Lista threads (1 por usuário) com a última mensagem e contagem total."""
     try:
-        q = db.table("bot_messages").select("*").order("created_at", desc=True).limit(2000)
+        q = db.table("bot_messages").select("*").eq("projeto_id", _pid()).order("created_at", desc=True).limit(2000)
         if canal_id:
             q = q.eq("canal_id", canal_id)
         rows = q.execute().data or []
@@ -2315,6 +2317,7 @@ def inbox_thread(user_id: str, limit: int = 200):
     try:
         rows = (db.table("bot_messages").select("*")
                 .eq("user_id", str(user_id))
+                .eq("projeto_id", _pid())
                 .order("created_at", desc=False)
                 .limit(limit).execute().data) or []
         return {"messages": rows}
@@ -2339,7 +2342,7 @@ async def inbox_reply(request: Request):
         pass
     if not bot_token:
         raise HTTPException(status_code=400, detail="Bot não configurado")
-    last = (db.table("bot_messages").select("*").eq("user_id", str(user_id))
+    last = (db.table("bot_messages").select("*").eq("user_id", str(user_id)).eq("projeto_id", _pid())
             .order("created_at", desc=True).limit(1).execute().data) or []
     user_info = {
         "id": user_id,
@@ -3011,6 +3014,7 @@ def booster_listar_contas():
                 .select("id,phone,username,first_name,user_id_tg,proxy,has_2fa,status,"
                         "cooldown_ate,views_hoje,reacoes_hoje,total_views,total_reacoes,"
                         "ultima_acao,banido_em,erro_msg,criado_em")
+                .eq("projeto_id", _pid())
                 .order("criado_em", desc=True).execute().data) or []
         return {"contas": rows}
     except Exception as e:
@@ -3063,6 +3067,7 @@ async def booster_upload_session(request: Request):
             "session_string": _enc(str_sess),
             "proxy":          proxy or None,
             "status":         "ativa",
+            "projeto_id":     _pid(),
         }
         ins = db.table("booster_contas").insert(new_row).execute()
         return {"ok": True, "conta": {k: new_row[k] for k in ("phone","username","first_name","user_id_tg")}}
@@ -3258,6 +3263,7 @@ async def _finalizar_login(login_id: str, auto_2fa: bool = False, senha_2fa_exis
         "has_2fa":        has_2fa,
         "senha_2fa_enc":  _enc(senha_2fa_nova or senha_2fa_existente) if (senha_2fa_nova or senha_2fa_existente) else None,
         "status":         "ativa",
+        "projeto_id":     _pid(),
     }
     db.table("booster_contas").insert(new_row).execute()
     return {
@@ -3430,6 +3436,7 @@ async def _registrar_acao(camp_id: int, conta_id: int, tipo: str, emoji: str, ok
             "campanha_id": camp_id, "conta_id": conta_id,
             "tipo": tipo, "emoji": emoji,
             "status": status, "erro_msg": erro,
+            "projeto_id": _pid(),
         }).execute()
         # Marca conta como banida se for o caso
         if status == "banida":
@@ -3482,6 +3489,8 @@ async def _executar_acao_agendada(camp_id: int, conta: dict, acao: dict, peer, m
 async def _executar_campanha(camp: dict):
     """Distribui as ações da campanha pelas contas elegíveis e roda em paralelo."""
     camp_id = camp["id"]
+    # define o projeto desta campanha no contexto (tasks filhas herdam via create_task)
+    _ctx_projeto.set(camp.get("projeto_id"))
     janela_seg = (camp.get("janela_min") or 30) * 60
     delay_min = camp.get("delay_min_seg") or 1
     delay_max = camp.get("delay_max_seg") or 30
@@ -3491,7 +3500,10 @@ async def _executar_campanha(camp: dict):
         db.table("booster_campanhas").update({"status": "erro", "erro_msg": "URL do post inválida"}).eq("id", camp_id).execute()
         return
 
-    contas = (db.table("booster_contas").select("*").eq("status","ativa").execute().data) or []
+    contas_q = db.table("booster_contas").select("*").eq("status","ativa")
+    if camp.get("projeto_id"):
+        contas_q = contas_q.eq("projeto_id", camp.get("projeto_id"))
+    contas = (contas_q.execute().data) or []
     if not contas:
         db.table("booster_campanhas").update({"status": "erro", "erro_msg": "nenhuma conta ativa"}).eq("id", camp_id).execute()
         return
@@ -3560,7 +3572,7 @@ async def _startup_booster():
 @app.get("/booster/campanhas")
 def booster_listar_campanhas(limit: int = 100):
     try:
-        rows = (db.table("booster_campanhas").select("*").order("criado_em", desc=True).limit(limit).execute().data) or []
+        rows = (db.table("booster_campanhas").select("*").eq("projeto_id", _pid()).order("criado_em", desc=True).limit(limit).execute().data) or []
         return {"campanhas": rows}
     except Exception as e:
         return {"campanhas": [], "erro": str(e)}
@@ -3590,6 +3602,7 @@ async def booster_criar_campanha(request: Request):
         "delay_max_seg":    max(2, int(body.get("delay_max_seg") or 30)),
         "janela_min":       max(1, int(body.get("janela_min") or 30)),
         "status":           "pendente" if body.get("iniciar_agora", True) else "pausada",
+        "projeto_id":       _pid(),
     }
     ins = db.table("booster_campanhas").insert(new_row).execute()
     return {"ok": True, "campanha": (ins.data[0] if ins.data else new_row)}
@@ -3624,7 +3637,7 @@ async def booster_criar_campanha_canal(request: Request):
         elif not canal_link_raw.lstrip("-").isdigit():
             canal_target = "@" + canal_link_raw
 
-    contas = (db.table("booster_contas").select("*").eq("status", "ativa").limit(1).execute().data) or []
+    contas = (db.table("booster_contas").select("*").eq("status", "ativa").eq("projeto_id", _pid()).limit(1).execute().data) or []
     if not contas:
         raise HTTPException(status_code=400, detail="Precisa pelo menos 1 conta ativa pra buscar os posts")
     api_id, api_hash = _booster_api_creds()
@@ -3685,6 +3698,7 @@ async def booster_criar_campanha_canal(request: Request):
             "delay_max_seg":    max(2, int(body.get("delay_max_seg") or 30)),
             "janela_min":       max(1, int(body.get("janela_min") or 30)),
             "status":           "pendente",
+            "projeto_id":       _pid(),
         }
         ins = db.table("booster_campanhas").insert(new_row).execute()
         criadas.append({"msg_id": p["msg_id"], "id": (ins.data[0]["id"] if ins.data else None), "preview": p["text"]})
@@ -3725,6 +3739,7 @@ def booster_acoes_campanha(camp_id: int, limit: int = 200):
     try:
         rows = (db.table("booster_acoes").select("*,booster_contas(phone,first_name,username)")
                 .eq("campanha_id", camp_id)
+                .eq("projeto_id", _pid())
                 .order("executado_em", desc=True).limit(limit).execute().data) or []
         return {"acoes": rows}
     except Exception as e:
@@ -3846,7 +3861,7 @@ async def booster_auto_salvar(request: Request):
     canal_id = body.get("canal_id")
     if not canal_id:
         raise HTTPException(status_code=400, detail="canal_id obrigatório")
-    canal = db.table("telegram_canais").select("*").eq("id", canal_id).execute()
+    canal = db.table("telegram_canais").select("*").eq("id", canal_id).eq("projeto_id", _pid()).execute()
     if not canal.data:
         raise HTTPException(status_code=404, detail="Canal não encontrado")
     canal_tgid = str(canal.data[0].get("telegram_id") or "")
@@ -3866,8 +3881,9 @@ async def booster_auto_salvar(request: Request):
         "janela_min":         max(1, int(body.get("janela_min") or 30)),
         "aguardar_min_antes": max(0, int(body.get("aguardar_min_antes") or 0)),
         "atualizado_em":      datetime.now(timezone.utc).isoformat(),
+        "projeto_id":         _pid(),
     }
-    existing = db.table("booster_auto").select("id").eq("canal_telegram_id", canal_tgid).execute()
+    existing = db.table("booster_auto").select("id").eq("canal_telegram_id", canal_tgid).eq("projeto_id", _pid()).execute()
     if existing.data:
         db.table("booster_auto").update(payload).eq("id", existing.data[0]["id"]).execute()
     else:
@@ -3947,7 +3963,7 @@ async def booster_auto_diag():
 
     # 2. Configs ativas
     try:
-        cfgs = (db.table("booster_auto").select("*").eq("ativo", True).execute().data) or []
+        cfgs = (db.table("booster_auto").select("*").eq("ativo", True).eq("projeto_id", _pid()).execute().data) or []
         out["auto_configs_ativas"] = [
             {"canal_nome": c.get("canal_nome"), "canal_telegram_id": c.get("canal_telegram_id"),
              "qtd_views": c.get("qtd_views"), "qtd_reacoes": c.get("qtd_reacoes")}
@@ -3958,7 +3974,7 @@ async def booster_auto_diag():
 
     # 3. Contas ativas
     try:
-        contas = db.table("booster_contas").select("status,phone,first_name").execute().data or []
+        contas = db.table("booster_contas").select("status,phone,first_name").eq("projeto_id", _pid()).execute().data or []
         out["contas"] = {
             "total": len(contas),
             "ativas": sum(1 for c in contas if c.get("status") == "ativa"),
@@ -3971,6 +3987,7 @@ async def booster_auto_diag():
     # 4. Últimas 5 campanhas (foca em auto)
     try:
         camps = (db.table("booster_campanhas").select("id,nome,canal_link,status,views_entregues,reacoes_entregues,qtd_views,qtd_reacoes,erro_msg,criado_em")
+                 .eq("projeto_id", _pid())
                  .order("criado_em", desc=True).limit(10).execute().data) or []
         out["ultimas_campanhas"] = camps
     except Exception as e:
@@ -3987,8 +4004,8 @@ async def booster_auto_diag():
 def booster_status_resumo():
     """Resumo geral pra aba Status."""
     try:
-        contas = db.table("booster_contas").select("status").execute().data or []
-        camps  = db.table("booster_campanhas").select("status,views_entregues,reacoes_entregues").execute().data or []
+        contas = db.table("booster_contas").select("status").eq("projeto_id", _pid()).execute().data or []
+        camps  = db.table("booster_campanhas").select("status,views_entregues,reacoes_entregues").eq("projeto_id", _pid()).execute().data or []
         from collections import Counter
         contas_por_status = Counter(c.get("status") or "?" for c in contas)
         camps_por_status  = Counter(c.get("status") or "?" for c in camps)
