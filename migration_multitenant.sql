@@ -13,6 +13,7 @@ alter table tracker_entradas  add column if not exists projeto_id text;
 alter table tracker_pageviews add column if not exists projeto_id text;
 alter table conversion_logs   add column if not exists projeto_id text;
 alter table telegram_members  add column if not exists projeto_id text;
+alter table telegram_canais   add column if not exists projeto_id text;
 
 -- config: cada projeto tem sua própria chave (remove unique só-em-chave e cria composto)
 alter table configuracoes drop constraint if exists configuracoes_chave_key;
@@ -26,6 +27,7 @@ create index if not exists tracker_entradas_projeto_idx  on tracker_entradas (pr
 create index if not exists tracker_pageviews_projeto_idx on tracker_pageviews (projeto_id);
 create index if not exists conversion_logs_projeto_idx   on conversion_logs (projeto_id);
 create index if not exists telegram_members_projeto_idx  on telegram_members (projeto_id);
+create index if not exists telegram_canais_projeto_idx   on telegram_canais (projeto_id);
 
 -- >>> AGORA rode o script de backfill (backfill_multitenant.py) <<<
 
@@ -53,3 +55,4 @@ alter table tracker_entradas  enable row level security;
 alter table tracker_pageviews enable row level security;
 alter table conversion_logs   enable row level security;
 alter table telegram_members  enable row level security;
+alter table telegram_canais   enable row level security;

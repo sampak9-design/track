@@ -106,7 +106,7 @@ def get_meta_config():
         if pixels:
             return pixels[0]["pixel_id"], pixels[0]["access_token"]
         # Fallback: config antiga
-        result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).execute()
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).eq("projeto_id", _pid()).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         return cfg.get("meta_pixel_id"), cfg.get("meta_token")
     except Exception as e:
@@ -129,7 +129,7 @@ def get_meta_pixels(somente_ativos: bool = False) -> list:
             except Exception:
                 pass
         # Auto-migra config antiga (pixel_id + token)
-        result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).execute()
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["meta_pixel_id", "meta_token"]).eq("projeto_id", _pid()).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         pid, tok = cfg.get("meta_pixel_id"), cfg.get("meta_token")
         if pid and tok:
@@ -294,7 +294,7 @@ async def enviar_meta(event_name: str, email: str = None, phone: str = None, val
 def get_kwai_config():
     """Lê kwai_pixel_id e kwai_token salvos no Supabase."""
     try:
-        result = db.table("configuracoes").select("chave,valor").in_("chave", ["kwai_pixel_id", "kwai_token"]).execute()
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["kwai_pixel_id", "kwai_token"]).eq("projeto_id", _pid()).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         return cfg.get("kwai_pixel_id"), cfg.get("kwai_token")
     except Exception as e:
@@ -304,7 +304,7 @@ def get_kwai_config():
 def get_tiktok_config():
     """Lê tiktok_pixel_code e tiktok_token salvos no Supabase."""
     try:
-        result = db.table("configuracoes").select("chave,valor").in_("chave", ["tiktok_pixel_code", "tiktok_token"]).execute()
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["tiktok_pixel_code", "tiktok_token"]).eq("projeto_id", _pid()).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         return cfg.get("tiktok_pixel_code"), cfg.get("tiktok_token")
     except Exception as e:
@@ -527,11 +527,11 @@ async def salvar_config_kwai(request: Request):
 
     try:
         for chave, valor in [("kwai_pixel_id", pixel_id), ("kwai_token", token)]:
-            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).eq("projeto_id", _pid()).execute()
             if existing.data:
-                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).eq("projeto_id", _pid()).execute()
             else:
-                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+                db.table("configuracoes").insert({"chave": chave, "valor": valor, "projeto_id": _pid()}).execute()
     except Exception as e:
         print(f"[CONFIG ERRO] {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -559,11 +559,11 @@ async def salvar_config_tiktok(request: Request):
 
     try:
         for chave, valor in [("tiktok_pixel_code", pixel_code), ("tiktok_token", token)]:
-            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).eq("projeto_id", _pid()).execute()
             if existing.data:
-                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).eq("projeto_id", _pid()).execute()
             else:
-                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+                db.table("configuracoes").insert({"chave": chave, "valor": valor, "projeto_id": _pid()}).execute()
     except Exception as e:
         print(f"[CONFIG ERRO] {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1383,7 +1383,7 @@ async def telegram_webhook(request: Request):
         if canal_id_interno is not None:
             bot_token_local = TELEGRAM_BOT_TOKEN
             try:
-                r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+                r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
                 if r2.data: bot_token_local = r2.data[0]["valor"]
             except Exception:
                 pass
@@ -1447,6 +1447,7 @@ async def telegram_webhook(request: Request):
                             "username": chat_uname,
                             "telegram_id": str(chat_id),
                             "link": "",
+                            "projeto_id": _pid(),
                         }).execute()
                         print(f"[CANAL AUTO] Canal detectado e salvo: {chat_title} ({chat_uname}) id={chat_id}")
                     else:
@@ -1599,7 +1600,7 @@ async def telegram_webhook(request: Request):
             if saida.get("ativo"):
                 bot_token_local = TELEGRAM_BOT_TOKEN
                 try:
-                    r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+                    r2 = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
                     if r2.data: bot_token_local = r2.data[0]["valor"]
                 except Exception:
                     pass
@@ -1627,11 +1628,11 @@ async def telegram_webhook(request: Request):
 @app.get("/config/telegram")
 def ler_config_telegram():
     try:
-        result = db.table("configuracoes").select("chave,valor").in_("chave", ["telegram_bot_token", "telegram_bot_username"]).execute()
+        result = db.table("configuracoes").select("chave,valor").in_("chave", ["telegram_bot_token", "telegram_bot_username"]).eq("projeto_id", _pid()).execute()
         cfg = {r["chave"]: r["valor"] for r in (result.data or [])}
         token = cfg.get("telegram_bot_token") or TELEGRAM_BOT_TOKEN
         username = cfg.get("telegram_bot_username", "")
-        canais_res = db.table("telegram_canais").select("*").execute()
+        canais_res = db.table("telegram_canais").select("*").eq("projeto_id", _pid()).execute()
         canais = canais_res.data or []
         return {"token": token or "", "username": username, "configurado": bool(token), "canais": canais}
     except Exception:
@@ -1647,11 +1648,11 @@ async def salvar_config_telegram(request: Request):
         raise HTTPException(status_code=400, detail="token é obrigatório")
     try:
         for chave, valor in [("telegram_bot_token", token), ("telegram_bot_username", username)]:
-            existing = db.table("configuracoes").select("chave").eq("chave", chave).execute()
+            existing = db.table("configuracoes").select("chave").eq("chave", chave).eq("projeto_id", _pid()).execute()
             if existing.data:
-                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).execute()
+                db.table("configuracoes").update({"valor": valor}).eq("chave", chave).eq("projeto_id", _pid()).execute()
             else:
-                db.table("configuracoes").insert({"chave": chave, "valor": valor}).execute()
+                db.table("configuracoes").insert({"chave": chave, "valor": valor, "projeto_id": _pid()}).execute()
         TELEGRAM_BOT_TOKEN = token
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1693,7 +1694,7 @@ async def adicionar_canal_telegram(request: Request):
     if not nome:
         raise HTTPException(status_code=400, detail="nome é obrigatório")
     try:
-        result = db.table("telegram_canais").insert({"nome": nome, "username": username, "link": link}).execute()
+        result = db.table("telegram_canais").insert({"nome": nome, "username": username, "link": link, "projeto_id": _pid()}).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": result.data[0]["id"]}
@@ -2110,7 +2111,7 @@ async def testar_boas_vindas(canal_id: int, request: Request):
     bv = _bv_cfg(canal_id)
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception:
         pass
@@ -2172,7 +2173,7 @@ async def testar_saida(canal_id: int, request: Request):
     saida = _bv_saida_cfg(canal_id)
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception:
         pass
@@ -2200,7 +2201,7 @@ async def gerar_link_solicitacao(canal_id: int, request: Request):
     body = await request.json() if request.headers.get("content-length") else {}
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception:
         pass
@@ -2332,7 +2333,7 @@ async def inbox_reply(request: Request):
         raise HTTPException(status_code=400, detail="user_id e texto são obrigatórios")
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception:
         pass
@@ -2773,7 +2774,7 @@ async def verificar_canal(username: str):
     """Verifica canal via API do Telegram e salva automaticamente."""
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").eq("projeto_id", _pid()).execute()
         if result.data:
             bot_token = result.data[0]["valor"]
     except Exception:
@@ -2807,7 +2808,7 @@ async def verificar_canal(username: str):
             db.table("telegram_canais").update({"nome": nome, "link": invite, "telegram_id": str(tg_id)}).eq("username", uname).execute()
             canal_id = existing.data[0]["id"]
         else:
-            ins = db.table("telegram_canais").insert({"nome": nome, "username": uname, "link": invite, "telegram_id": str(tg_id)}).execute()
+            ins = db.table("telegram_canais").insert({"nome": nome, "username": uname, "link": invite, "telegram_id": str(tg_id), "projeto_id": _pid()}).execute()
             canal_id = ins.data[0]["id"]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2821,7 +2822,7 @@ async def detectar_canais(request: Request):
     """Pausa webhook, busca updates com my_chat_member, reativa webhook."""
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").eq("projeto_id", _pid()).execute()
         if result.data:
             bot_token = result.data[0]["valor"]
     except Exception:
@@ -2898,6 +2899,7 @@ async def detectar_canais(request: Request):
                     "username": chat_uname,
                     "telegram_id": str(chat_id),
                     "link": "",
+                    "projeto_id": _pid(),
                 }).execute()
                 salvos += 1
                 print(f"[DETECTAR] Canal salvo: {chat_title} id={chat_id}")
@@ -2907,7 +2909,7 @@ async def detectar_canais(request: Request):
     # Retornar todos os canais já cadastrados (inclusive os salvos pelo webhook)
     canais_total = []
     try:
-        canais_res = db.table("telegram_canais").select("*").execute()
+        canais_res = db.table("telegram_canais").select("*").eq("projeto_id", _pid()).execute()
         canais_total = canais_res.data or []
     except Exception:
         pass
@@ -2921,7 +2923,7 @@ async def telegram_setup(request: Request):
     # tenta pegar token do Supabase primeiro
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").execute()
+        result = db.table("configuracoes").select("valor").eq("chave", "telegram_bot_token").eq("projeto_id", _pid()).execute()
         if result.data:
             bot_token = result.data[0]["valor"]
     except Exception:
@@ -3755,7 +3757,7 @@ async def booster_adicionar_canal_via_link(request: Request):
             chat_id_param = "@" + link
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception:
         pass
@@ -3792,6 +3794,7 @@ async def booster_adicionar_canal_via_link(request: Request):
             ins = db.table("telegram_canais").insert({
                 "nome": title, "username": ("@"+uname) if uname else "",
                 "telegram_id": str(chat_id), "link": link,
+                "projeto_id": _pid(),
             }).execute()
             canal_id = ins.data[0]["id"] if ins.data else None
             criado = True
@@ -3808,7 +3811,7 @@ async def booster_adicionar_canal_via_link(request: Request):
 def booster_auto_listar():
     """Lista canais cadastrados + config de auto-boost (se houver)."""
     try:
-        canais = (db.table("telegram_canais").select("id,nome,username,telegram_id").execute().data) or []
+        canais = (db.table("telegram_canais").select("id,nome,username,telegram_id").eq("projeto_id", _pid()).execute().data) or []
         autos = (db.table("booster_auto").select("*").execute().data) or []
         by_tgid = {a.get("canal_telegram_id"): a for a in autos}
         merged = []
@@ -3883,7 +3886,7 @@ async def booster_atualizar_webhook(request: Request):
     """Força reconfiguração do webhook com channel_post incluído (pra Auto-Boost)."""
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception: pass
     if not bot_token:
@@ -3919,7 +3922,7 @@ async def booster_auto_diag():
     # 1. WebhookInfo
     bot_token = TELEGRAM_BOT_TOKEN
     try:
-        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").execute()
+        r = db.table("configuracoes").select("valor").eq("chave","telegram_bot_token").eq("projeto_id", _pid()).execute()
         if r.data: bot_token = r.data[0]["valor"]
     except Exception: pass
     if bot_token:
