@@ -1812,7 +1812,7 @@ def get_leads():
             dep_by_email[email]["ltv"] += float(d.get("valor") or 0)
 
         # 4. Canal principal
-        canais = db.table("telegram_canais").select("nome").execute().data or []
+        canais = db.table("telegram_canais").select("nome").eq("projeto_id", _pid()).execute().data or []
         canal_nome = canais[0]["nome"] if canais else "—"
 
         # 5. Monta lista com cadastros + enriquece com Telegram
@@ -2806,9 +2806,9 @@ async def verificar_canal(username: str):
 
     # Salva ou atualiza no banco
     try:
-        existing = db.table("telegram_canais").select("id").eq("username", uname).execute()
+        existing = db.table("telegram_canais").select("id").eq("username", uname).eq("projeto_id", _pid()).execute()
         if existing.data:
-            db.table("telegram_canais").update({"nome": nome, "link": invite, "telegram_id": str(tg_id)}).eq("username", uname).execute()
+            db.table("telegram_canais").update({"nome": nome, "link": invite, "telegram_id": str(tg_id)}).eq("username", uname).eq("projeto_id", _pid()).execute()
             canal_id = existing.data[0]["id"]
         else:
             ins = db.table("telegram_canais").insert({"nome": nome, "username": uname, "link": invite, "telegram_id": str(tg_id), "projeto_id": _pid()}).execute()
