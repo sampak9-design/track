@@ -1355,6 +1355,20 @@ async def telegram_webhook(request: Request):
             raise HTTPException(status_code=401, detail="invalid secret token")
     update = await request.json()
 
+    # ── Multi-tenant: descobre o projeto pelo CANAL do evento (o bot é global/único) ──
+    # Sem isso, o webhook cairia sempre no projeto principal e não acharia a config
+    # (auto-aprovar, boas-vindas) de canais de outros projetos.
+    try:
+        _ev = (update.get("chat_join_request") or update.get("chat_member")
+               or update.get("my_chat_member") or update.get("channel_post") or {})
+        _cid = (_ev.get("chat") or {}).get("id")
+        if _cid:
+            _c = db.table("telegram_canais").select("projeto_id").eq("telegram_id", str(_cid)).execute()
+            if _c.data and _c.data[0].get("projeto_id"):
+                _ctx_projeto.set(_c.data[0]["projeto_id"])
+    except Exception as _e:
+        print(f"[WEBHOOK projeto] {_e}")
+
     # ── Solicitação de entrada (chat_join_request) ──
     join_req = update.get("chat_join_request")
     if join_req:
@@ -1660,7 +1674,7 @@ async def salvar_config_telegram(request: Request):
 
     # Configurar webhook AUTOMATICAMENTE para capturar my_chat_member quando o bot for adicionado
     try:
-        webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+        webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook?projeto=" + _pid()
         secret_token = _get_telegram_secret_token()
         async with httpx.AsyncClient(timeout=15) as client:
             wh_resp = await client.post(
@@ -2834,7 +2848,7 @@ async def detectar_canais(request: Request):
     if not bot_token:
         raise HTTPException(status_code=400, detail="Bot não configurado")
 
-    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook?projeto=" + _pid()
 
     async with httpx.AsyncClient(timeout=15) as client:
         # 1. Deletar webhook temporariamente (sem drop_pending para preservar updates)
@@ -2935,7 +2949,7 @@ async def telegram_setup(request: Request):
     if not bot_token:
         raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN não configurado")
 
-    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook"
+    webhook_url = str(request.base_url).rstrip("/").replace("http://", "https://") + "/telegram/webhook?projeto=" + _pid()
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -3907,7 +3921,7 @@ async def booster_atualizar_webhook(request: Request):
     except Exception: pass
     if not bot_token:
         raise HTTPException(status_code=400, detail="bot_token não configurado em Pixels → Telegram")
-    webhook_url = str(request.base_url).rstrip("/").replace("http://","https://") + "/telegram/webhook"
+    webhook_url = str(request.base_url).rstrip("/").replace("http://","https://") + "/telegram/webhook?projeto=" + _pid()
     secret = _get_telegram_secret_token()
     try:
         async with httpx.AsyncClient(timeout=15) as client:

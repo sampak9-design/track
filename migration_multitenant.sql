@@ -20,8 +20,10 @@ alter table booster_acoes     add column if not exists projeto_id text;
 alter table booster_auto      add column if not exists projeto_id text;
 alter table bot_messages      add column if not exists projeto_id text;
 
--- config: cada projeto tem sua própria chave (remove unique só-em-chave e cria composto)
+-- config: cada projeto tem sua própria chave (remove uniques antigos e cria composto)
+-- IMPORTANTE: a PK antiga (user_id, chave) impedia 2 projetos de terem a mesma chave.
 alter table configuracoes drop constraint if exists configuracoes_chave_key;
+alter table configuracoes drop constraint if exists configuracoes_pkey;
 create unique index if not exists configuracoes_projeto_chave_uidx
   on configuracoes (projeto_id, chave);
 
