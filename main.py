@@ -4066,45 +4066,7 @@ def _etapa_idx(nome) -> int:
     return FUNIL_ETAPAS.index(nome) if nome in FUNIL_ETAPAS else -1
 
 
-@app.post("/tracker/funil")
-async def tracker_funil(request: Request):
-    # Aceita text/plain (sendBeacon) e application/json
-    try:
-        data = json.loads((await request.body()) or b"{}")
-    except Exception:
-        return {"ok": True}
-    if not isinstance(data, dict):
-        return {"ok": True}
-
-    sid = _txt(data.get("sessao_id"), 64)
-    if not sid:
-        return {"ok": True}
-    pid = _ctx_projeto.get() or _txt(data.get("projeto"), 64) or DEFAULT_PROJETO_ID
-    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
-    resumo = data.get("resumo") if isinstance(data.get("resumo"), dict) else {}
-    eventos = data.get("eventos") if isinstance(data.get("eventos"), list) else []
-
-    # Eventos
-    linhas = []
-    for ev in eventos[:200]:
-        if not isinstance(ev, dict) or ev.get("tipo") not in FUNIL_TIPOS:
-            continue
-        dados = ev.get("dados") if isinstance(ev.get("dados"), dict) else None
-        if dados is not None and len(json.dumps(dados)) > 2000:
-            dados = None
-        t_ms = _num(ev.get("t_ms"), 0, 86_400_000)
-        linhas.append({
-            "projeto_id": pid,
-            "sessao_id": sid,
-            "tipo": ev["tipo"],
-            "nome": _txt(ev.get("nome"), 120),
-            "etapa": _txt(ev.get("etapa"), 40),
-            "t_ms": int(t_ms) if t_ms is not None else None,
-            "x": _num(ev.get("x"), 0, 1),
-            "y": _num(ev.get("y"), 0, 1),
-            "dados": dados,
-        })
-
+def _funil_salvar(sid, pid, meta, resumo, linhas):
     # Sessão: combina com o que já existe (etapa mais avançada, contadores máximos)
     try:
         atual = db.table("funil_sessoes").select(
@@ -4150,6 +4112,49 @@ async def tracker_funil(request: Request):
             db.table("funil_eventos").insert(linhas).execute()
     except Exception as e:
         print(f"[FUNIL ERRO] {e}")
+
+
+@app.post("/tracker/funil")
+async def tracker_funil(request: Request):
+    # Aceita text/plain (sendBeacon) e application/json
+    try:
+        data = json.loads((await request.body()) or b"{}")
+    except Exception:
+        return {"ok": True}
+    if not isinstance(data, dict):
+        return {"ok": True}
+
+    sid = _txt(data.get("sessao_id"), 64)
+    if not sid:
+        return {"ok": True}
+    pid = _ctx_projeto.get() or _txt(data.get("projeto"), 64) or DEFAULT_PROJETO_ID
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    resumo = data.get("resumo") if isinstance(data.get("resumo"), dict) else {}
+    eventos = data.get("eventos") if isinstance(data.get("eventos"), list) else []
+
+    # Eventos
+    linhas = []
+    for ev in eventos[:200]:
+        if not isinstance(ev, dict) or ev.get("tipo") not in FUNIL_TIPOS:
+            continue
+        dados = ev.get("dados") if isinstance(ev.get("dados"), dict) else None
+        if dados is not None and len(json.dumps(dados)) > 2000:
+            dados = None
+        t_ms = _num(ev.get("t_ms"), 0, 86_400_000)
+        linhas.append({
+            "projeto_id": pid,
+            "sessao_id": sid,
+            "tipo": ev["tipo"],
+            "nome": _txt(ev.get("nome"), 120),
+            "etapa": _txt(ev.get("etapa"), 40),
+            "t_ms": int(t_ms) if t_ms is not None else None,
+            "x": _num(ev.get("x"), 0, 1),
+            "y": _num(ev.get("y"), 0, 1),
+            "dados": dados,
+        })
+
+    # Banco em thread separada: o cliente do Supabase é síncrono e travaria o servidor
+    await asyncio.to_thread(_funil_salvar, sid, pid, meta, resumo, linhas)
     return {"ok": True}
 
 
