@@ -375,6 +375,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Tráfego Meta
     </div>
+    <div class="nav-item" onclick="mudarSecao('funil',this)" id="nav-funil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>
+      Funil da Página
+    </div>
     <div class="nav-item" onclick="mudarSecao('ia',this)" id="nav-ia">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1.5a2.5 2.5 0 0 0-2.5 2.5v0a2.5 2.5 0 0 0 0 5v0a2.5 2.5 0 0 0 2.5 2.5V18a3 3 0 0 0 6 0v-1.5a2.5 2.5 0 0 0 2.5-2.5v0a2.5 2.5 0 0 0 0-5v0A2.5 2.5 0 0 0 15 6.5V5a3 3 0 0 0-3-3z"/><circle cx="9.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="14.5" cy="9.5" r=".5" fill="currentColor"/></svg>
       Análise com IA
@@ -743,6 +747,96 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ════ FUNIL DA PÁGINA ════ -->
+    <div class="secao" id="sec-funil">
+      <style>
+        .fn-filtros { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:flex-end; }
+        .fn-filtros label { display:block; font-size:0.68rem; color:#4a5568; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+        .fn-filtros input, .fn-filtros select { background:#13151f; border:1px solid #1e2235; color:#c9d1e0; padding:7px 10px; border-radius:7px; font-size:0.8rem; font-family:inherit; outline:none; min-width:130px; }
+        .fn-etapa { display:grid; grid-template-columns: 170px 1fr 70px; gap:12px; align-items:center; padding:7px 0; }
+        .fn-etapa-nome { font-size:0.8rem; color:#c9d1e0; }
+        .fn-etapa-sub { font-size:0.68rem; color:#4a5568; margin-top:2px; }
+        .fn-barra { height:22px; background:#1a1d2e; border-radius:6px; overflow:hidden; position:relative; }
+        .fn-barra > div { height:100%; background:linear-gradient(90deg,#4f6ef7,#06b6d4); border-radius:6px; transition:width .4s; }
+        .fn-barra span { position:absolute; left:8px; top:3px; font-size:0.72rem; font-weight:600; color:#fff; }
+        .fn-pct { text-align:right; font-weight:700; font-size:0.85rem; }
+        .fn-queda { padding-left:182px; font-size:0.7rem; color:#ef4444; }
+        .fn-heat-wrap { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+        .fn-heat { background:#0b0d14; border:1px solid #1e2235; border-radius:18px; }
+        .fn-link { color:#4f6ef7; cursor:pointer; }
+        .fn-modal { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:300; display:none; align-items:center; justify-content:center; padding:16px; }
+        .fn-modal.aberto { display:flex; }
+        .fn-modal-box { background:#13151f; border:1px solid #1e2235; border-radius:12px; width:min(560px,100%); max-height:85vh; overflow:auto; padding:18px 20px; }
+        .fn-tl { border-left:2px solid #1e2235; margin-left:6px; padding-left:14px; }
+        .fn-tl-item { position:relative; padding:6px 0; font-size:0.8rem; color:#c9d1e0; }
+        .fn-tl-item::before { content:""; position:absolute; left:-20px; top:11px; width:10px; height:10px; border-radius:50%; background:#4f6ef7; }
+        .fn-tl-item.clique::before { background:#f59e0b; width:8px; height:8px; left:-19px; }
+        .fn-tl-item.saida::before { background:#ef4444; }
+        .fn-tl-t { color:#4a5568; font-size:0.72rem; margin-right:8px; font-variant-numeric:tabular-nums; }
+        @media (max-width: 700px) { .fn-etapa { grid-template-columns: 1fr 60px; } .fn-etapa .fn-barra { grid-column: 1 / -1; order: 3; } .fn-queda { padding-left:0; } }
+      </style>
+
+      <div class="fn-filtros">
+        <div><label>Data inicial</label><input type="date" id="fn-inicio" onchange="carregarFunil()"></div>
+        <div><label>Data final</label><input type="date" id="fn-fim" onchange="carregarFunil()"></div>
+        <div><label>Idioma</label>
+          <select id="fn-lang" onchange="carregarFunil()"><option value="">Todos</option><option value="pt">Português</option><option value="es">Espanhol (MX)</option></select></div>
+        <div><label>Aparelho</label>
+          <select id="fn-device" onchange="carregarFunil()"><option value="">Todos</option><option value="mobile">Celular</option><option value="desktop">Computador</option><option value="tablet">Tablet</option></select></div>
+        <div><label>Campanha</label>
+          <select id="fn-campanha" onchange="carregarFunil()"><option value="">Todas</option></select></div>
+        <button class="btn-atualizar" onclick="carregarFunil()" style="height:33px">Atualizar</button>
+      </div>
+
+      <div class="cards-grid" id="fn-cards"></div>
+
+      <div class="grid-60-40">
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Funil passo a passo</div>
+            <div class="panel-subtitle">% sobre quem entrou na página · tempo médio até chegar em cada etapa</div></div></div>
+          <div id="fn-etapas"><div class="empty-state"><p>Carregando…</p></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Onde saíram</div>
+            <div class="panel-subtitle">Etapa em que estavam quem não clicou no Telegram</div></div></div>
+          <div id="fn-saidas" class="stat-row"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Mapa de cliques</div>
+            <div class="panel-subtitle">Onde tocaram na página (posição relativa)</div></div>
+            <select id="fn-heat-etapa" onchange="desenharHeatmap()" style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:5px 8px;border-radius:7px;font-size:0.75rem;font-family:inherit">
+              <option value="">Todas as etapas</option></select></div>
+          <div class="fn-heat-wrap"><canvas id="fn-heat" class="fn-heat" width="220" height="440" style="max-height:none"></canvas>
+            <div style="flex:1;min-width:200px"><div class="tabela-wrap"><table><thead><tr><th>Elemento</th><th>Etapa</th><th>Cliques</th></tr></thead><tbody id="fn-cliques-top"></tbody></table></div></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Por origem</div>
+            <div class="panel-subtitle">Visitas, quem iniciou e quem clicou no Telegram</div></div>
+            <select id="fn-grupo" onchange="renderGrupo()" style="background:#0f1117;border:1px solid #1e2235;color:#c9d1e0;padding:5px 8px;border-radius:7px;font-size:0.75rem;font-family:inherit">
+              <option value="por_campanha">Campanha</option><option value="por_device">Aparelho</option><option value="por_browser">Navegador</option><option value="por_lang">Idioma</option></select></div>
+          <div class="tabela-wrap"><table><thead><tr><th>Origem</th><th>Visitas</th><th>Iniciou</th><th>Telegram</th><th>Tempo médio</th></tr></thead><tbody id="fn-grupo-body"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Visitas recentes</div>
+          <div class="panel-subtitle">Clique numa visita para ver a linha do tempo completa</div></div></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Quando</th><th>Origem</th><th>Aparelho</th><th>Idioma</th><th>Chegou até</th><th>Saiu em</th><th>Tempo</th><th>Cliques</th><th>Telegram</th></tr></thead>
+          <tbody id="fn-sessoes"></tbody></table></div>
+      </div>
+
+      <div class="fn-modal" id="fn-modal" onclick="if(event.target===this)fecharTimeline()">
+        <div class="fn-modal-box">
+          <div class="panel-header"><div class="panel-title">Linha do tempo da visita</div>
+            <button class="panel-action" onclick="fecharTimeline()">Fechar ✕</button></div>
+          <div id="fn-modal-conteudo"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ════ CADASTROS ════ -->
@@ -2514,7 +2608,7 @@
   const titulos = {
     resumo: "Principal", cadastros: "Cadastros",
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
-    trafego: "Tráfego Meta", ia: "Análise com IA", integracoes: "Pixels",
+    trafego: "Tráfego Meta", funil: "Funil da Página", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
     solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster", configuracoes: "Configurações"
   };
@@ -3558,6 +3652,7 @@
     if (id === "membros") { carregarMembros(); }
     if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
     if (id === "trafego") { carregarTrafegoInit(); }
+    if (id === "funil") { carregarFunil(); }
     if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
@@ -6455,6 +6550,171 @@
       carregarCanais();
     } catch(e) {}
   }
+
+  // ── Funil da Página ──
+  const FN_ETAPAS = {
+    pagina: "Entrou na página", iniciou: "Clicou em Iniciar", analise: "IA analisando",
+    entrada: "Entrou na operação", resultado: "Viu o resultado", licenca: "Licença desbloqueada", telegram: "Clicou no Telegram",
+  };
+  let fnDados = null;
+
+  function fnEsc(s) {
+    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function fnTempo(ms) {
+    if (ms === null || ms === undefined) return "—";
+    const s = Math.round(ms / 1000);
+    return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + String(s % 60).padStart(2, "0") + "s";
+  }
+  function fnPct(a, b) { return b ? Math.round((a / b) * 1000) / 10 : 0; }
+
+  async function carregarFunil() {
+    const ini = document.getElementById("fn-inicio"), fim = document.getElementById("fn-fim");
+    if (!ini.value && !fim.value) {
+      const hoje = new Date(), semana = new Date(Date.now() - 6 * 864e5);
+      const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+      ini.value = iso(semana); fim.value = iso(hoje);
+    }
+    const p = new URLSearchParams({ data_inicio: ini.value, data_fim: fim.value });
+    for (const [id, k] of [["fn-lang", "lang"], ["fn-device", "device"], ["fn-campanha", "utm_campaign"]]) {
+      const v = document.getElementById(id).value; if (v) p.set(k, v);
+    }
+    document.getElementById("fn-etapas").innerHTML = '<div class="empty-state"><p>Carregando…</p></div>';
+    try {
+      const r = await fetch("/funil/relatorio?" + p.toString());
+      if (!r.ok) throw new Error(r.status === 401 ? "Faça login novamente." : "Erro " + r.status);
+      fnDados = await r.json();
+      renderFunil();
+    } catch (e) {
+      document.getElementById("fn-etapas").innerHTML = '<div class="empty-state"><p>Não foi possível carregar: ' + fnEsc(e.message) + '</p></div>';
+    }
+  }
+
+  function renderFunil() {
+    const d = fnDados, total = d.total;
+    const et = Object.fromEntries(d.etapas.map(e => [e.etapa, e]));
+    const card = (label, valor, sub, cor) => `<div class="metric-card"><div class="metric-header"><span class="metric-label">${label}</span></div>
+      <div class="metric-value ${cor}">${valor}</div><div class="metric-sub">${sub}</div></div>`;
+    document.getElementById("fn-cards").innerHTML =
+      card("Visitas", total, "entraram na página", "c-white") +
+      card("Iniciaram a operação", fnPct(et.iniciou.visitas, total) + "%", et.iniciou.visitas + " visitas", "c-blue") +
+      card("Clicaram no Telegram", fnPct(et.telegram.visitas, total) + "%", et.telegram.visitas + " visitas", "c-green") +
+      card("Tempo na página", fnTempo(d.tempo_medio_ms), "média · mediana " + fnTempo(d.tempo_mediano_ms), "c-purple");
+
+    if (!total) {
+      document.getElementById("fn-etapas").innerHTML = '<div class="empty-state"><p>Nenhuma visita no período.</p></div>';
+    } else {
+      let html = "", anterior = null;
+      for (const e of d.etapas) {
+        if (anterior && anterior.visitas) {
+          const perdeu = anterior.visitas - e.visitas;
+          if (perdeu > 0) html += `<div class="fn-queda">↓ ${perdeu} saíram (${fnPct(perdeu, anterior.visitas)}% da etapa anterior)</div>`;
+        }
+        const pct = fnPct(e.visitas, total);
+        html += `<div class="fn-etapa"><div><div class="fn-etapa-nome">${FN_ETAPAS[e.etapa] || e.etapa}</div>
+          <div class="fn-etapa-sub">${e.etapa === "pagina" ? "início" : "em média aos " + fnTempo(e.tempo_medio_ms)}</div></div>
+          <div class="fn-barra"><div style="width:${pct}%"></div><span>${e.visitas}</span></div>
+          <div class="fn-pct">${pct}%</div></div>`;
+        anterior = e;
+      }
+      document.getElementById("fn-etapas").innerHTML = html;
+    }
+
+    const saidas = d.etapas.filter(e => e.saidas > 0), totSaidas = saidas.reduce((a, e) => a + e.saidas, 0);
+    document.getElementById("fn-saidas").innerHTML = saidas.length ? saidas.sort((a, b) => b.saidas - a.saidas).map(e => `
+      <div class="stat-item"><span class="stat-name">${FN_ETAPAS[e.etapa] || e.etapa}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${fnPct(e.saidas, totSaidas)}%;background:#ef4444"></div></div>
+        <span class="stat-val">${e.saidas} <span style="color:#4a5568;font-weight:400">(${fnPct(e.saidas, totSaidas)}%)</span></span></div>`).join("")
+      : '<div class="empty-state"><p>Ninguém saiu sem clicar 🎉</p></div>';
+
+    // Campanhas no filtro (mantém a escolhida)
+    const sel = document.getElementById("fn-campanha"), atual = sel.value;
+    const camps = d.por_campanha.map(g => g.valor).filter(v => v !== "(não informado)");
+    if (atual && !camps.includes(atual)) camps.unshift(atual);
+    sel.innerHTML = '<option value="">Todas</option>' + camps.map(c => `<option value="${fnEsc(c)}" ${c === atual ? "selected" : ""}>${fnEsc(c)}</option>`).join("");
+
+    const heatSel = document.getElementById("fn-heat-etapa"), heatAtual = heatSel.value;
+    heatSel.innerHTML = '<option value="">Todas as etapas</option>' + Object.entries(FN_ETAPAS)
+      .map(([k, v]) => `<option value="${k}" ${k === heatAtual ? "selected" : ""}>${v}</option>`).join("");
+    desenharHeatmap();
+
+    document.getElementById("fn-cliques-top").innerHTML = d.cliques_top.length ? d.cliques_top.map(c =>
+      `<tr><td>${fnEsc(c.nome)}</td><td>${FN_ETAPAS[c.etapa] || fnEsc(c.etapa)}</td><td>${c.cliques}</td></tr>`).join("")
+      : '<tr><td colspan="3" style="color:#4a5568">Sem cliques no período</td></tr>';
+
+    renderGrupo();
+
+    document.getElementById("fn-sessoes").innerHTML = d.sessoes.length ? d.sessoes.map(s => {
+      const quando = new Date(s.criado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      const origem = s.utm_campaign || s.utm_source || "direto";
+      return `<tr style="cursor:pointer" onclick="abrirTimeline('${fnEsc(s.sessao_id)}')">
+        <td class="fn-link">${quando}</td><td>${fnEsc(origem)}</td><td>${fnEsc(s.device || "—")} · ${fnEsc(s.browser || "")}</td>
+        <td>${s.lang === "es" ? "MX" : "PT"}</td><td>${FN_ETAPAS[s.etapa_max] || "—"}</td>
+        <td>${s.clicou_telegram ? "—" : (s.saiu ? (FN_ETAPAS[s.etapa_saida] || "—") : '<span class="badge badge-blue">na página</span>')}</td>
+        <td>${fnTempo(s.tempo_ativo_ms)}</td><td>${s.cliques}</td>
+        <td>${s.clicou_telegram ? '<span class="badge badge-green">Sim</span>' : '<span class="badge badge-gray">Não</span>'}</td></tr>`;
+    }).join("") : '<tr><td colspan="9" style="color:#4a5568">Nenhuma visita no período</td></tr>';
+  }
+
+  function renderGrupo() {
+    if (!fnDados) return;
+    const grupo = fnDados[document.getElementById("fn-grupo").value] || [];
+    const nomes = { mobile: "Celular", desktop: "Computador", tablet: "Tablet", pt: "Português", es: "Espanhol (MX)" };
+    document.getElementById("fn-grupo-body").innerHTML = grupo.length ? grupo.map(g => `<tr>
+      <td>${fnEsc(nomes[g.valor] || g.valor)}</td><td>${g.visitas}</td>
+      <td>${fnPct(g.iniciou, g.visitas)}%</td><td><b style="color:#22c55e">${fnPct(g.telegram, g.visitas)}%</b> <span style="color:#4a5568">(${g.telegram})</span></td>
+      <td>${fnTempo(g.tempo_medio_ms)}</td></tr>`).join("") : '<tr><td colspan="5" style="color:#4a5568">Sem dados</td></tr>';
+  }
+
+  function desenharHeatmap() {
+    const cv = document.getElementById("fn-heat"), ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (!fnDados) return;
+    const filtro = document.getElementById("fn-heat-etapa").value;
+    const pts = fnDados.cliques_pontos.filter(p => !filtro || p[2] === filtro);
+    // grade de fundo
+    ctx.strokeStyle = "#151827"; ctx.lineWidth = 1;
+    for (let y = 40; y < cv.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+    ctx.globalCompositeOperation = "lighter";
+    for (const [x, y] of pts) {
+      const px = x * cv.width, py = y * cv.height;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 18);
+      g.addColorStop(0, "rgba(245,158,11,0.22)"); g.addColorStop(0.5, "rgba(239,68,68,0.07)"); g.addColorStop(1, "rgba(239,68,68,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#4a5568"; ctx.font = "11px Inter, sans-serif";
+    ctx.fillText(pts.length + " cliques", 10, cv.height - 10);
+  }
+
+  async function abrirTimeline(sid) {
+    const box = document.getElementById("fn-modal-conteudo");
+    box.innerHTML = '<div class="empty-state"><p>Carregando…</p></div>';
+    document.getElementById("fn-modal").classList.add("aberto");
+    try {
+      const r = await fetch("/funil/sessao/" + encodeURIComponent(sid));
+      if (!r.ok) throw new Error("Erro " + r.status);
+      const { sessao: s, eventos } = await r.json();
+      const info = [
+        ["Origem", [s.utm_source, s.utm_campaign].filter(Boolean).join(" · ") || "direto"],
+        ["Aparelho", [s.device, s.os, s.browser].filter(Boolean).join(" · ")],
+        ["Idioma", s.lang === "es" ? "Espanhol (MX)" : "Português"],
+        ["Tempo ativo", fnTempo(s.tempo_ativo_ms)],
+        ["Cliques", s.cliques],
+        ["Telegram", s.clicou_telegram ? "Clicou ✅" : "Não clicou"],
+      ].map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1d2e"><span style="color:#6b7280">${k}</span><span>${fnEsc(v)}</span></div>`).join("");
+      const itens = eventos.map(e => {
+        const texto = e.tipo === "etapa" ? `<b>${FN_ETAPAS[e.nome] || fnEsc(e.nome)}</b>`
+          : e.tipo === "clique" ? `Clicou em <span style="color:#f59e0b">${fnEsc(e.nome)}</span>`
+          : `<span style="color:#ef4444">Saiu da página</span> <span style="color:#4a5568">(em ${FN_ETAPAS[e.etapa] || fnEsc(e.etapa)})</span>`;
+        return `<div class="fn-tl-item ${e.tipo}"><span class="fn-tl-t">${fnTempo(e.t_ms)}</span>${texto}</div>`;
+      }).join("");
+      box.innerHTML = `<div style="margin-bottom:14px">${info}</div><div class="fn-tl">${itens || '<p style="color:#4a5568">Sem eventos</p>'}</div>`;
+    } catch (e) {
+      box.innerHTML = '<div class="empty-state"><p>Não foi possível carregar.</p></div>';
+    }
+  }
+  function fecharTimeline() { document.getElementById("fn-modal").classList.remove("aberto"); }
 </script>
 </body>
 </html>

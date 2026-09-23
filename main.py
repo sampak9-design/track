@@ -4035,5 +4035,259 @@ def booster_status_resumo():
         return {"erro": str(e)}
 
 
+
+# ── Funil da página (ex.: apollo-landing) ────────────────────────
+# A página manda lotes de eventos (etapas, cliques, saída) por visita.
+# funil_sessoes = 1 linha por visita (resumo); funil_eventos = 1 linha por ação.
+# Tabelas criadas por migration_funil.sql.
+
+FUNIL_ETAPAS = ["pagina", "iniciou", "analise", "entrada", "resultado", "licenca", "telegram"]
+FUNIL_TIPOS = {"etapa", "clique", "saida"}
+
+
+def _txt(v, n: int):
+    if v is None:
+        return None
+    v = str(v).strip()
+    return v[:n] if v else None
+
+
+def _num(v, lo: float, hi: float):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if f != f:  # NaN
+        return None
+    return max(lo, min(hi, f))
+
+
+def _etapa_idx(nome) -> int:
+    return FUNIL_ETAPAS.index(nome) if nome in FUNIL_ETAPAS else -1
+
+
+@app.post("/tracker/funil")
+async def tracker_funil(request: Request):
+    # Aceita text/plain (sendBeacon) e application/json
+    try:
+        data = json.loads((await request.body()) or b"{}")
+    except Exception:
+        return {"ok": True}
+    if not isinstance(data, dict):
+        return {"ok": True}
+
+    sid = _txt(data.get("sessao_id"), 64)
+    if not sid:
+        return {"ok": True}
+    pid = _ctx_projeto.get() or _txt(data.get("projeto"), 64) or DEFAULT_PROJETO_ID
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    resumo = data.get("resumo") if isinstance(data.get("resumo"), dict) else {}
+    eventos = data.get("eventos") if isinstance(data.get("eventos"), list) else []
+
+    # Eventos
+    linhas = []
+    for ev in eventos[:200]:
+        if not isinstance(ev, dict) or ev.get("tipo") not in FUNIL_TIPOS:
+            continue
+        dados = ev.get("dados") if isinstance(ev.get("dados"), dict) else None
+        if dados is not None and len(json.dumps(dados)) > 2000:
+            dados = None
+        t_ms = _num(ev.get("t_ms"), 0, 86_400_000)
+        linhas.append({
+            "projeto_id": pid,
+            "sessao_id": sid,
+            "tipo": ev["tipo"],
+            "nome": _txt(ev.get("nome"), 120),
+            "etapa": _txt(ev.get("etapa"), 40),
+            "t_ms": int(t_ms) if t_ms is not None else None,
+            "x": _num(ev.get("x"), 0, 1),
+            "y": _num(ev.get("y"), 0, 1),
+            "dados": dados,
+        })
+
+    # Sessão: combina com o que já existe (etapa mais avançada, contadores máximos)
+    try:
+        atual = db.table("funil_sessoes").select(
+            "etapa_max,tempo_ativo_ms,cliques,clicou_telegram"
+        ).eq("sessao_id", sid).limit(1).execute().data
+        atual = atual[0] if atual else {}
+
+        etapas_novas = [l["nome"] for l in linhas if l["tipo"] == "etapa"]
+        etapa_max = atual.get("etapa_max")
+        for e in etapas_novas + [resumo.get("etapa")]:
+            if _etapa_idx(e) > _etapa_idx(etapa_max):
+                etapa_max = e
+
+        tempo = _num(resumo.get("tempo_ativo_ms"), 0, 86_400_000)
+        cliques = _num(resumo.get("cliques"), 0, 100_000)
+        sessao = {
+            "sessao_id": sid,
+            "projeto_id": pid,
+            "etapa_max": etapa_max,
+            "tempo_ativo_ms": max(int(tempo or 0), atual.get("tempo_ativo_ms") or 0),
+            "cliques": max(int(cliques or 0), atual.get("cliques") or 0),
+            "clicou_telegram": bool(atual.get("clicou_telegram")) or "telegram" in etapas_novas,
+            "saiu": bool(resumo.get("saiu")),
+            "etapa_saida": _txt(resumo.get("etapa"), 40) if resumo.get("saiu") else None,
+        }
+        sessao["atualizado_em"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if meta:
+            sessao.update({
+                "external_id": _txt(meta.get("external_id"), 80),
+                "page_url": _txt(meta.get("page_url"), 500),
+                "lang": _txt(meta.get("lang"), 8),
+                "device": _txt(meta.get("device"), 16),
+                "os": _txt(meta.get("os"), 24),
+                "browser": _txt(meta.get("browser"), 32),
+                "screen_w": int(_num(meta.get("screen_w"), 0, 10000) or 0) or None,
+                "screen_h": int(_num(meta.get("screen_h"), 0, 10000) or 0) or None,
+                "referrer": _txt(meta.get("referrer"), 500),
+                **{k: _txt(meta.get(k), 200) for k in
+                   ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]},
+            })
+        db.table("funil_sessoes").upsert(sessao, on_conflict="sessao_id").execute()
+        if linhas:
+            db.table("funil_eventos").insert(linhas).execute()
+    except Exception as e:
+        print(f"[FUNIL ERRO] {e}")
+    return {"ok": True}
+
+
+def _funil_exigir_login(request: Request) -> str:
+    """Relatórios do funil só com login: o projeto vem do token do dashboard."""
+    auth = request.headers.get("Authorization", "")
+    pid = _projeto_do_token(auth[7:]) if auth.startswith("Bearer ") else ""
+    if not pid:
+        raise HTTPException(status_code=401, detail="login necessário")
+    return pid
+
+
+def _funil_buscar(query_fn, limite: int = 50_000):
+    """Pagina uma consulta do Supabase (1000 por vez)."""
+    linhas, ini = [], 0
+    while ini < limite:
+        lote = query_fn().range(ini, ini + 999).execute().data or []
+        linhas += lote
+        if len(lote) < 1000:
+            break
+        ini += 1000
+    return linhas
+
+
+@app.get("/funil/relatorio")
+def funil_relatorio(request: Request, data_inicio: str = None, data_fim: str = None,
+                    lang: str = None, device: str = None, utm_campaign: str = None):
+    pid = _funil_exigir_login(request)
+    try:
+        tz_offset = int(_get_cfg("timezone_offset") or "-3")
+    except Exception:
+        tz_offset = -3
+    tz = f"{tz_offset:+03d}:00"
+
+    def sessoes_q():
+        q = db.table("funil_sessoes").select("*").eq("projeto_id", pid)
+        if data_inicio: q = q.gte("criado_em", data_inicio + "T00:00:00" + tz)
+        if data_fim:    q = q.lte("criado_em", data_fim + "T23:59:59" + tz)
+        if lang:        q = q.eq("lang", lang)
+        if device:      q = q.eq("device", device)
+        if utm_campaign: q = q.eq("utm_campaign", utm_campaign)
+        return q.order("criado_em", desc=True)
+
+    sessoes = _funil_buscar(sessoes_q)
+    ids = {s["sessao_id"] for s in sessoes}
+    total = len(sessoes)
+
+    # Funil: quantas visitas chegaram (pelo menos) a cada etapa
+    alcance = [0] * len(FUNIL_ETAPAS)
+    for s in sessoes:
+        for i in range(_etapa_idx(s.get("etapa_max")) + 1):
+            alcance[i] += 1
+
+    # Onde saíram (quem não clicou no Telegram)
+    saidas = {e: 0 for e in FUNIL_ETAPAS}
+    for s in sessoes:
+        if not s.get("clicou_telegram"):
+            e = s.get("etapa_saida") or s.get("etapa_max") or "pagina"
+            if e in saidas:
+                saidas[e] += 1
+
+    tempos = sorted((s.get("tempo_ativo_ms") or 0) for s in sessoes)
+    mediana = tempos[len(tempos) // 2] if tempos else 0
+
+    # Eventos do período (para tempos por etapa e cliques)
+    def eventos_q():
+        q = db.table("funil_eventos").select("sessao_id,tipo,nome,etapa,t_ms,x,y").eq("projeto_id", pid) \
+            .in_("tipo", ["etapa", "clique"])
+        if data_inicio: q = q.gte("criado_em", data_inicio + "T00:00:00" + tz)
+        if data_fim:    q = q.lte("criado_em", data_fim + "T23:59:59" + tz)
+        return q.order("id")
+
+    eventos = [e for e in _funil_buscar(eventos_q, 100_000) if e["sessao_id"] in ids]
+
+    soma_t = {e: [] for e in FUNIL_ETAPAS}
+    cliques_pts, cliques_nome = [], {}
+    for e in eventos:
+        if e["tipo"] == "etapa" and e.get("nome") in soma_t and e.get("t_ms") is not None:
+            soma_t[e["nome"]].append(e["t_ms"])
+        elif e["tipo"] == "clique":
+            if e.get("x") is not None and e.get("y") is not None and len(cliques_pts) < 5000:
+                cliques_pts.append([round(e["x"], 4), round(e["y"], 4), e.get("etapa") or ""])
+            chave = (e.get("nome") or "(sem nome)", e.get("etapa") or "")
+            cliques_nome[chave] = cliques_nome.get(chave, 0) + 1
+
+    def media(v):
+        return int(sum(v) / len(v)) if v else None
+
+    def agrupar(campo):
+        grupos = {}
+        for s in sessoes:
+            k = s.get(campo) or "(não informado)"
+            g = grupos.setdefault(k, {"valor": k, "visitas": 0, "iniciou": 0, "telegram": 0, "tempo": 0})
+            g["visitas"] += 1
+            g["iniciou"] += 1 if _etapa_idx(s.get("etapa_max")) >= 1 else 0
+            g["telegram"] += 1 if s.get("clicou_telegram") else 0
+            g["tempo"] += s.get("tempo_ativo_ms") or 0
+        for g in grupos.values():
+            g["tempo_medio_ms"] = int(g.pop("tempo") / g["visitas"]) if g["visitas"] else 0
+        return sorted(grupos.values(), key=lambda g: -g["visitas"])[:20]
+
+    return {
+        "total": total,
+        "etapas": [
+            {"etapa": e, "visitas": alcance[i], "tempo_medio_ms": media(soma_t[e]), "saidas": saidas[e]}
+            for i, e in enumerate(FUNIL_ETAPAS)
+        ],
+        "tempo_medio_ms": int(sum(tempos) / total) if total else 0,
+        "tempo_mediano_ms": mediana,
+        "cliques_total": sum(s.get("cliques") or 0 for s in sessoes),
+        "cliques_pontos": cliques_pts,
+        "cliques_top": [
+            {"nome": k[0], "etapa": k[1], "cliques": v}
+            for k, v in sorted(cliques_nome.items(), key=lambda kv: -kv[1])[:15]
+        ],
+        "por_campanha": agrupar("utm_campaign"),
+        "por_device": agrupar("device"),
+        "por_lang": agrupar("lang"),
+        "por_browser": agrupar("browser"),
+        "sessoes": [
+            {k: s.get(k) for k in ["sessao_id", "criado_em", "lang", "device", "os", "browser",
+                                   "utm_source", "utm_campaign", "etapa_max", "etapa_saida",
+                                   "tempo_ativo_ms", "cliques", "clicou_telegram", "saiu"]}
+            for s in sessoes[:200]
+        ],
+    }
+
+
+@app.get("/funil/sessao/{sessao_id}")
+def funil_sessao(sessao_id: str, request: Request):
+    pid = _funil_exigir_login(request)
+    sessao = db.table("funil_sessoes").select("*").eq("projeto_id", pid) \
+        .eq("sessao_id", sessao_id).limit(1).execute().data
+    if not sessao:
+        raise HTTPException(status_code=404, detail="sessão não encontrada")
+    eventos = db.table("funil_eventos").select("tipo,nome,etapa,t_ms,x,y,criado_em") \
+        .eq("projeto_id", pid).eq("sessao_id", sessao_id).order("t_ms").limit(1000).execute().data
+    return {"sessao": sessao[0], "eventos": eventos}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
