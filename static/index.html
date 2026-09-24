@@ -7,35 +7,36 @@
   <link rel="icon" type="image/png" href="/static/logo.png">
   <link rel="apple-touch-icon" href="/static/logo.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
+      font-family: 'Figtree', 'Segoe UI', sans-serif;
+      background: #060a0b;
+      color: #fcfcfc;
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
     }
     .card {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 12px;
+      background: #0a1316;
+      border: 1px solid #1d3c46;
+      border-radius:18px;
       padding: 40px;
       width: 100%;
       max-width: 400px;
     }
     h1 { font-size: 1.5rem; margin-bottom: 8px; }
-    p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 28px; }
-    label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; }
+    p { color: #b5b5b5; font-size: 0.9rem; margin-bottom: 28px; }
+    label { display: block; font-size: 0.85rem; color: #b5b5b5; margin-bottom: 6px; }
     input {
       width: 100%;
-      background: #0f1117;
-      border: 1px solid #2d3148;
+      background: #060a0b;
+      border: 1px solid #1d3c46;
       border-radius: 8px;
       padding: 12px 14px;
-      color: #e2e8f0;
+      color: #fcfcfc;
       font-size: 0.95rem;
       margin-bottom: 16px;
       outline: none;
@@ -55,7 +56,18 @@
     }
     button:hover { background: #4f46e5; }
     .erro { color: #f87171; font-size: 0.85rem; margin-top: 12px; display: none; }
-  </style>
+  
+    /* Tema VS Track */
+    body { background:#030303 radial-gradient(1000px 600px at -10% 110%, rgba(86,215,253,.18), transparent 60%); }
+    .card { background:linear-gradient(180deg, rgba(17,43,51,.45), rgba(6,10,11,.95)), #070c0e; border:1px solid rgba(86,215,253,.14); border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    input { border-radius:12px; border-color:#14282f; background:#060a0b; }
+    input:focus { border-color:#56d7fd; box-shadow:0 0 0 3px rgba(86,215,253,.12); outline:none; }
+    button { font-family:inherit; border-radius:12px !important; font-weight:600; }
+    button:not(.btn-secundario) { background:#56d7fd !important; color:#031a20 !important; box-shadow:0 0 24px rgba(86,215,253,.25); }
+    button:not(.btn-secundario):hover { background:#8be5fe !important; }
+    .btn-secundario { background:transparent !important; color:#b5b5b5 !important; border:1px solid #1d3c46 !important; }
+    .btn-secundario:hover { border-color:#56d7fd !important; color:#fcfcfc !important; }
+</style>
 </head>
 <body>
   <div class="card">
@@ -66,7 +78,7 @@
     <label>Senha</label>
     <input type="password" id="senha" placeholder="••••••••">
     <button onclick="login()">Entrar</button>
-    <button onclick="cadastrar()" style="background:transparent;color:#94a3b8;border:1px solid #2d3148;margin-top:10px">Criar conta (novo projeto)</button>
+    <button class="btn-secundario" onclick="cadastrar()" style="background:transparent;color:#b5b5b5;border:1px solid #1d3c46;margin-top:10px">Criar conta (novo projeto)</button>
     <div class="erro" id="erro"></div>
     <div id="ok" style="color:#4ade80;font-size:0.85rem;margin-top:12px;display:none"></div>
   </div>
