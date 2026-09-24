@@ -498,6 +498,16 @@
     .content button[style*="background:transparent"]:hover { border-color:rgba(86,215,253,.5) !important; color:#fcfcfc !important; }
     .content textarea, .content input[type=text], .content input[type=url], .content input[type=number],
     .content input[type=password], .content input[type=email] { border-radius:12px !important; }
+    /* ─── Filtro do Inbox ─── */
+    #inbox-filtros { display:grid !important; grid-template-columns:repeat(3,1fr); gap:6px !important; }
+    .inbox-filtro { background:transparent; border:1px solid #14282f; color:#8a9599; padding:6px 4px; border-radius:12px;
+      font-size:.68rem; font-weight:500; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; gap:2px;
+      align-items:center; white-space:nowrap; min-width:0; }
+    .inbox-filtro span { font-size:.95rem; font-weight:600; color:#d5dcdf; line-height:1.1; }
+    .inbox-filtro:hover { color:#fcfcfc; border-color:rgba(86,215,253,.35); }
+    .inbox-filtro.ativo { background:rgba(86,215,253,.12); color:#56d7fd; border-color:rgba(86,215,253,.45); }
+    .inbox-filtro.ativo span { color:#56d7fd; }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -2062,6 +2072,11 @@
               <div style="font-size:0.85rem;font-weight:700;color:#fcfcfc">Conversas</div>
               <button onclick="carregarInboxThreads()"
                 style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit">↻</button>
+            </div>
+            <div id="inbox-filtros" style="display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid #14282f;flex-wrap:wrap">
+              <button class="inbox-filtro ativo" data-f="todas" onclick="filtrarInbox('todas')">Todas <span></span></button>
+              <button class="inbox-filtro" data-f="resp" onclick="filtrarInbox('resp')">Responderam <span></span></button>
+              <button class="inbox-filtro" data-f="sem" onclick="filtrarInbox('sem')">Sem resposta <span></span></button>
             </div>
             <div id="inbox-threads-list" style="overflow-y:auto;flex:1">
               <div style="padding:20px;text-align:center;color:#8a9599;font-size:0.8rem">Carregando...</div>
@@ -4624,7 +4639,9 @@
     try {
       const r = await fetch("/inbox/threads");
       const d = await r.json();
-      const threads = d.threads || [];
+      _inboxThreads = d.threads || [];
+      const threads = _inboxThreads;
+      atualizarContagemInbox();
       if (!threads.length) {
         // Roda diagnóstico pra entender o motivo
         let diag = null;
@@ -4651,6 +4668,36 @@
         }
         return;
       }
+      renderInboxThreads();
+    } catch(e) {
+      cont.innerHTML = `<div style="padding:20px;color:#ef4444;font-size:0.8rem">Erro: ${e.message}</div>`;
+    }
+  }
+
+  // ── Filtro do Inbox (quem respondeu / quem não respondeu) ──
+  let _inboxThreads = [];
+  let _inboxFiltro = "todas";
+  function atualizarContagemInbox() {
+    const resp = _inboxThreads.filter(t => t.tem_resposta).length;
+    const n = { todas: _inboxThreads.length, resp, sem: _inboxThreads.length - resp };
+    document.querySelectorAll(".inbox-filtro").forEach(b => { b.querySelector("span").textContent = n[b.dataset.f]; });
+  }
+  function filtrarInbox(f) {
+    _inboxFiltro = f;
+    document.querySelectorAll(".inbox-filtro").forEach(b => b.classList.toggle("ativo", b.dataset.f === f));
+    renderInboxThreads();
+  }
+  function renderInboxThreads() {
+    const cont = document.getElementById("inbox-threads-list");
+    if (!cont || !_inboxThreads.length) return;
+    const threads = _inboxThreads.filter(t =>
+      _inboxFiltro === "resp" ? t.tem_resposta : _inboxFiltro === "sem" ? !t.tem_resposta : true);
+    if (!threads.length) {
+      cont.innerHTML = `<div style="padding:24px 16px;text-align:center;color:#8a9599;font-size:0.8rem">
+        ${_inboxFiltro === "resp" ? "Ninguém respondeu ainda." : "Todos já responderam."}</div>`;
+      return;
+    }
+    {
       cont.innerHTML = threads.map(t => {
         const nome = t.first_name || t.username || ("user " + t.user_id);
         const inicial = (nome[0] || "?").toUpperCase();
@@ -4658,7 +4705,7 @@
         const dirIcon = t.ultima_dir === "in" ? "📨" : "📤";
         const ativo = (_inboxAtivo === t.user_id);
         return `<div onclick="abrirThread('${t.user_id}')" style="padding:11px 14px;border-bottom:1px solid #14282f;cursor:pointer;background:${ativo?'#16404c':'transparent'};display:flex;gap:10px;align-items:center;transition:0.15s"
-          onmouseover="if(!${ativo})this.style.background='#22273f'" onmouseout="if(!${ativo})this.style.background='transparent'">
+          onmouseover="if(!${ativo})this.style.background='rgba(86,215,253,0.06)'" onmouseout="if(!${ativo})this.style.background='transparent'">
           <div style="width:36px;height:36px;border-radius:50%;background:#16404c;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fcfcfc;flex-shrink:0">${_escHtml(inicial)}</div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
@@ -4666,12 +4713,11 @@
               <div style="font-size:0.66rem;color:#8a9599;flex-shrink:0">${_formatTempo(t.ultima_em)}</div>
             </div>
             <div style="font-size:0.72rem;color:#8a9599;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${dirIcon} ${_escHtml(preview)}</div>
-            <div style="font-size:0.62rem;color:#4b5563;margin-top:2px">${_escHtml(t.canal_nome||'')} · ${t.total} msgs ${t.tem_resposta?'· respondeu':''}</div>
+            <div style="font-size:0.62rem;color:#5d6b70;margin-top:3px;display:flex;gap:6px;align-items:center">${_escHtml(t.canal_nome||'')} · ${t.total} msgs
+              ${t.tem_resposta ? '<span style="background:rgba(34,197,94,.12);color:#22c55e;border-radius:999px;padding:0 7px;font-size:0.6rem;font-weight:600">respondeu</span>' : ''}</div>
           </div>
         </div>`;
       }).join("");
-    } catch(e) {
-      cont.innerHTML = `<div style="padding:20px;color:#ef4444;font-size:0.8rem">Erro: ${e.message}</div>`;
     }
   }
 
