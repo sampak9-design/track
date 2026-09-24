@@ -105,7 +105,7 @@
     .user-row:hover { background: #0f1d22; }
     .avatar {
       width: 30px; height: 30px; border-radius: 50%;
-      background: linear-gradient(135deg, #56d7fd, #7c3aed);
+      background: linear-gradient(135deg, #56d7fd, #112b33);
       display: flex; align-items: center; justify-content: center;
       font-size: 0.75rem; font-weight: 700; color: white; flex-shrink: 0;
     }
@@ -458,6 +458,33 @@
     .stat-bar-wrap { height:6px; background:#0f1d22; border-radius:999px; }
     .stat-bar-fill { background:linear-gradient(90deg,#1b6f86,#56d7fd); border-radius:999px; }
     .tooltip-box { background:#56d7fd; color:#031a20; border:none; border-radius:10px; font-weight:600; }
+
+    /* ─── Ajustes de celular ─── */
+    @media (max-width: 900px) {
+      .content { padding:16px 14px 40px; }
+      /* grades fixas escritas no HTML viram 2 colunas */
+      .content [style*="grid-template-columns:repeat(4"], .content [style*="grid-template-columns: repeat(4"],
+      .content [style*="grid-template-columns:repeat(5"], .content [style*="grid-template-columns:repeat(6"],
+      .content [style*="grid-template-columns:repeat(3"], .content [style*="grid-template-columns: repeat(3"],
+      .cards-grid-3 { grid-template-columns:1fr 1fr !important; }
+      .metric-card { padding:14px 16px; }
+      .metric-value { font-size:1.6rem; }
+      .metric-label { font-size:.76rem; }
+      /* barra de filtros do Resumo */
+      #sec-resumo > div:first-child { gap:10px !important; }
+      #sec-resumo > div:first-child > div { flex:1 1 calc(50% - 10px); min-width:0; }
+      #sec-resumo > div:first-child > div:nth-child(4),
+      #sec-resumo > div:first-child > div:last-child { flex-basis:100%; margin-left:0 !important; }
+      #sec-resumo > div:first-child > div:last-child > div:first-child { display:none; }
+      #sec-resumo select, #sec-resumo input[type=date] { width:100% !important; min-width:0 !important; }
+      #btn-att { width:100%; justify-content:center; padding:11px 16px; }
+      #preset-grid { gap:6px !important; }
+      .topbar { padding:0 14px; }
+      .sidebar-logo { height:auto; padding:14px 10px; }
+    }
+    @media (max-width: 420px) {
+      .content [style*="grid-template-columns:repeat(4"], .content [style*="grid-template-columns: repeat(4"] { grid-template-columns:1fr 1fr !important; }
+    }
   </style>
 </head>
 <body>
@@ -634,9 +661,9 @@
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          background: linear-gradient(135deg, #56d7fd 0%, #6c4ff7 100%);
+          background: #56d7fd;
           border: none;
-          color: #fff;
+          color: #031a20;
           padding: 8px 16px;
           border-radius: 8px;
           font-size: 0.82rem;
@@ -644,7 +671,7 @@
           font-weight: 600;
           cursor: pointer;
           transition: all 0.15s;
-          box-shadow: 0 1px 4px rgba(86,215,253,0.3);
+          box-shadow: 0 0 22px rgba(86,215,253,0.22);
         }
         .btn-refresh:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(86,215,253,0.45); }
         .btn-refresh:active { transform: translateY(0); }
