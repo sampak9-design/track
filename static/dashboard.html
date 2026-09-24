@@ -7,6 +7,9 @@
   <link rel="icon" type="image/png" href="/static/logo.png">
   <link rel="apple-touch-icon" href="/static/logo.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/pt.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     // Tema dos gráficos (Chart.js)
@@ -459,6 +462,35 @@
     .stat-bar-fill { background:linear-gradient(90deg,#1b6f86,#56d7fd); border-radius:999px; }
     .tooltip-box { background:#56d7fd; color:#031a20; border:none; border-radius:10px; font-weight:600; }
 
+    /* ─── Campo de período + calendário ─── */
+    .topbar-actions .btn-refresh { display:inline-flex !important; }
+    .periodo-campo { position:relative; display:flex; align-items:center; }
+    .periodo-campo svg { position:absolute; left:12px; color:#56d7fd; pointer-events:none; }
+    #stats-periodo { width:100%; min-width:210px; background:#0a1316; border:1px solid #14282f; color:#fcfcfc;
+      padding:8px 12px 8px 36px; border-radius:12px; font-size:.82rem; font-family:inherit; outline:none; cursor:pointer; }
+    #stats-periodo:focus { border-color:#56d7fd; box-shadow:0 0 0 3px rgba(86,215,253,.12); }
+    .flatpickr-calendar { background:#0a1316; border:1px solid rgba(86,215,253,.18); border-radius:18px;
+      box-shadow:0 20px 50px rgba(0,0,0,.6); font-family:'Figtree','Inter',sans-serif; }
+    .flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after,
+    .flatpickr-calendar.arrowBottom:before, .flatpickr-calendar.arrowBottom:after { display:none; }
+    .flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-current-month input.cur-year { color:#fcfcfc; fill:#fcfcfc; background:transparent; }
+    .flatpickr-current-month .flatpickr-monthDropdown-months option { background:#0a1316; }
+    .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { color:#56d7fd; fill:#56d7fd; }
+    .flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill:#8be5fe; }
+    span.flatpickr-weekday { color:#8a9599; background:transparent; }
+    .flatpickr-day { color:#d5dcdf; border-radius:10px; }
+    .flatpickr-day:hover, .flatpickr-day:focus { background:#14282f; border-color:#14282f; }
+    .flatpickr-day.today { border-color:rgba(86,215,253,.5); }
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled { color:#3e5158; }
+    .flatpickr-day.inRange, .flatpickr-day.prevMonthDay.inRange, .flatpickr-day.nextMonthDay.inRange {
+      background:#12323c; border-color:#12323c; box-shadow:-5px 0 0 #12323c, 5px 0 0 #12323c; color:#fcfcfc; }
+    .flatpickr-day.startRange + .endRange:not(:nth-child(7n+1)), .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n+1)) { box-shadow:-10px 0 0 #56d7fd; }
+    .flatpickr-day.endRange.startRange, .flatpickr-day.selected.startRange.endRange { border-radius:10px; }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange,
+    .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
+      background:#56d7fd; border-color:#56d7fd; color:#031a20; font-weight:600; }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -473,14 +505,13 @@
       /* barra de filtros do Resumo */
       #sec-resumo > div:first-child { gap:10px !important; }
       #sec-resumo > div:first-child > div { flex:1 1 calc(50% - 10px); min-width:0; }
-      #sec-resumo > div:first-child > div:nth-child(4),
-      #sec-resumo > div:first-child > div:last-child { flex-basis:100%; margin-left:0 !important; }
-      #sec-resumo > div:first-child > div:last-child > div:first-child { display:none; }
-      #sec-resumo select, #sec-resumo input[type=date] { width:100% !important; min-width:0 !important; }
-      #btn-att { width:100%; justify-content:center; padding:11px 16px; }
+      #sec-resumo > div:first-child > div:last-child { flex-basis:100%; }
+      #sec-resumo select { width:100% !important; min-width:0 !important; }
       #preset-grid { gap:6px !important; }
       .topbar { padding:0 14px; }
       .sidebar-logo { height:auto; padding:14px 10px; }
+      #stats-periodo { min-width:0; }
+      .flatpickr-calendar { max-width:calc(100vw - 20px); }
     }
     @media (max-width: 420px) {
       .content [style*="grid-template-columns:repeat(4"], .content [style*="grid-template-columns: repeat(4"] { grid-template-columns:1fr 1fr !important; }
@@ -596,6 +627,9 @@
     </div>
     <div class="topbar-actions">
       <span class="update-info" id="update-time"></span>
+      <button class="btn-refresh" id="btn-att" onclick="atualizarPagina()" title="Atualizar" aria-label="Atualizar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
   </div>
 
@@ -614,13 +648,14 @@
             <option value="">Todos os Canais</option>
           </select>
         </div>
-        <div>
-          <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Inicial</div>
-          <input type="date" id="stats-inicio" onchange="onDataChangeManual();carregarStats()" style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
-        </div>
-        <div>
-          <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Data Final</div>
-          <input type="date" id="stats-fim" onchange="onDataChangeManual();carregarStats()" style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none">
+        <div class="periodo-wrap">
+          <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período</div>
+          <div class="periodo-campo">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <input type="text" id="stats-periodo" readonly placeholder="Todo o período">
+          </div>
+          <input type="hidden" id="stats-inicio">
+          <input type="hidden" id="stats-fim">
         </div>
         <div>
           <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período Rápido</div>
@@ -632,13 +667,7 @@
             <button class="preset-btn" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
           </div>
         </div>
-        <div style="margin-left:auto">
-          <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
-          <button class="btn-refresh" id="btn-att" onclick="atualizarPagina()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            <span>Atualizar</span>
-          </button>
-        </div>
+
       </div>
 
       <style>
@@ -658,23 +687,12 @@
         .preset-btn.ativo { background: #14282f; color: #fff; border-color: #56d7fd; }
 
         .btn-refresh {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          background: #56d7fd;
-          border: none;
-          color: #031a20;
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 0.82rem;
-          font-family: inherit;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.15s;
-          box-shadow: 0 0 22px rgba(86,215,253,0.22);
+          width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: #56d7fd; color: #031a20; box-shadow: 0 0 20px rgba(86,215,253,.3);
+          transition: transform .15s, background .15s;
         }
-        .btn-refresh:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(86,215,253,0.45); }
-        .btn-refresh:active { transform: translateY(0); }
+        .btn-refresh:hover { background: #8be5fe; transform: rotate(30deg); }
         .btn-refresh.loading { opacity: 0.7; cursor: default; pointer-events: none; }
         .btn-refresh.loading svg { animation: spin 0.8s linear infinite; }
       </style>
@@ -2764,7 +2782,37 @@
   };
 
   // ── Stats / Resumo ──
+  // ── Período (calendário de intervalo) ──
+  let fpPeriodo = null;
+  function iniciarPeriodo() {
+    if (fpPeriodo || !window.flatpickr) return;
+    fpPeriodo = flatpickr("#stats-periodo", {
+      mode: "range", locale: (flatpickr.l10ns && flatpickr.l10ns.pt) || "default",
+      dateFormat: "d/m/Y", disableMobile: true, maxDate: new Date(new Date().getFullYear() + 1, 11, 31),
+      onClose(sel) {
+        if (!sel.length) return;
+        const ini = sel[0], fim = sel[1] || sel[0];
+        document.getElementById("stats-inicio").value = fmtData(ini);
+        document.getElementById("stats-fim").value = fmtData(fim);
+        onDataChangeManual();
+        carregarStats();
+      },
+    });
+  }
+  function sincronizarPeriodo() {
+    iniciarPeriodo();
+    const ini = document.getElementById("stats-inicio").value, fim = document.getElementById("stats-fim").value;
+    const campo = document.getElementById("stats-periodo");
+    if (!ini && !fim) { if (fpPeriodo) fpPeriodo.clear(false); campo.value = ""; return; }
+    const d = (v) => { const [y, m, dd] = v.split("-").map(Number); return new Date(y, m - 1, dd); };
+    const datas = [d(ini || fim), d(fim || ini)];
+    if (fpPeriodo) fpPeriodo.setDate(datas, false);
+    const f = (x) => String(x.getDate()).padStart(2, "0") + "/" + String(x.getMonth() + 1).padStart(2, "0");
+    campo.value = (ini === fim) ? f(datas[0]) + "/" + datas[0].getFullYear() : f(datas[0]) + " – " + f(datas[1]) + "/" + datas[1].getFullYear();
+  }
+
   async function carregarStats() {
+    sincronizarPeriodo();
     const canal = document.getElementById("stats-canal").value;
     const inicio = document.getElementById("stats-inicio").value;
     const fim = document.getElementById("stats-fim").value;
