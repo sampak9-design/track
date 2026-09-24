@@ -427,7 +427,7 @@
     /* Botões */
     .btn-atualizar { background:#56d7fd; color:#031a20; border-radius:12px; font-weight:600; box-shadow:0 0 22px rgba(86,215,253,.22); }
     .btn-atualizar:hover { background:#8be5fe; }
-    .btn-copy { border-radius:999px; }
+    .btn-copy { border-radius:999px; font-family:'Figtree','Inter',sans-serif; }
     .preset-btn { border-radius:999px !important; }
     .preset-btn.ativo { background:rgba(86,215,253,.12) !important; color:#56d7fd !important; border-color:rgba(86,215,253,.45) !important; }
     .pixel-tab.ativo { color:#fcfcfc; border-bottom-color:#56d7fd; }
@@ -490,6 +490,14 @@
     .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
       background:#56d7fd; border-color:#56d7fd; color:#031a20; font-weight:600; }
 
+
+    /* ─── Botões padronizados ─── */
+    .content button, .modal button, button { font-family:inherit; }
+    .content button { transition: background .15s, border-color .15s, color .15s, transform .15s; }
+    .content button[style*="background:#56d7fd"]:hover { transform:translateY(-1px); }
+    .content button[style*="background:transparent"]:hover { border-color:rgba(86,215,253,.5) !important; color:#fcfcfc !important; }
+    .content textarea, .content input[type=text], .content input[type=url], .content input[type=number],
+    .content input[type=password], .content input[type=email] { border-radius:12px !important; }
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -1110,7 +1118,7 @@
       <!-- Tabs Source / Campaign / Medium / Content -->
       <div style="display:flex;gap:0;border-bottom:1px solid #14282f;margin-bottom:16px">
         <button class="tab-utm ativo" onclick="mudarTabUtm('source',this)" data-utm="utm_source"
-          style="padding:9px 16px;background:#14282f;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          style="padding:9px 16px;background:rgba(86,215,253,0.12);border:none;border-radius:7px 7px 0 0;color:#56d7fd;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
           Fonte
         </button>
         <button class="tab-utm" onclick="mudarTabUtm('campaign',this)" data-utm="utm_campaign"
@@ -1220,7 +1228,7 @@
     <div class="secao" id="sec-ia">
       <div style="margin-bottom:14px">
         <h2 style="font-size:1.4rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px">
-          <span style="background:linear-gradient(135deg,#a855f7,#1877f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Análise com IA</span>
+          <span style="background:#56d7fd;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Análise com IA</span>
           <span style="font-size:0.65rem;background:#0f1d22;color:#a855f7;padding:3px 8px;border-radius:16px;font-weight:600;letter-spacing:0.5px">CLAUDE</span>
         </h2>
         <p style="font-size:0.82rem;color:#8a9599">Pergunte qualquer coisa sobre seus dados — vendas, campanhas, conversão, otimizações</p>
@@ -1247,7 +1255,7 @@
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarPergunta()}"
             style="flex:1;background:#060a0b;border:1px solid #14282f;border-radius:8px;padding:10px 12px;color:#fcfcfc;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;min-height:42px;max-height:120px"></textarea>
           <button onclick="enviarPergunta()" id="btn-enviar-ia"
-            style="background:linear-gradient(135deg,#a855f7,#1877f2);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:6px;align-self:stretch">
+            style="background:#56d7fd;color:#031a20;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:6px;align-self:stretch;box-shadow:0 0 18px rgba(86,215,253,.22)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Enviar
           </button>
@@ -1269,7 +1277,7 @@
         .ia-sugestao:hover { background: #0f1d22; border-color: #a855f7; }
         .ia-msg-user {
           align-self: flex-end;
-          background: linear-gradient(135deg, #1877f2, #0d6efd);
+          background: linear-gradient(135deg, #56d7fd, #0d6efd);
           color: white;
           padding: 10px 14px;
           border-radius: 14px 14px 4px 14px;
@@ -1311,7 +1319,7 @@
     <!-- ════ TRÁFEGO META ════ -->
     <div class="secao" id="sec-trafego">
       <div style="margin-bottom:14px">
-        <h2 style="font-size:1.4rem;font-weight:700;color:#1877f2;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+        <h2 style="font-size:1.4rem;font-weight:700;color:#56d7fd;margin-bottom:4px;display:flex;align-items:center;gap:10px">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#1877f2"><path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01z"/></svg>
           Tráfego Meta Ads
         </h2>
@@ -1321,7 +1329,7 @@
       <!-- Tabs internas -->
       <div style="display:flex;gap:0;border-bottom:1px solid #14282f;margin-bottom:16px">
         <button class="tab-trafego ativo" onclick="mudarTabTrafego('resumo',this)"
-          style="padding:9px 18px;background:#14282f;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          style="padding:9px 18px;background:rgba(86,215,253,0.12);border:none;border-radius:7px 7px 0 0;color:#56d7fd;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
           Resumo
         </button>
         <button class="tab-trafego" onclick="mudarTabTrafego('campanhas',this)"
@@ -1382,7 +1390,7 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
         <div class="metric-card">
           <div class="metric-header"><span class="metric-label">Investimento</span></div>
-          <div class="metric-value" style="color:#1877f2" id="t-spend">R$ 0,00</div>
+          <div class="metric-value" style="color:#56d7fd" id="t-spend">R$ 0,00</div>
           <div class="metric-sub">total gasto Meta Ads</div>
         </div>
         <div class="metric-card">
@@ -1403,14 +1411,14 @@
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
-        <div class="metric-card" style="border-color:#1877f2;background:linear-gradient(135deg,#060a0b 60%,#0a2229 100%)">
+        <div class="metric-card" style="border-color:#56d7fd;background:linear-gradient(135deg,#060a0b 60%,#0a2229 100%)">
           <div class="metric-header"><span class="metric-label">JoinChannel (Meta)</span></div>
-          <div class="metric-value" style="color:#1877f2" id="t-join">0</div>
+          <div class="metric-value" style="color:#56d7fd" id="t-join">0</div>
           <div class="metric-sub" id="t-join-sub">entradas reportadas pelo Meta</div>
         </div>
-        <div class="metric-card" style="border-color:#1877f2;background:linear-gradient(135deg,#060a0b 60%,#0a2229 100%)">
+        <div class="metric-card" style="border-color:#56d7fd;background:linear-gradient(135deg,#060a0b 60%,#0a2229 100%)">
           <div class="metric-header"><span class="metric-label">Custo por JoinChannel</span></div>
-          <div class="metric-value" style="color:#1877f2" id="t-cpjoin">R$ 0,00</div>
+          <div class="metric-value" style="color:#56d7fd" id="t-cpjoin">R$ 0,00</div>
           <div class="metric-sub">gasto Meta / joins atribuídos</div>
         </div>
         <div class="metric-card">
@@ -1461,12 +1469,12 @@
           <div style="padding:14px 18px;border-bottom:1px solid #14282f;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
             <div>
               <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc">Campanhas</div>
-              <div style="font-size:0.74rem;color:#8a9599;margin-top:2px"><span id="camp-count">0</span> encontradas · <span id="camp-selected-count" style="color:#1877f2;font-weight:600">0</span> selecionadas</div>
+              <div style="font-size:0.74rem;color:#8a9599;margin-top:2px"><span id="camp-count">0</span> encontradas · <span id="camp-selected-count" style="color:#56d7fd;font-weight:600">0</span> selecionadas</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <input id="camp-busca" oninput="filtrarCampanhas()" type="text" placeholder="Buscar campanha..."
                 style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit;outline:none;min-width:200px">
-              <button onclick="abrirSeletorColunas()" style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 12px;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <button onclick="abrirSeletorColunas()" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:7px 12px;border-radius:12px;font-size:0.78rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 Colunas
               </button>
@@ -1496,7 +1504,7 @@
           <div id="colunas-lista" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
           <div style="display:flex;gap:8px;margin-top:14px">
             <button onclick="resetarColunas()" style="flex:1;background:none;border:1px solid #1d3c46;color:#b5b5b5;padding:9px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Resetar</button>
-            <button onclick="fecharSeletorColunas()" style="flex:1;background:#1877f2;border:none;color:white;padding:9px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Aplicar</button>
+            <button onclick="fecharSeletorColunas()" style="flex:1;background:#56d7fd;border:none;color:#031a20;padding:9px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Aplicar</button>
           </div>
         </div>
       </div>
@@ -1514,7 +1522,7 @@
           position: absolute; content: ""; height: 16px; width: 16px;
           left: 3px; bottom: 3px; background-color: #8a9599; border-radius: 50%; transition: .25s;
         }
-        .toggle-camp input:checked + .toggle-slider { background-color: #1877f2; }
+        .toggle-camp input:checked + .toggle-slider { background-color: #56d7fd; }
         .toggle-camp input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #fff; }
         .toggle-camp.loading .toggle-slider { opacity: 0.5; pointer-events: none; }
       </style>
@@ -1524,7 +1532,7 @@
         <div style="font-size:2.5rem;margin-bottom:10px">📊</div>
         <div style="font-size:1rem;color:#fcfcfc;font-weight:600;margin-bottom:6px">Nenhuma conta Meta Ads conectada</div>
         <p style="font-size:0.82rem;color:#8a9599;margin-bottom:14px">Conecte sua conta na aba Pixels → Meta Ads</p>
-        <button onclick="document.getElementById('nav-integracoes').click()" style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit">
+        <button onclick="document.getElementById('nav-integracoes').click()" style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;box-shadow:0 0 18px rgba(86,215,253,.22)">
           Ir para Integrações
         </button>
       </div>
@@ -1538,7 +1546,7 @@
           <p style="font-size:0.82rem;color:#8a9599">Acompanhe todas as conversões enviadas para Meta / Kwai / TikTok</p>
         </div>
         <button onclick="limparErrosFake()" id="btn-limpar-fakes"
-          style="background:#060a0b;border:1px solid #14282f;color:#d5dcdf;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit"
+          style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-family:inherit"
           title="Remove logs antigos de Kwai/TikTok 'Pixel não configurado'">
           Limpar erros falsos
         </button>
@@ -1547,7 +1555,7 @@
       <!-- Tabs Enviados/Recebidos -->
       <div style="display:flex;gap:0;border-bottom:1px solid #14282f;margin-bottom:16px">
         <button class="tab-log ativo" onclick="mudarTabLogs('enviado',this)"
-          style="padding:8px 18px;background:#14282f;border:none;border-radius:7px 7px 0 0;color:#fff;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
+          style="padding:8px 18px;background:rgba(86,215,253,0.12);border:none;border-radius:7px 7px 0 0;color:#56d7fd;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-right:4px">
           Enviados
         </button>
         <button class="tab-log" onclick="mudarTabLogs('recebido',this)"
@@ -1794,11 +1802,11 @@
                 <input type="hidden" id="meta-edit-id" value="">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
                   <button onclick="salvarMetaPixel()" id="btn-salvar-meta"
-                    style="background:#1877f2;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+                    style="background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
                     Salvar
                   </button>
                   <button onclick="cancelarEdicaoMeta()" id="btn-cancelar-meta"
-                    style="display:none;background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">
+                    style="display:none;background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">
                     Cancelar
                   </button>
                   <span id="meta-save-msg" style="font-size:0.78rem;display:none"></span>
@@ -1850,8 +1858,8 @@
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 <button onclick="salvarKwai()" id="btn-salvar-kwai"
-                  style="background:#f97316;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-                  onmouseover="this.style.background='#ea6c0f'" onmouseout="this.style.background='#f97316'">
+                  style="background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s;box-shadow:0 0 18px rgba(86,215,253,.22)"
+                  onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
                   Salvar configuração
                 </button>
                 <span id="kwai-save-msg" style="font-size:0.78rem;display:none"></span>
@@ -1902,8 +1910,8 @@
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 <button onclick="salvarTiktok()" id="btn-salvar-tiktok"
-                  style="background:#2d2d2d;color:white;border:1px solid #4a4a4a;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-                  onmouseover="this.style.background='#3d3d3d'" onmouseout="this.style.background='#2d2d2d'">
+                  style="background:#56d7fd;color:#031a20;border:1px solid #4a4a4a;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s;box-shadow:0 0 18px rgba(86,215,253,.22)"
+                  onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
                   Salvar configuração
                 </button>
                 <span id="tiktok-save-msg" style="font-size:0.78rem;display:none"></span>
@@ -1929,13 +1937,13 @@
                 <div class="webhook-label-row">App ID (Meta Developers)</div>
                 <input id="metaads-app-id" type="text" placeholder="Ex: 1234567890123456"
                   style="width:100%;background:#060a0b;border:1px solid #14282f;border-radius:7px;padding:9px 12px;color:#fcfcfc;font-size:0.82rem;font-family:inherit;outline:none"
-                  onfocus="this.style.borderColor='#1877f2'" onblur="this.style.borderColor='#14282f'">
+                  onfocus="this.style.borderColor='#56d7fd'" onblur="this.style.borderColor='#14282f'">
               </div>
               <div>
                 <div class="webhook-label-row">App Secret</div>
                 <input id="metaads-app-secret" type="password" placeholder="Secret do app..."
                   style="width:100%;background:#060a0b;border:1px solid #14282f;border-radius:7px;padding:9px 12px;color:#fcfcfc;font-size:0.82rem;font-family:inherit;outline:none"
-                  onfocus="this.style.borderColor='#1877f2'" onblur="this.style.borderColor='#14282f'">
+                  onfocus="this.style.borderColor='#56d7fd'" onblur="this.style.borderColor='#14282f'">
                 <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
                   <input type="checkbox" id="show-metaads-secret" onchange="document.getElementById('metaads-app-secret').type=this.checked?'text':'password'" style="cursor:pointer">
                   <label for="show-metaads-secret" style="font-size:0.72rem;color:#8a9599;cursor:pointer">Mostrar secret</label>
@@ -1943,17 +1951,17 @@
               </div>
               <div style="padding:10px 12px;background:#060a0b;border:1px solid #14282f;border-radius:7px;font-size:0.74rem;color:#8a9599">
                 <strong style="color:#d5dcdf">Redirect URI</strong> (cadastre no Meta Developers):<br>
-                <code id="metaads-redirect-uri" style="color:#1877f2;font-family:monospace;font-size:0.72rem;word-break:break-all"></code>
+                <code id="metaads-redirect-uri" style="color:#56d7fd;font-family:monospace;font-size:0.72rem;word-break:break-all"></code>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <button onclick="salvarMetaAdsCredenciais()" id="btn-salvar-metaads"
-                style="background:#2d2d2d;color:white;border:1px solid #4a4a4a;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-                onmouseover="this.style.background='#3d3d3d'" onmouseout="this.style.background='#2d2d2d'">
+                style="background:#56d7fd;color:#031a20;border:1px solid #4a4a4a;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s;box-shadow:0 0 18px rgba(86,215,253,.22)"
+                onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
                 Salvar credenciais
               </button>
-              <button onclick="conectarFacebook()" id="btn-conectar-facebook" style="display:none;background:#1877f2;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-                onmouseover="this.style.background='#0d6efd'" onmouseout="this.style.background='#1877f2'">
+              <button onclick="conectarFacebook()" id="btn-conectar-facebook" style="display:none;background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s;box-shadow:0 0 18px rgba(86,215,253,.22)"
+                onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
                 Conectar com Facebook
               </button>
               <span id="metaads-msg" style="font-size:0.78rem;display:none"></span>
@@ -2053,7 +2061,7 @@
             <div style="padding:12px 14px;border-bottom:1px solid #14282f;display:flex;align-items:center;justify-content:space-between">
               <div style="font-size:0.85rem;font-weight:700;color:#fcfcfc">Conversas</div>
               <button onclick="carregarInboxThreads()"
-                style="background:#060a0b;border:1px solid #14282f;color:#d5dcdf;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;font-family:inherit">↻</button>
+                style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit">↻</button>
             </div>
             <div id="inbox-threads-list" style="overflow-y:auto;flex:1">
               <div style="padding:20px;text-align:center;color:#8a9599;font-size:0.8rem">Carregando...</div>
@@ -2071,7 +2079,7 @@
                 style="flex:1;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:9px 12px;border-radius:6px;font-size:0.85rem;font-family:inherit;outline:none"
                 onkeydown="if(event.key==='Enter')enviarReplyInbox()">
               <button onclick="enviarReplyInbox()"
-                style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Enviar</button>
+                style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Enviar</button>
             </div>
           </div>
         </div>
@@ -2129,12 +2137,12 @@
           <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc">Pool de Contas</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="abrirModalUploadSession()"
-              style="background:#060a0b;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:7px">
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:7px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Upload .session
             </button>
             <button onclick="abrirModalLogin()"
-              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:7px">
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:7px;box-shadow:0 0 18px rgba(86,215,253,.22)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
               Adicionar via SMS
             </button>
@@ -2211,7 +2219,7 @@
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
               <button onclick="criarCampanhaCanal()" id="btn-criar-campc"
-                style="background:#1877f2;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
+                style="background:#56d7fd;color:#031a20;border:none;padding:10px 22px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
                 Buscar posts e impulsionar
               </button>
               <span id="campc-msg" style="font-size:0.78rem;display:none"></span>
@@ -2274,7 +2282,7 @@
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
               <button onclick="criarCampanha()" id="btn-criar-camp"
-                style="background:#1877f2;color:white;border:none;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">
+                style="background:#56d7fd;color:#031a20;border:none;padding:10px 22px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
                 Criar e iniciar
               </button>
               <span id="camp-msg" style="font-size:0.78rem;display:none"></span>
@@ -2285,7 +2293,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc">Campanhas</div>
           <button onclick="carregarCampanhas()"
-            style="background:#060a0b;border:1px solid #14282f;color:#d5dcdf;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻ Atualizar</button>
+            style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:6px 12px;border-radius:12px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻ Atualizar</button>
         </div>
         <div id="b-lista-campanhas"></div>
       </div>
@@ -2303,11 +2311,11 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="atualizarWebhookBooster()" id="btn-wh-update"
-              style="background:#1877f2;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
+              style="background:#56d7fd;color:#031a20;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
               Atualizar webhook do bot
             </button>
             <button onclick="verDiagBooster()"
-              style="background:#060a0b;border:1px solid #14282f;color:#d5dcdf;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit">
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:8px 14px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-family:inherit">
               Diagnóstico
             </button>
             <span id="wh-msg" style="font-size:0.74rem;align-self:center;display:none"></span>
@@ -2323,7 +2331,7 @@
             <input type="text" id="auto-add-link" placeholder="https://t.me/seucanal"
               style="flex:1;min-width:240px;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:9px 12px;border-radius:7px;font-size:0.85rem;font-family:monospace;outline:none">
             <button onclick="adicionarCanalAuto()" id="btn-add-canal-auto"
-              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap">Adicionar</button>
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;white-space:nowrap;box-shadow:0 0 18px rgba(86,215,253,.22)">Adicionar</button>
           </div>
           <div id="auto-add-msg" style="font-size:0.74rem;margin-top:8px;display:none"></div>
         </div>
@@ -2338,7 +2346,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc">Últimas ações</div>
             <button onclick="carregarStatusBooster()"
-              style="background:#060a0b;border:1px solid #14282f;color:#d5dcdf;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻</button>
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:6px 12px;border-radius:12px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻</button>
           </div>
           <div id="b-status-acoes"></div>
         </div>
@@ -2368,7 +2376,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
               <button onclick="salvarBoosterConfig()"
-                style="background:#22c55e;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+                style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Salvar</button>
               <span id="b-config-msg" style="font-size:0.74rem;display:none"></span>
             </div>
           </div>
@@ -2406,9 +2414,9 @@
 
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button onclick="fecharModalLogin()"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
             <button onclick="loginIniciar()" id="login-btn-1"
-              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Enviar código</button>
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Enviar código</button>
           </div>
         </div>
 
@@ -2422,9 +2430,9 @@
             style="width:100%;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:14px 12px;border-radius:7px;font-size:1.4rem;font-family:monospace;outline:none;margin-bottom:14px;text-align:center;letter-spacing:0.4em">
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button onclick="loginCancelar()"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
             <button onclick="loginConfirmar()" id="login-btn-2"
-              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Confirmar</button>
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Confirmar</button>
           </div>
         </div>
 
@@ -2437,9 +2445,9 @@
             style="width:100%;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:10px 12px;border-radius:7px;font-size:0.95rem;font-family:inherit;outline:none;margin-bottom:14px">
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button onclick="loginCancelar()"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
             <button onclick="loginConfirmar2fa()" id="login-btn-3"
-              style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Entrar</button>
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Entrar</button>
           </div>
         </div>
 
@@ -2451,10 +2459,10 @@
           <div id="login-senha-mostrar" style="display:none;background:#2a1810;border:1px solid #5f3a1e;border-radius:7px;padding:12px;margin-bottom:14px;text-align:left">
             <div style="font-size:0.74rem;color:#edc5a8;margin-bottom:6px;font-weight:600">⚠️ ANOTE A SENHA 2FA AGORA — só aparece 1 vez</div>
             <div style="background:#060a0b;padding:8px 10px;border-radius:5px;font-family:monospace;font-size:0.95rem;color:#22c55e;word-break:break-all" id="login-senha-text"></div>
-            <button onclick="copiarSenha2fa()" style="margin-top:8px;background:#060a0b;border:1px solid #14282f;color:#56d7fd;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">📋 Copiar</button>
+            <button onclick="copiarSenha2fa()" style="margin-top:8px;background:transparent;border:1px solid rgba(86,215,253,.22);color:#56d7fd;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit">📋 Copiar</button>
           </div>
           <button onclick="fecharModalLogin()"
-            style="background:#22c55e;color:white;border:none;padding:10px 24px;border-radius:7px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Concluir</button>
+            style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Concluir</button>
         </div>
 
         <div id="login-erro" style="display:none;color:#ef4444;font-size:0.78rem;margin-top:10px;background:#2a0d0d;border:1px solid #5f1e1e;padding:8px 12px;border-radius:6px"></div>
@@ -2478,9 +2486,9 @@
           style="width:100%;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:9px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none;margin-bottom:14px">
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button onclick="fecharModalUploadSession()"
-            style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
+            style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">Cancelar</button>
           <button onclick="uploadSession()" id="b-btn-upload"
-            style="background:#1877f2;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Validar e adicionar</button>
+            style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Validar e adicionar</button>
         </div>
       </div>
     </div>
@@ -2494,7 +2502,7 @@
 
       <div class="panel">
         <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc;margin-bottom:6px;display:flex;align-items:center;gap:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1877f2" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#56d7fd" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Fuso Horário
         </div>
         <p style="font-size:0.78rem;color:#8a9599;margin-bottom:14px">Define o fuso usado nos filtros de data (Hoje, Mês, etc.)</p>
@@ -2514,7 +2522,7 @@
             <option value="3">🇷🇺 Moscou (GMT+3)</option>
           </select>
           <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
-            <button onclick="salvarConfigGeral()" id="btn-salvar-cfg" style="background:#1877f2;color:white;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+            <button onclick="salvarConfigGeral()" id="btn-salvar-cfg" style="background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Salvar</button>
             <span id="cfg-msg" style="font-size:0.78rem;display:none"></span>
           </div>
         </div>
@@ -2535,7 +2543,7 @@
           <div style="display:flex;gap:8px;align-items:center">
             <input id="cfg-anthropic-key" type="password" placeholder="sk-ant-api03-..."
               style="flex:1;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:9px 12px;border-radius:7px;font-size:0.82rem;font-family:inherit;outline:none">
-            <button onclick="salvarConfigIA()" style="background:#a855f7;color:white;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">Salvar</button>
+            <button onclick="salvarConfigIA()" style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Salvar</button>
           </div>
           <div id="cfg-anthropic-status" style="font-size:0.74rem;color:#8a9599">—</div>
         </div>
@@ -2585,8 +2593,8 @@
 
         <div style="position:relative;background:#060a0b;border:1px solid #14282f;border-radius:8px;padding:16px;max-width:700px">
           <button onclick="copiarTracker()" id="btn-copy-tracker"
-            style="position:absolute;top:10px;right:10px;background:#56d7fd;color:#031a20;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px"
-            onmouseover="this.style.background='#3cc4ee'" onmouseout="this.style.background='#56d7fd'">
+            style="position:absolute;top:10px;right:10px;background:#56d7fd;color:#031a20;border:none;padding:6px 14px;border-radius:12px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px;box-shadow:0 0 18px rgba(86,215,253,.22)"
+            onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copiar
           </button>
@@ -2606,8 +2614,8 @@
         <div style="display:flex;gap:8px;align-items:center;max-width:600px">
           <div style="flex:1;background:#060a0b;border:1px solid #14282f;border-radius:8px;padding:11px 14px;font-size:0.82rem;color:#56d7fd;font-family:'Courier New',monospace" id="tracker-link-canal">—</div>
           <button onclick="copiarLinkCanal()" id="btn-copy-link"
-            style="background:#f59e0b;color:#060a0b;border:none;padding:10px 16px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap"
-            onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+            style="background:#56d7fd;color:#031a20;border:none;padding:10px 16px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;box-shadow:0 0 18px rgba(86,215,253,.22)"
+            onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copiar
           </button>
@@ -2660,8 +2668,8 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <button onclick="salvarBot()" id="btn-salvar-bot"
-                style="background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s"
-                onmouseover="this.style.background='#3cc4ee'" onmouseout="this.style.background='#56d7fd'">
+                style="background:#56d7fd;color:#031a20;border:none;padding:9px 20px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;transition:background 0.12s;box-shadow:0 0 18px rgba(86,215,253,.22)"
+                onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
                 Adicionar Bot
               </button>
               <span id="bot-save-msg" style="font-size:0.78rem;display:none"></span>
@@ -2685,14 +2693,14 @@
             </div>
             <div style="display:flex;gap:6px">
               <button onclick="ativarWebhookBot()" title="Ativar webhook"
-                style="background:#14282f;border:none;color:#56d7fd;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px"
-                onmouseover="this.style.background='#252840'" onmouseout="this.style.background='#14282f'">
+                style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#56d7fd;padding:7px 12px;border-radius:12px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px"
+                onmouseover="this.style.background='rgba(86,215,253,0.08)'" onmouseout="this.style.background='transparent'">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
                 Ativar
               </button>
               <button onclick="removerBot()" title="Remover bot"
-                style="background:#14282f;border:none;color:#ef4444;width:32px;height:32px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center"
-                onmouseover="this.style.background='#2a1a1a'" onmouseout="this.style.background='#14282f'">
+                style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;width:32px;height:32px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center"
+                onmouseover="this.style.background='rgba(86,215,253,0.08)'" onmouseout="this.style.background='transparent'">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               </button>
             </div>
@@ -2709,8 +2717,8 @@
             <span class="panel-title">Meus Canais</span>
           </div>
           <button onclick="abrirWizardCanal()"
-            style="background:#56d7fd;color:#031a20;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:0.8rem;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px"
-            onmouseover="this.style.background='#3cc4ee'" onmouseout="this.style.background='#56d7fd'">
+            style="background:#56d7fd;color:#031a20;border:none;padding:7px 14px;border-radius:12px;cursor:pointer;font-size:0.8rem;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;box-shadow:0 0 18px rgba(86,215,253,.22)"
+            onmouseover="this.style.background='#8be5fe'" onmouseout="this.style.background='#56d7fd'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Adicionar Canal
           </button>
@@ -3486,9 +3494,9 @@
                 <span style="width:6px;height:6px;border-radius:50%;background:${p.ativo?'#22c55e':'#8a9599'};display:inline-block"></span>
                 ${p.ativo ? 'Ativo' : 'Inativo'}
               </span>
-              <button onclick="toggleMetaPixel('${p.id}')" style="background:#050809;border:1px solid #14282f;color:#d5dcdf;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">${p.ativo ? 'Desativar' : 'Ativar'}</button>
-              <button onclick="editarMetaPixel('${p.id}')" style="background:#050809;border:1px solid #14282f;color:#56d7fd;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit">Editar</button>
-              <button onclick="deletarMetaPixel('${p.id}')" style="background:#050809;border:1px solid #14282f;color:#ef4444;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit" title="Excluir">
+              <button onclick="toggleMetaPixel('${p.id}')" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit">${p.ativo ? 'Desativar' : 'Ativar'}</button>
+              <button onclick="editarMetaPixel('${p.id}')" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#56d7fd;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit">Editar</button>
+              <button onclick="deletarMetaPixel('${p.id}')" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit" title="Excluir">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
@@ -4013,12 +4021,12 @@
             <div style="display:flex;gap:8px;align-items:center">
               <input id="link-${c.id}" type="text" value="${linkAtual}" readonly
                 style="flex:1;background:#060a0b;border:1px solid #14282f;border-radius:7px;padding:9px 12px;color:#56d7fd;font-size:0.78rem;font-family:monospace;outline:none">
-              <button onclick="copiarLink(${c.id})" style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit">Copiar</button>
+              <button onclick="copiarLink(${c.id})" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 14px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-family:inherit">Copiar</button>
             </div>
           </div>
 
           <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-            <button onclick="gerarLinkSolicitacao(${c.id})" style="background:#a855f7;color:white;border:none;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">
+            <button onclick="gerarLinkSolicitacao(${c.id})" style="background:#56d7fd;color:#031a20;border:none;padding:9px 14px;border-radius:12px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
               Gerar novo link com solicitação
             </button>
           </div>
@@ -4164,7 +4172,7 @@
               ${["texto","foto","video","animacao"].map(t => `
                 <button type="button" onclick="bvSetTipo(${c.id},'${t}')"
                   id="bv-tipo-${c.id}-${t}"
-                  style="background:${tipo===t?'#1877f2':'#060a0b'};border:1px solid ${tipo===t?'#1877f2':'#14282f'};color:${tipo===t?'white':'#d5dcdf'};padding:7px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
+                  style="background:${tipo===t?'#56d7fd':'#060a0b'};border:1px solid ${tipo===t?'#56d7fd':'#14282f'};color:${tipo===t?'#031a20':'#d5dcdf'};padding:7px 14px;border-radius:10px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
                   ${t==="texto"?"📝 Texto":t==="foto"?"🖼️ Foto":t==="video"?"🎬 Vídeo":"🎞️ GIF"}
                 </button>
               `).join("")}
@@ -4203,7 +4211,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:0.78rem;font-weight:700;color:#fcfcfc">🔘 Botões inline</div>
               <button type="button" onclick="bvAddBotao(${c.id})"
-                style="background:#060a0b;border:1px solid #14282f;color:#56d7fd;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
+                style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#56d7fd;padding:6px 12px;border-radius:12px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
                 + Adicionar botão
               </button>
             </div>
@@ -4215,11 +4223,11 @@
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #14282f;padding-top:12px">
             <button onclick="salvarBoasVindas(${c.id})"
-              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
               Salvar
             </button>
             <button onclick="testarBoasVindas(${c.id})"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
               Enviar teste
             </button>
             <span id="bv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
@@ -4243,8 +4251,8 @@
       const btn = document.getElementById(`bv-tipo-${canalId}-${t}`);
       if (!btn) return;
       const ativo = (t === tipo);
-      btn.style.background = ativo ? "#1877f2" : "#060a0b";
-      btn.style.borderColor = ativo ? "#1877f2" : "#14282f";
+      btn.style.background = ativo ? "#56d7fd" : "#060a0b";
+      btn.style.borderColor = ativo ? "#56d7fd" : "#14282f";
       btn.style.color = ativo ? "white" : "#d5dcdf";
       btn.style.fontWeight = ativo ? "600" : "500";
       btn.dataset.ativo = ativo ? "1" : "0";
@@ -4297,7 +4305,7 @@
         <input type="url" id="bv-bt-url-${canalId}-${idx}" value="${_escHtml(b.url||'')}" placeholder="https://..."
           style="flex:2;min-width:160px;background:#060a0b;border:1px solid #14282f;border-radius:6px;padding:8px 10px;color:#fcfcfc;font-size:0.78rem;font-family:inherit;outline:none">
         <button type="button" onclick="bvRemoveBotao(${canalId},${idx})"
-          style="background:#0f1d22;border:1px solid #1d3c46;color:#ef4444;padding:0 12px;border-radius:6px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
+          style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:0 12px;border-radius:12px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
       </div>
     `).join("");
   }
@@ -4403,7 +4411,7 @@
               ${["texto","foto","video","animacao"].map(t => `
                 <button type="button" onclick="svSetTipo(${c.id},'${t}')"
                   id="sv-tipo-${c.id}-${t}"
-                  style="background:${tipo===t?'#f59e0b':'#060a0b'};border:1px solid ${tipo===t?'#f59e0b':'#14282f'};color:${tipo===t?'white':'#d5dcdf'};padding:7px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
+                  style="background:${tipo===t?'#56d7fd':'#060a0b'};border:1px solid ${tipo===t?'#56d7fd':'#14282f'};color:${tipo===t?'#031a20':'#d5dcdf'};padding:7px 14px;border-radius:10px;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:${tipo===t?'600':'500'};text-transform:capitalize">
                   ${t==="texto"?"📝 Texto":t==="foto"?"🖼️ Foto":t==="video"?"🎬 Vídeo":"🎞️ GIF"}
                 </button>
               `).join("")}
@@ -4439,7 +4447,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:0.78rem;font-weight:700;color:#fcfcfc">🔘 Botões inline</div>
               <button type="button" onclick="svAddBotao(${c.id})"
-                style="background:#060a0b;border:1px solid #14282f;color:#f59e0b;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
+                style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#f59e0b;padding:6px 12px;border-radius:12px;cursor:pointer;font-size:0.74rem;font-family:inherit;font-weight:600">
                 + Adicionar botão
               </button>
             </div>
@@ -4448,11 +4456,11 @@
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #14282f;padding-top:12px">
             <button onclick="salvarSaida(${c.id})"
-              style="background:#22c55e;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
               Salvar
             </button>
             <button onclick="testarSaida(${c.id})"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#d5dcdf;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
               Enviar teste
             </button>
             <span id="sv-msg-status-${c.id}" style="font-size:0.74rem;color:#22c55e;align-self:center;display:none"></span>
@@ -4525,7 +4533,7 @@
         <input type="url" id="sv-bt-url-${canalId}-${idx}" value="${_escHtml(b.url||'')}" placeholder="https://..."
           style="flex:2;min-width:160px;background:#060a0b;border:1px solid #14282f;border-radius:6px;padding:8px 10px;color:#fcfcfc;font-size:0.78rem;font-family:inherit;outline:none">
         <button type="button" onclick="svRemoveBotao(${canalId},${idx})"
-          style="background:#0f1d22;border:1px solid #1d3c46;color:#ef4444;padding:0 12px;border-radius:6px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
+          style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:0 12px;border-radius:12px;cursor:pointer;font-size:0.95rem;font-family:inherit">×</button>
       </div>
     `).join("");
   }
@@ -4862,9 +4870,9 @@
                 <td style="padding:10px 12px;color:#d5dcdf">${(c.total_views||0)}v · ${(c.total_reacoes||0)}r</td>
                 <td style="padding:10px 12px;text-align:right;white-space:nowrap">
                   <button onclick="testarConta(${c.id})" title="Testar conexão"
-                    style="background:#060a0b;border:1px solid #14282f;color:#56d7fd;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit;margin-right:4px">↻ Testar</button>
+                    style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#56d7fd;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit;margin-right:4px">↻ Testar</button>
                   <button onclick="deletarConta(${c.id}, '${_escHtml(c.phone||c.username||c.id)}')" title="Excluir"
-                    style="background:#060a0b;border:1px solid #14282f;color:#ef4444;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.72rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px">
+                    style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:5px 10px;border-radius:12px;cursor:pointer;font-size:0.72rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </td>
@@ -5108,7 +5116,7 @@
       cont.innerHTML = EMOJIS_DISPONIVEIS.map(e => {
         const sel = _campEmojisSel.includes(e);
         return `<button type="button" onclick="toggleEmojiCampanha('${e}')"
-          style="background:${sel?'#1877f2':'#060a0b'};border:1px solid ${sel?'#1877f2':'#14282f'};color:#fcfcfc;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
+          style="background:${sel?'#56d7fd':'#060a0b'};border:1px solid ${sel?'#56d7fd':'#14282f'};color:${sel?'#031a20':'#fcfcfc'};padding:7px 12px;border-radius:10px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
       }).join("");
     }
     // Form "Boost por canal"
@@ -5117,7 +5125,7 @@
       cont2.innerHTML = EMOJIS_DISPONIVEIS.map(e => {
         const sel = _campcEmojisSel.includes(e);
         return `<button type="button" onclick="toggleEmojiCampC('${e}')"
-          style="background:${sel?'#f59e0b':'#060a0b'};border:1px solid ${sel?'#f59e0b':'#14282f'};color:#fcfcfc;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
+          style="background:${sel?'#56d7fd':'#060a0b'};border:1px solid ${sel?'#56d7fd':'#14282f'};color:${sel?'#031a20':'#fcfcfc'};padding:7px 12px;border-radius:10px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
       }).join("");
     }
   }
@@ -5252,8 +5260,8 @@
             </div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               ${_campStatusBadge(c.status)}
-              ${podeCancelar ? `<button onclick="cancelarCampanha(${c.id})" style="background:#060a0b;border:1px solid #14282f;color:#f59e0b;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit">Cancelar</button>` : ""}
-              <button onclick="deletarCampanha(${c.id})" style="background:#060a0b;border:1px solid #14282f;color:#ef4444;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:0.7rem;font-family:inherit" title="Excluir">
+              ${podeCancelar ? `<button onclick="cancelarCampanha(${c.id})" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#f59e0b;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:0.7rem;font-family:inherit">Cancelar</button>` : ""}
+              <button onclick="deletarCampanha(${c.id})" style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:0.7rem;font-family:inherit" title="Excluir">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
@@ -5427,11 +5435,11 @@
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #14282f;padding-top:12px">
             <button onclick="salvarBoosterAuto(${c.canal_id})"
-              style="background:#1877f2;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+              style="background:#56d7fd;color:#031a20;border:none;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
               Salvar
             </button>
             ${c.auto_id ? `<button onclick="deletarBoosterAuto(${c.auto_id})"
-              style="background:#0f1d22;border:1px solid #1d3c46;color:#ef4444;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit">Remover</button>` : ""}
+              style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;padding:9px 16px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit">Remover</button>` : ""}
             <span id="auto-msg-${c.canal_id}" style="font-size:0.74rem;align-self:center;display:none"></span>
           </div>
         </div>`;
@@ -5450,7 +5458,7 @@
     cont.innerHTML = EMOJIS_DISPONIVEIS.map(e => {
       const ativo = sel.includes(e);
       return `<button type="button" onclick="toggleAutoEmoji(${canalId},'${e}')"
-        style="background:${ativo?'#1877f2':'#060a0b'};border:1px solid ${ativo?'#1877f2':'#14282f'};color:#fcfcfc;padding:6px 11px;border-radius:6px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
+        style="background:${ativo?'#56d7fd':'#060a0b'};border:1px solid ${ativo?'#56d7fd':'#14282f'};color:${ativo?'#031a20':'#fcfcfc'};padding:6px 11px;border-radius:10px;cursor:pointer;font-size:1rem;font-family:inherit">${e}</button>`;
     }).join("");
   }
 
@@ -6039,7 +6047,7 @@
     const todasSel = camps.length > 0 && camps.every(c => selecionadas.includes(c.id));
     head.innerHTML = colObjs.map(c => {
       if (c.key === "selecionar") {
-        return `<th style="text-align:center;padding:10px 14px;border-bottom:1px solid #14282f"><input type="checkbox" ${todasSel?"checked":""} onchange="selecionarTodas(this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></th>`;
+        return `<th style="text-align:center;padding:10px 14px;border-bottom:1px solid #14282f"><input type="checkbox" ${todasSel?"checked":""} onchange="selecionarTodas(this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#56d7fd"></th>`;
       }
       return `<th style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:#8a9599;font-weight:600;text-transform:uppercase;border-bottom:1px solid #14282f">${c.label}</th>`;
     }).join("");
@@ -6065,14 +6073,14 @@
       const dl = colObj && colObj.label ? `data-label="${colObj.label}"` : 'data-label=""';
       switch (key) {
         case "selecionar":
-          return `<td ${dl} style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#1877f2"></td>`;
+          return `<td ${dl} style="padding:12px 14px;text-align:center"><input type="checkbox" ${isSel?"checked":""} onchange="toggleSelecionada('${c.id}', this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#56d7fd"></td>`;
         case "status":
           return `<td ${dl} style="padding:12px 14px"><label class="toggle-camp" id="toggle-${c.id}"><input type="checkbox" ${isActive?"checked":""} onchange="toggleCampanha('${c.id}', this)"><span class="toggle-slider"></span></label></td>`;
         case "nome":
           return `<td ${dl} style="padding:12px 14px"><div style="font-size:0.85rem;color:#fcfcfc;font-weight:500;text-align:right">${c.name || "—"}</div><div style="font-size:0.7rem;color:#8a9599;margin-top:2px;text-align:right">${c.objective || ""} · <span style="color:${isActive ? '#22c55e' : '#b5b5b5'}">${effLabel}</span></div></td>`;
         case "joinchannel": {
           const j = extrairJoinChannelCamp(c);
-          return `<td ${dl} style="padding:12px 14px;text-align:right;font-size:0.85rem"><span style="color:${j > 0 ? '#1877f2' : '#5d6b70'};font-weight:600">${j > 0 ? j.toLocaleString("pt-BR") : "—"}</span></td>`;
+          return `<td ${dl} style="padding:12px 14px;text-align:right;font-size:0.85rem"><span style="color:${j > 0 ? '#56d7fd' : '#5d6b70'};font-weight:600">${j > 0 ? j.toLocaleString("pt-BR") : "—"}</span></td>`;
         }
         case "custo_join": {
           const j = extrairJoinChannelCamp(c);
@@ -6085,7 +6093,7 @@
           return `<td ${dl} style="padding:12px 14px;color:#b5b5b5;font-size:0.78rem">${res.tipo}</td>`;
         case "custo_resultado":
           return `<td ${dl} style="padding:12px 14px;text-align:right;color:#d5dcdf;font-size:0.85rem">${res.value > 0 ? fmtBRL(custoResultado) : "—"}</td>`;
-        case "spend":       return `<td ${dl} style="padding:12px 14px;text-align:right;color:#1877f2;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
+        case "spend":       return `<td ${dl} style="padding:12px 14px;text-align:right;color:#56d7fd;font-weight:600;font-size:0.85rem">${fmtBRL(ins.spend)}</td>`;
         case "impressions": return `<td ${dl} style="padding:12px 14px;text-align:right;color:#d5dcdf;font-size:0.85rem">${fmtNum(ins.impressions)}</td>`;
         case "reach":       return `<td ${dl} style="padding:12px 14px;text-align:right;color:#d5dcdf;font-size:0.85rem">${fmtNum(ins.reach)}</td>`;
         case "clicks":      return `<td ${dl} style="padding:12px 14px;text-align:right;color:#d5dcdf;font-size:0.85rem">${fmtNum(ins.clicks)}</td>`;
@@ -6478,7 +6486,7 @@
               <div style="font-size:0.72rem;color:#22c55e;margin-top:2px">✓ Bot ativo</div>
             </div>
           </div>`;
-        footer.innerHTML = `<button onclick="wizardStep=2;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Próximo →</button>`;
+        footer.innerHTML = `<button onclick="wizardStep=2;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Próximo →</button>`;
       } else {
         body.innerHTML = `
           <p style="font-size:0.82rem;color:#8a9599;margin-bottom:14px">Configure seu bot do Telegram para começar.</p>
@@ -6497,7 +6505,7 @@
             </div>
           </div>
           <div id="wiz-bot-msg" style="font-size:0.78rem;margin-top:8px;display:none"></div>`;
-        footer.innerHTML = `<button onclick="wizSalvarBot()" id="wiz-btn-bot" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Salvar e Continuar →</button>`;
+        footer.innerHTML = `<button onclick="wizSalvarBot()" id="wiz-btn-bot" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Salvar e Continuar →</button>`;
       }
 
     } else if (wizardStep === 2) {
@@ -6512,14 +6520,14 @@
           <div>5. Marque a permissão <span style="color:#22c55e">Adicionar Assinantes</span></div>
         </div>`;
       footer.innerHTML = `
-        <button onclick="wizardStep=1;renderWizard()" style="background:#14282f;color:#d5dcdf;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
-        <button onclick="wizardStep=3;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Já adicionei →</button>`;
+        <button onclick="wizardStep=1;renderWizard()" style="background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:10px 20px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
+        <button onclick="wizardStep=3;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Já adicionei →</button>`;
 
     } else if (wizardStep === 3) {
       body.innerHTML = `<div id="wiz-canal-body"><div style="text-align:center;padding:20px 0;color:#8a9599;font-size:0.82rem">Buscando canais...</div></div>`;
       footer.innerHTML = `
-        <button onclick="wizardStep=2;renderWizard()" style="background:#14282f;color:#d5dcdf;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
-        <button id="wiz-btn-proximo" onclick="wizardStep=4;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;opacity:0.4;cursor:default" disabled>Próximo →</button>`;
+        <button onclick="wizardStep=2;renderWizard()" style="background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:10px 20px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">← Voltar</button>
+        <button id="wiz-btn-proximo" onclick="wizardStep=4;renderWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;opacity:0.4;cursor:default;box-shadow:0 0 18px rgba(86,215,253,.22)" disabled>Próximo →</button>`;
       await wizDetectarCanal();
 
     } else if (wizardStep === 4) {
@@ -6529,7 +6537,7 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           <span style="font-size:0.85rem;color:#22c55e;font-weight:600">Canal adicionado com sucesso!</span>
         </div>`;
-      footer.innerHTML = `<button onclick="fecharWizard()" style="background:#22c55e;color:white;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600">Concluir ✓</button>`;
+      footer.innerHTML = `<button onclick="fecharWizard()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Concluir ✓</button>`;
     }
   }
 
@@ -6579,7 +6587,7 @@
             </div>
             <p style="font-size:0.78rem;color:#c9a84c;line-height:1.5;margin-bottom:12px">Remova o bot do canal, adicione de volta como admin e tente novamente.</p>
             <button onclick="wizDetectarCanal()"
-              style="width:100%;background:#f59e0b;color:#060a0b;border:none;padding:10px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
+              style="width:100%;background:#56d7fd;color:#031a20;border:none;padding:10px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 18px rgba(86,215,253,.22)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Já removi e adicionei novamente
             </button>
@@ -6595,7 +6603,7 @@
                 onfocus="this.style.borderColor='#a855f7'" onblur="this.style.borderColor='#14282f'">
               <div id="wiz-manual-msg" style="font-size:0.78rem;display:none"></div>
               <button onclick="wizSalvarManual()"
-                style="background:#a855f7;color:white;border:none;padding:10px;border-radius:7px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600">
+                style="background:#56d7fd;color:#031a20;border:none;padding:10px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">
                 Salvar Canal →
               </button>
             </div>
@@ -6744,8 +6752,8 @@
           </div>
         </div>
         <button onclick="removerCanal('${c.id}')"
-          style="background:#14282f;border:none;color:#ef4444;width:32px;height:32px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center"
-          onmouseover="this.style.background='#2a1a1a'" onmouseout="this.style.background='#14282f'">
+          style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#ef4444;width:32px;height:32px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center"
+          onmouseover="this.style.background='rgba(86,215,253,0.08)'" onmouseout="this.style.background='transparent'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </div>
