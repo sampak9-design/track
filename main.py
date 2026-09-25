@@ -4340,7 +4340,7 @@ def funil_sessao(sessao_id: str, request: Request):
 # ── Notificações push (PWA) ──────────────────────────────────────
 # Tabela push_inscricoes (migration_push.sql). Chaves VAPID geradas uma vez e
 # guardadas em configuracoes com projeto_id "__global__".
-PUSH_TIPOS = ["ftd", "deposito", "cadastro", "entrada", "alerta"]
+PUSH_TIPOS = ["ftd", "deposito", "cadastro", "entrada", "alerta", "resumo"]
 _vapid_cache: dict = {}
 
 
@@ -4387,7 +4387,8 @@ def _push_para(subs: list, tipo: str, titulo: str, corpo: str, url: str = "/stat
     payload = json.dumps({"titulo": titulo, "corpo": corpo, "url": url, "tipo": tipo}, ensure_ascii=False)
     enviados = 0
     for sub in subs:
-        if filtrar_prefs and not (sub.get("prefs") or {}).get(PUSH_CATEGORIA.get(tipo, tipo)):
+        cat = PUSH_CATEGORIA.get(tipo, tipo)
+        if filtrar_prefs and not (sub.get("prefs") or {}).get(cat, cat == "resumo"):
             continue
         try:
             webpush(
@@ -4438,7 +4439,7 @@ PUSH_MODELOS_PADRAO = {
 }
 # Qual opção do aparelho (Configurações) libera cada modelo
 PUSH_CATEGORIA = {"ftd": "ftd", "deposito": "deposito", "cadastro": "cadastro", "entrada": "entrada",
-                  "alerta_bot": "alerta", "conta_nova": "alerta"}
+                  "alerta_bot": "alerta", "conta_nova": "alerta", "agendada": "resumo"}
 PUSH_EXEMPLO = {"email": "jo***@gmail.com", "valor": "150,00", "campanha": "CAM 01 / 5 ADS", "nome": "João", "canal": "APOLLO IA | SEM GALE"}
 _push_modelos_cache: dict = {}
 
@@ -4460,7 +4461,7 @@ def _push_modelos() -> dict:
 
 
 def _preencher(texto: str, vars: dict) -> str:
-    out = re.sub(r"\{(\w+)\}", lambda m: str(vars.get(m.group(1)) or ""), texto or "")
+    out = re.sub(r"\{(\w+)\}", lambda m: "" if vars.get(m.group(1)) in (None, "") else str(vars.get(m.group(1))), texto or "")
     out = re.sub(r"(\s*·\s*)+$", "", re.sub(r"^(\s*·\s*)+", "", out))  # tira separadores sobrando
     return out.strip()
 
@@ -4505,7 +4506,7 @@ async def push_inscrever(request: Request):
         db.table("push_inscricoes").update(registro).eq("endpoint", sub["endpoint"]).execute()
         prefs = atual[0]["prefs"]
     else:
-        prefs = {"ftd": True, "deposito": True, "cadastro": False, "entrada": False, "alerta": True}
+        prefs = {"ftd": True, "deposito": True, "cadastro": False, "entrada": False, "alerta": True, "resumo": True}
         db.table("push_inscricoes").insert({**registro, "prefs": prefs}).execute()
     return {"status": "ok", "prefs": prefs}
 
@@ -4706,6 +4707,227 @@ async def admin_push_enviar(request: Request):
     subs = q.execute().data or []
     n = await asyncio.to_thread(_push_para, subs, tipo, titulo, corpo, "/static/dashboard.html", False)
     return {"status": "ok", "enviados": n, "total": len(subs)}
+
+
+# ── Notificações agendadas: resumo do dia (ROI, lucro...) ─────────
+# Guardadas por projeto em configuracoes (chave push_agendadas).
+# Receita = FTDs + redepósitos do dia. Investimento = gasto de hoje no Meta Ads.
+from datetime import timedelta
+AGENDADAS_VARS = ["investimento", "receita", "lucro", "roi", "roas", "ftds", "depositos", "cadastros", "entradas", "hora"]
+
+
+def _brl(v: float) -> str:
+    return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _agora_local(pid: str) -> datetime:
+    try:
+        off = int(_get_cfg("timezone_offset", pid) or "-3")
+    except Exception:
+        off = -3
+    return datetime.now(timezone(timedelta(hours=off)))
+
+
+def _contar_desde(tabela: str, pid: str, desde_iso: str, filtro=None) -> int:
+    q = db.table(tabela).select("id", count="exact").eq("projeto_id", pid).gte("created_at", desde_iso)
+    if filtro:
+        q = filtro(q)
+    return q.limit(1).execute().count or 0
+
+
+def _metricas_hoje(pid: str) -> dict:
+    agora = _agora_local(pid)
+    inicio = agora.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    deps = db.table("depositos").select("valor,tipo").eq("projeto_id", pid).gte("created_at", inicio).limit(5000).execute().data or []
+    receita = sum(float(d.get("valor") or 0) for d in deps)
+    ftds = sum(1 for d in deps if d.get("tipo") == "ftd")
+
+    invest = 0.0
+    token = _get_cfg("metaads_access_token", pid)
+    try:
+        contas = json.loads(_get_cfg("metaads_contas", pid) or "[]")
+    except Exception:
+        contas = []
+    if token and contas:
+        for c in contas:
+            try:
+                r = httpx.get(f"https://graph.facebook.com/v19.0/{c['id']}/insights",
+                              params={"access_token": token, "date_preset": "today", "fields": "spend"}, timeout=20).json()
+                invest += sum(float(x.get("spend") or 0) for x in r.get("data", []))
+            except Exception as e:
+                print(f"[AGENDADA ERRO gasto] {e}")
+
+    lucro = receita - invest
+    roi = (lucro / invest * 100) if invest > 0 else None
+    return {
+        "valores": {"investimento": invest, "receita": receita, "lucro": lucro, "roi": roi,
+                    "roas": (receita / invest) if invest > 0 else None},
+        "vars": {
+            "investimento": _brl(invest), "receita": _brl(receita),
+            "lucro": ("-" if lucro < 0 else "") + _brl(abs(lucro)),
+            "roi": (f"{roi:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".") if roi is not None else "—"),
+            "roas": (f"{receita / invest:.2f}".replace(".", ",") if invest > 0 else "—"),
+            "ftds": ftds, "depositos": len(deps) - ftds,
+            "cadastros": _contar_desde("cadastros", pid, inicio),
+            "entradas": _contar_desde("tracker_entradas", pid, inicio),
+            "hora": agora.strftime("%H:%M"),
+        },
+    }
+
+
+def _agendadas(pid: str) -> list:
+    try:
+        return json.loads(_get_cfg("push_agendadas", pid) or "[]")
+    except Exception:
+        return []
+
+
+def _montar_agendada(ag: dict, met: dict):
+    """Escolhe a versão pela condição. Retorna (titulo, corpo) ou None se não deve enviar."""
+    lucro = met["valores"]["lucro"]
+    cond = ag.get("condicao", "sempre")
+    if cond == "lucro" and lucro <= 0:
+        return None
+    if cond == "duas" and lucro < 0:
+        t, c = ag.get("titulo_neg") or ag.get("titulo"), ag.get("corpo_neg") or ag.get("corpo")
+    else:
+        t, c = ag.get("titulo"), ag.get("corpo")
+    return _preencher(t, met["vars"]), _preencher(c, met["vars"])
+
+
+def _agendadas_padrao() -> list:
+    return [
+        {"id": uuid.uuid4().hex[:10], "nome": "Parabéns do meio-dia", "hora": "12:00", "dias": [0, 1, 2, 3, 4, 5, 6],
+         "condicao": "lucro", "ativo": True, "ultimo_envio": "",
+         "titulo": "🚀 ROI de {roi}% ao meio-dia!", "corpo": "Parabéns! Já são R$ {lucro} de lucro hoje · {ftds} FTDs",
+         "titulo_neg": "", "corpo_neg": ""},
+        {"id": uuid.uuid4().hex[:10], "nome": "Lucro da tarde", "hora": "18:00", "dias": [0, 1, 2, 3, 4, 5, 6],
+         "condicao": "duas", "ativo": True, "ultimo_envio": "",
+         "titulo": "📊 Hoje já estamos com R$ {lucro} de lucro", "corpo": "ROI {roi}% · receita R$ {receita} · gasto R$ {investimento}",
+         "titulo_neg": "⚠️ Dia no vermelho até agora", "corpo_neg": "Lucro R$ {lucro} · ROI {roi}% · vale revisar as campanhas"},
+        {"id": uuid.uuid4().hex[:10], "nome": "Fechamento do dia", "hora": "23:30", "dias": [0, 1, 2, 3, 4, 5, 6],
+         "condicao": "sempre", "ativo": True, "ultimo_envio": "",
+         "titulo": "🏁 Fechamento: R$ {lucro} de lucro", "corpo": "ROI {roi}% · {ftds} FTDs · {depositos} redepósitos · gasto R$ {investimento}",
+         "titulo_neg": "", "corpo_neg": ""},
+    ]
+
+
+def _verificar_agendadas():
+    """Chamado a cada minuto: envia o que venceu (uma vez por dia, até 30 min depois do horário)."""
+    try:
+        linhas = db.table("configuracoes").select("projeto_id,valor").eq("chave", "push_agendadas").execute().data or []
+    except Exception as e:
+        print(f"[AGENDADA ERRO ler] {e}")
+        return
+    for linha in linhas:
+        pid = linha["projeto_id"]
+        try:
+            lista = json.loads(linha["valor"] or "[]")
+        except Exception:
+            continue
+        agora = _agora_local(pid)
+        hoje, dia_sem = agora.strftime("%Y-%m-%d"), (agora.weekday() + 1) % 7  # 0 = domingo
+        vencidas = []
+        for ag in lista:
+            try:
+                h, m = map(int, (ag.get("hora") or "0:0").split(":"))
+            except Exception:
+                continue
+            alvo = agora.replace(hour=h, minute=m, second=0, microsecond=0)
+            if (ag.get("ativo") and ag.get("ultimo_envio") != hoje and dia_sem in (ag.get("dias") or [])
+                    and alvo <= agora < alvo + timedelta(minutes=30)):
+                ag["ultimo_envio"] = hoje
+                vencidas.append(ag)
+        if not vencidas:
+            continue
+        _set_cfg("push_agendadas", json.dumps(lista, ensure_ascii=False), pid)  # marca antes de enviar: sem repetir
+        met = _metricas_hoje(pid)
+        for ag in vencidas:
+            msg = _montar_agendada(ag, met)
+            if msg:
+                n = _push_enviar(pid, "agendada", msg[0], msg[1])
+                print(f"[AGENDADA] {ag.get('nome')} ({pid[:8]}) -> {n} aparelho(s)")
+
+
+async def _agendadas_loop():
+    while True:
+        try:
+            await asyncio.to_thread(_verificar_agendadas)
+        except Exception as e:
+            print(f"[AGENDADA ERRO loop] {e}")
+        await asyncio.sleep(60)
+
+
+@app.on_event("startup")
+async def _startup_agendadas():
+    asyncio.create_task(_agendadas_loop())
+
+
+@app.get("/admin/push/agendadas")
+def admin_agendadas(request: Request):
+    eu = _exigir_admin(request)
+    pid = eu["projeto_id"]
+    lista = _agendadas(pid)
+    if not lista and not _get_cfg("push_agendadas", pid):
+        lista = _agendadas_padrao()
+        _set_cfg("push_agendadas", json.dumps(lista, ensure_ascii=False), pid)
+    met = _metricas_hoje(pid)
+    return {"agendadas": lista, "vars": met["vars"], "variaveis": AGENDADAS_VARS}
+
+
+@app.post("/admin/push/agendadas")
+async def admin_agendada_salvar(request: Request):
+    eu = _exigir_admin(request)
+    pid = eu["projeto_id"]
+    d = await request.json()
+    try:
+        h, m = map(int, (d.get("hora") or "").split(":"))
+        assert 0 <= h < 24 and 0 <= m < 60
+    except Exception:
+        raise HTTPException(status_code=400, detail="horário inválido (use HH:MM)")
+    item = {
+        "nome": (d.get("nome") or "Resumo").strip()[:60], "hora": f"{h:02d}:{m:02d}",
+        "dias": sorted({int(x) for x in (d.get("dias") or []) if 0 <= int(x) <= 6}),
+        "condicao": d.get("condicao") if d.get("condicao") in ("sempre", "lucro", "duas") else "sempre",
+        "ativo": bool(d.get("ativo")),
+        "titulo": (d.get("titulo") or "").strip()[:120], "corpo": (d.get("corpo") or "").strip()[:300],
+        "titulo_neg": (d.get("titulo_neg") or "").strip()[:120], "corpo_neg": (d.get("corpo_neg") or "").strip()[:300],
+    }
+    lista = _agendadas(pid)
+    if d.get("id") and any(x["id"] == d["id"] for x in lista):
+        lista = [{**x, **item} for x in lista if x["id"] == d["id"]] + [x for x in lista if x["id"] != d["id"]]
+        lista.sort(key=lambda x: x.get("hora", ""))
+    else:
+        lista.append({"id": uuid.uuid4().hex[:10], "ultimo_envio": "", **item})
+        lista.sort(key=lambda x: x.get("hora", ""))
+    _set_cfg("push_agendadas", json.dumps(lista, ensure_ascii=False), pid)
+    return {"status": "ok", "agendadas": lista}
+
+
+@app.delete("/admin/push/agendadas/{aid}")
+def admin_agendada_apagar(aid: str, request: Request):
+    eu = _exigir_admin(request)
+    lista = [x for x in _agendadas(eu["projeto_id"]) if x["id"] != aid]
+    _set_cfg("push_agendadas", json.dumps(lista, ensure_ascii=False), eu["projeto_id"])
+    return {"status": "ok", "agendadas": lista}
+
+
+@app.post("/admin/push/agendadas/{aid}/testar")
+async def admin_agendada_testar(aid: str, request: Request):
+    """Envia agora com os números reais de hoje (ignora horário; respeita a versão positiva/negativa)."""
+    eu = _exigir_admin(request)
+    d = await request.json()
+    ag = next((x for x in _agendadas(eu["projeto_id"]) if x["id"] == aid), None)
+    if not ag:
+        raise HTTPException(status_code=404, detail="agendamento não encontrado")
+    met = await asyncio.to_thread(_metricas_hoje, eu["projeto_id"])
+    msg = _montar_agendada({**ag, "condicao": "duas" if ag.get("condicao") == "duas" else "sempre"}, met)
+    q = db.table("push_inscricoes").select("id,endpoint,p256dh,auth,prefs")
+    if d.get("alvo", "todos") != "todos":
+        q = q.eq("id", int(d["alvo"]))
+    subs = q.execute().data or []
+    n = await asyncio.to_thread(_push_para, subs, "agendada", msg[0], msg[1], "/static/dashboard.html", False)
+    return {"status": "ok", "enviados": n, "total": len(subs), "titulo": msg[0], "corpo": msg[1]}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

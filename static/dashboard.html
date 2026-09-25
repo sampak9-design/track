@@ -614,6 +614,21 @@
     .adm-chip.on { background:rgba(86,215,253,.12); color:#56d7fd; }
     #adm-push-alvo { background:#0a1316; border:1px solid #14282f; color:#fcfcfc; padding:0 30px 0 10px; height:36px; border-radius:12px; font-size:.8rem; font-family:inherit; }
 
+    .adm-agora { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .adm-agora div { background:#060a0b; border:1px solid #14282f; border-radius:12px; padding:8px 12px; font-size:.72rem; color:#8a9599; }
+    .adm-agora b { display:block; font-size:.95rem; color:#fcfcfc; font-weight:600; }
+    .adm-dias { display:flex; gap:4px; flex-wrap:wrap; }
+    .adm-dias label { cursor:pointer; }
+    .adm-dias input { display:none; }
+    .adm-dias span { display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center; border-radius:50%;
+      border:1px solid #14282f; font-size:.72rem; color:#8a9599; }
+    .adm-dias input:checked + span { background:rgba(86,215,253,.14); border-color:rgba(86,215,253,.5); color:#56d7fd; font-weight:600; }
+    .adm-linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .adm-modelo input[type=time], .adm-modelo select { background:#0a1316; border:1px solid #14282f; color:#fcfcfc; border-radius:10px !important;
+      height:34px; padding:0 10px; font-size:.8rem; font-family:inherit; }
+    .adm-neg { border-left:2px solid rgba(248,113,113,.5); padding-left:8px; display:flex; flex-direction:column; gap:6px; }
+    .adm-rot { font-size:.68rem; color:#8a9599; text-transform:uppercase; letter-spacing:.4px; }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -1185,6 +1200,15 @@
         <div class="panel-header"><div><div class="panel-title">Notificações automáticas</div>
           <div class="panel-subtitle">Enviadas sozinhas quando o evento acontece. Variáveis: <span id="adm-push-vars"></span></div></div></div>
         <div id="adm-push-modelos" class="adm-modelos"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Notificações agendadas — resumo do dia</div>
+          <div class="panel-subtitle">Enviadas no horário com os números de hoje (receita = FTD + redepósitos; gasto = Meta Ads).
+            Variáveis: <span id="adm-ag-vars"></span></div></div>
+          <button class="btn-atualizar" onclick="admAgNova()" style="height:36px">+ Novo agendamento</button></div>
+        <div id="adm-ag-agora" class="adm-agora"></div>
+        <div id="adm-ag-lista" class="adm-modelos"></div>
       </div>
 
       <div class="panel">
@@ -2694,6 +2718,7 @@
           <label class="push-opcao"><input type="checkbox" data-p="cadastro"> <span><b>Cadastro</b> — novo cadastro na corretora</span></label>
           <label class="push-opcao"><input type="checkbox" data-p="entrada"> <span><b>Entrada no canal</b> — cada pessoa que entra (pode ser muita notificação)</span></label>
           <label class="push-opcao"><input type="checkbox" data-p="alerta"> <span><b>Alertas</b> — problemas, como o bot sair de um canal</span></label>
+          <label class="push-opcao"><input type="checkbox" data-p="resumo"> <span><b>Resumo do dia</b> — ROI e lucro nos horários agendados</span></label>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button id="push-ativar" onclick="pushAtivar()" style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Ativar neste aparelho</button>
@@ -4136,7 +4161,7 @@
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "automacao") { abrirAutomacao(); }
     if (id === "booster") { abrirBooster(); }
-    if (id === "admin") { carregarAdmin(); carregarAdminPush(); }
+    if (id === "admin") { carregarAdmin(); carregarAdminPush(); carregarAgendadas(); }
   }
 
   // ── Análise com IA ──
@@ -7304,7 +7329,8 @@
     document.getElementById("push-status").innerHTML = ativo
       ? '<span style="color:#22c55e">● Ativado neste aparelho</span> — escolha o que quer receber:'
       : "Desativado neste aparelho.";
-    if (prefs) document.querySelectorAll("#push-prefs input").forEach(i => { i.checked = !!prefs[i.dataset.p]; });
+    if (prefs) document.querySelectorAll("#push-prefs input").forEach(i => {
+      i.checked = i.dataset.p in prefs ? !!prefs[i.dataset.p] : i.dataset.p === "resumo"; });
   }
   async function carregarPush() {
     if (!document.getElementById("push-panel")) return;
@@ -7536,7 +7562,7 @@
 
   // ── Admin: notificações ──
   let admPush = null;
-  const PUSH_NOMES = { ftd: "FTD", deposito: "Depósito", cadastro: "Cadastro", entrada: "Entrada", alerta: "Alertas" };
+  const PUSH_NOMES = { ftd: "FTD", deposito: "Depósito", cadastro: "Cadastro", entrada: "Entrada", alerta: "Alertas", resumo: "Resumo" };
   function admPushMsg(t, cor) { const m = document.getElementById("adm-push-msg"); m.textContent = t; m.style.color = cor || "#b5b5b5"; }
   function admPreencher(txt) {
     return (txt || "").replace(/\{(\w+)\}/g, (_, k) => (admPush.exemplo || {})[k] || "")
@@ -7559,7 +7585,7 @@
 
     document.getElementById("adm-push-aparelhos").innerHTML = ap.length ? ap.map(a => `<tr>
         <td>${_escHtml(a.conta)}</td><td>${_escHtml(a.aparelho || "—")}</td><td>${fmtDataHora(a.criado_em)}</td>
-        <td>${Object.keys(PUSH_NOMES).map(k => `<span class="adm-chip ${a.prefs && a.prefs[k] ? "on" : ""}">${PUSH_NOMES[k]}</span>`).join("")}</td>
+        <td>${Object.keys(PUSH_NOMES).map(k => `<span class="adm-chip ${a.prefs && (k in a.prefs ? a.prefs[k] : k === "resumo") ? "on" : ""}">${PUSH_NOMES[k]}</span>`).join("")}</td>
         <td style="white-space:nowrap"><div class="adm-acoes">
           <button onclick="admPushEnviar({alvo:'${a.id}', titulo:'🔔 VS Track', corpo:'Teste enviado pelo admin'})">Enviar teste</button>
           <button class="perigo" onclick="admPushRemoverAparelho(${a.id})">Remover</button></div></td></tr>`).join("")
@@ -7650,6 +7676,107 @@
     const card = e.target.closest && e.target.closest(".adm-modelo");
     if (card && e.target.dataset.c === "ativo") card.classList.toggle("off", !e.target.checked);
   });
+
+  // ── Admin: notificações agendadas (resumo do dia) ──
+  let admAg = null;
+  const DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const COND = { sempre: "Enviar sempre", lucro: "Só se estiver no lucro", duas: "Uma mensagem se lucro, outra se prejuízo" };
+  function agPreencher(txt) {
+    return (txt || "").replace(/\{(\w+)\}/g, (_, k) => { const v = (admAg.vars || {})[k]; return v === undefined || v === null ? "" : v; })
+      .replace(/^(\s*·\s*)+|(\s*·\s*)+$/g, "").trim();
+  }
+  async function carregarAgendadas() {
+    const lista = document.getElementById("adm-ag-lista");
+    if (!lista) return;
+    lista.innerHTML = '<div style="color:#8a9599;font-size:.8rem">Calculando números de hoje…</div>';
+    try {
+      const r = await fetch("/admin/push/agendadas");
+      if (!r.ok) throw new Error("Erro " + r.status);
+      admAg = await r.json();
+      renderAgendadas();
+    } catch (e) { lista.innerHTML = `<div style="color:#ef4444;font-size:.8rem">${_escHtml(e.message)}</div>`; }
+  }
+  function renderAgendadas() {
+    const v = admAg.vars || {};
+    document.getElementById("adm-ag-vars").innerHTML = (admAg.variaveis || []).map(x => `<code style="color:#56d7fd">{${x}}</code>`).join(" ");
+    const cor = String(v.lucro || "").startsWith("-") ? "#f87171" : "#22c55e";
+    document.getElementById("adm-ag-agora").innerHTML = `
+      <div>Gasto hoje<b>R$ ${v.investimento}</b></div><div>Receita hoje<b>R$ ${v.receita}</b></div>
+      <div>Lucro<b style="color:${cor}">R$ ${v.lucro}</b></div><div>ROI<b style="color:${cor}">${v.roi}%</b></div>
+      <div>ROAS<b>${v.roas}</b></div><div>FTDs<b>${v.ftds}</b></div><div>Redepósitos<b>${v.depositos}</b></div>
+      <div style="align-self:center;border:none;background:none">às ${v.hora}</div>`;
+    const ags = admAg.agendadas || [];
+    document.getElementById("adm-ag-lista").innerHTML = ags.length ? ags.map(a => `
+      <div class="adm-modelo ${a.ativo ? "" : "off"}" id="adm-a-${a.id}">
+        <div class="adm-modelo-topo">
+          <input type="text" data-c="nome" value="${_escHtml(a.nome)}" style="font-weight:600;max-width:60%">
+          <label class="adm-switch"><input type="checkbox" ${a.ativo ? "checked" : ""} data-c="ativo"> Ativa</label></div>
+        <div class="adm-linha"><input type="time" data-c="hora" value="${a.hora}">
+          <div class="adm-dias">${DIAS.map((d, i) => `<label><input type="checkbox" data-dia="${i}" ${(a.dias || []).includes(i) ? "checked" : ""}><span>${d}</span></label>`).join("")}</div></div>
+        <select data-c="condicao" onchange="agCond('${a.id}')">${Object.entries(COND).map(([k, t]) => `<option value="${k}" ${a.condicao === k ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <div class="adm-rot">${a.condicao === "duas" ? "Se estiver no lucro" : "Mensagem"}</div>
+        <input type="text" data-c="titulo" value="${_escHtml(a.titulo)}" placeholder="Título" oninput="agPreview('${a.id}')">
+        <textarea data-c="corpo" rows="2" placeholder="Texto" oninput="agPreview('${a.id}')">${_escHtml(a.corpo)}</textarea>
+        <div class="adm-neg" style="${a.condicao === "duas" ? "" : "display:none"}">
+          <div class="adm-rot">Se estiver no prejuízo</div>
+          <input type="text" data-c="titulo_neg" value="${_escHtml(a.titulo_neg || "")}" placeholder="Título (prejuízo)" oninput="agPreview('${a.id}')">
+          <textarea data-c="corpo_neg" rows="2" placeholder="Texto (prejuízo)" oninput="agPreview('${a.id}')">${_escHtml(a.corpo_neg || "")}</textarea></div>
+        <div class="adm-rot">Prévia com os números de agora</div>
+        <div class="adm-preview"><img src="/static/icon-192.png"><div><b data-p="t"></b><span data-p="c"></span></div></div>
+        <div class="adm-acoes">
+          <button class="prim" onclick="agSalvar('${a.id}')">Salvar</button>
+          <button onclick="agTestar('${a.id}')">Testar agora</button>
+          <button class="perigo" onclick="agApagar('${a.id}')">Excluir</button></div>
+        ${a.ultimo_envio ? `<div style="font-size:.68rem;color:#5d6b70">Último envio: ${a.ultimo_envio.split("-").reverse().join("/")}</div>` : ""}
+      </div>`).join("") : '<div style="color:#8a9599;font-size:.8rem">Nenhum agendamento. Clique em “+ Novo agendamento”.</div>';
+    ags.forEach(a => agPreview(a.id));
+  }
+  function agCard(id) { return document.getElementById("adm-a-" + id); }
+  function agDados(id) {
+    const c = agCard(id), g = k => c.querySelector(`[data-c="${k}"]`);
+    return { id, nome: g("nome").value, hora: g("hora").value, condicao: g("condicao").value, ativo: g("ativo").checked,
+      titulo: g("titulo").value, corpo: g("corpo").value, titulo_neg: g("titulo_neg").value, corpo_neg: g("corpo_neg").value,
+      dias: [...c.querySelectorAll("[data-dia]")].filter(x => x.checked).map(x => Number(x.dataset.dia)) };
+  }
+  function agCond(id) {
+    const c = agCard(id), duas = c.querySelector('[data-c="condicao"]').value === "duas";
+    c.querySelector(".adm-neg").style.display = duas ? "" : "none";
+    c.querySelectorAll(".adm-rot")[0].textContent = duas ? "Se estiver no lucro" : "Mensagem";
+    agPreview(id);
+  }
+  function agPreview(id) {
+    const d = agDados(id), c = agCard(id);
+    const neg = d.condicao === "duas" && String((admAg.vars || {}).lucro || "").startsWith("-");
+    c.querySelector('[data-p="t"]').textContent = agPreencher(neg ? (d.titulo_neg || d.titulo) : d.titulo);
+    c.querySelector('[data-p="c"]').textContent = agPreencher(neg ? (d.corpo_neg || d.corpo) : d.corpo)
+      + (d.condicao === "lucro" && String((admAg.vars || {}).lucro || "").startsWith("-") ? "  (hoje não seria enviada: sem lucro)" : "");
+  }
+  async function agSalvar(id) {
+    const r = await fetch("/admin/push/agendadas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(agDados(id)) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return admPushMsg("✗ " + (d.detail || "Erro ao salvar"), "#ef4444");
+    admAg.agendadas = d.agendadas; renderAgendadas(); admPushMsg("✓ Agendamento salvo.", "#22c55e");
+  }
+  async function agTestar(id) {
+    const alvo = document.getElementById("adm-push-alvo").value;
+    admPushMsg("Calculando e enviando…");
+    const r = await fetch(`/admin/push/agendadas/${id}/testar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alvo }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return admPushMsg("✗ " + (d.detail || "Erro"), "#ef4444");
+    admPushMsg(d.enviados ? `✓ Enviada para ${d.enviados} aparelho(s): “${d.titulo}”` : "✗ Nenhum aparelho recebeu.", d.enviados ? "#22c55e" : "#ef4444");
+  }
+  async function agApagar(id) {
+    if (!confirm("Excluir este agendamento?")) return;
+    const r = await fetch("/admin/push/agendadas/" + id, { method: "DELETE" });
+    const d = await r.json().catch(() => ({})); admAg.agendadas = d.agendadas || []; renderAgendadas();
+  }
+  async function admAgNova() {
+    const r = await fetch("/admin/push/agendadas", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome: "Novo resumo", hora: "20:00", dias: [0,1,2,3,4,5,6], condicao: "sempre", ativo: false,
+        titulo: "📊 ROI de hoje: {roi}%", corpo: "Lucro R$ {lucro} · receita R$ {receita} · gasto R$ {investimento}" }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { admAg.agendadas = d.agendadas; renderAgendadas(); admPushMsg("Novo agendamento criado (desativado) — ajuste e marque Ativa."); }
+  }
 </script>
 </body>
 </html>
