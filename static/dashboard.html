@@ -565,6 +565,29 @@
     .push-opcao b { color:#fcfcfc; font-weight:600; }
     .push-opcao input { accent-color:#56d7fd; width:16px; height:16px; margin-top:1px; flex-shrink:0; }
 
+    /* ─── Onboarding PWA (instalar / ativar notificações) ─── */
+    .ob-fundo { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      display:flex; align-items:flex-end; justify-content:center; animation:obFade .2s ease; }
+    .ob-card { width:100%; max-width:440px; background:linear-gradient(180deg,rgba(17,43,51,.6),rgba(6,10,11,.98)),#070c0e;
+      border:1px solid rgba(86,215,253,.18); border-radius:24px 24px 0 0; padding:22px 22px calc(22px + env(safe-area-inset-bottom));
+      box-shadow:0 -20px 60px rgba(0,0,0,.6); animation:obSobe .28s cubic-bezier(.22,1,.36,1); }
+    @media (min-width: 700px) { .ob-fundo { align-items:center; } .ob-card { border-radius:24px; } }
+    .ob-topo { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .ob-topo img { width:52px; height:52px; border-radius:14px; box-shadow:0 0 20px rgba(86,215,253,.25); }
+    .ob-titulo { font-size:1.08rem; font-weight:600; color:#fcfcfc; }
+    .ob-sub { font-size:.8rem; color:#b5b5b5; margin-top:2px; line-height:1.4; }
+    .ob-passo { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid #0f1d22; font-size:.84rem; color:#d5dcdf; }
+    .ob-num { width:26px; height:26px; flex-shrink:0; border-radius:50%; background:#56d7fd; color:#031a20; font-weight:700; font-size:.78rem; display:flex; align-items:center; justify-content:center; }
+    .ob-passo svg { color:#56d7fd; vertical-align:-4px; }
+    .ob-botoes { display:flex; gap:8px; margin-top:16px; }
+    .ob-botoes button { flex:1; padding:12px; border-radius:14px; font-size:.86rem; font-weight:600; font-family:inherit; cursor:pointer; }
+    .ob-prim { background:#56d7fd; color:#031a20; border:none; box-shadow:0 0 22px rgba(86,215,253,.3); }
+    .ob-sec { background:transparent; color:#b5b5b5; border:1px solid #14282f; }
+    .ob-lista { margin:6px 0 2px; }
+    .ob-lista div { font-size:.8rem; color:#d5dcdf; padding:5px 0; }
+    @keyframes obSobe { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
+    @keyframes obFade { from { opacity:0; } to { opacity:1; } }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -3160,7 +3183,7 @@
     PROJETO_ID = data.session.user.app_metadata?.projeto_id || "";
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
-    verificarStatusConta();
+    verificarStatusConta().then(ok => { if (ok) setTimeout(iniciarOnboarding, 1500); });
     preencherWebhookURLs();
     definirDatasPadraoMes();
     carregar();
@@ -7298,9 +7321,10 @@
       const r = await fetch("/auth/status");
       if (!r.ok) return;
       const d = await r.json();
-      if (d.status === "pendente" || d.status === "bloqueado") return mostrarContaBloqueada(d.status);
+      if (d.status === "pendente" || d.status === "bloqueado") { mostrarContaBloqueada(d.status); return false; }
       if (d.admin) document.getElementById("nav-admin").style.display = "";
-    } catch (e) {}
+      return true;
+    } catch (e) { return true; }
   }
   function mostrarContaBloqueada(status) {
     const pend = status === "pendente";
@@ -7360,6 +7384,103 @@
     const r = await fetch(`/admin/usuarios/${uid}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
     if (!r.ok) { const d = await r.json().catch(() => ({})); alert(d.detail || "Erro"); }
     carregarAdmin();
+  }
+
+  // ── Onboarding: 1) instalar o app  2) ativar notificações ──
+  let _installEvt = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); _installEvt = e; });
+  const EH_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const EH_ANDROID = /Android/i.test(navigator.userAgent);
+  function obAdiado(chave) {
+    try { return Number(localStorage.getItem("ob_" + chave) || 0) > Date.now(); } catch (e) { return false; }
+  }
+  function obAdiar(chave, dias) {
+    try { localStorage.setItem("ob_" + chave, String(Date.now() + dias * 864e5)); } catch (e) {}
+  }
+  function obFechar() { const el = document.getElementById("ob-sheet"); if (el) el.remove(); }
+  function obMostrar(html) {
+    obFechar();
+    const d = document.createElement("div");
+    d.id = "ob-sheet"; d.className = "ob-fundo"; d.innerHTML = `<div class="ob-card">${html}</div>`;
+    d.addEventListener("click", (e) => { if (e.target === d) obFechar(); });
+    document.body.appendChild(d);
+  }
+  const OB_TOPO = (titulo, sub) => `<div class="ob-topo"><img src="/static/apple-touch-icon.png" alt=""><div>
+    <div class="ob-titulo">${titulo}</div><div class="ob-sub">${sub}</div></div></div>`;
+  const ICO_SHARE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
+  const ICO_ADD = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+  const ICO_MENU = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+
+  function obInstalar() {
+    let passos, botao = "";
+    if (EH_IOS) {
+      passos = `
+        <div class="ob-passo"><span class="ob-num">1</span><span>Toque em <b>Compartilhar</b> ${ICO_SHARE} na barra do Safari</span></div>
+        <div class="ob-passo"><span class="ob-num">2</span><span>Role e toque em <b>Adicionar à Tela de Início</b> ${ICO_ADD}</span></div>
+        <div class="ob-passo"><span class="ob-num">3</span><span>Toque em <b>Adicionar</b> e abra o VS Track pelo ícone</span></div>`;
+    } else if (_installEvt) {
+      passos = `<div class="ob-passo"><span class="ob-num">1</span><span>Toque em <b>Instalar</b> abaixo e confirme</span></div>
+        <div class="ob-passo"><span class="ob-num">2</span><span>Abra o VS Track pelo ícone na tela inicial</span></div>`;
+      botao = `<button class="ob-prim" onclick="obInstalarAgora()">Instalar</button>`;
+    } else {
+      passos = `
+        <div class="ob-passo"><span class="ob-num">1</span><span>Toque no menu ${ICO_MENU} do navegador</span></div>
+        <div class="ob-passo"><span class="ob-num">2</span><span>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b></span></div>
+        <div class="ob-passo"><span class="ob-num">3</span><span>Abra o VS Track pelo ícone</span></div>`;
+    }
+    obMostrar(OB_TOPO("Instale o VS Track", "Tenha o painel na tela de início e receba avisos de FTD e depósitos no celular.")
+      + passos + `<div class="ob-botoes"><button class="ob-sec" onclick="obAdiar('instalar',3);obFechar()">Agora não</button>${botao}</div>`);
+  }
+  async function obInstalarAgora() {
+    if (!_installEvt) return obFechar();
+    _installEvt.prompt();
+    const { outcome } = await _installEvt.userChoice.catch(() => ({}));
+    _installEvt = null; obFechar();
+    if (outcome !== "accepted") obAdiar("instalar", 3);
+  }
+
+  function obNotificacoes() {
+    obMostrar(OB_TOPO("Ative as notificações", "Seja avisado na hora, mesmo com o app fechado:")
+      + `<div class="ob-lista"><div>💰 Novo FTD</div><div>💵 Novos depósitos</div><div>⚠️ Alertas importantes</div></div>
+         <div class="ob-sub" style="margin-top:6px">Você escolhe o que receber em Configurações.</div>
+         <div class="ob-botoes"><button class="ob-sec" onclick="obAdiar('notif',3);obFechar()">Agora não</button>
+         <button class="ob-prim" id="ob-ativar" onclick="obAtivarNotif()">Ativar</button></div>`);
+  }
+  async function obAtivarNotif() {
+    const b = document.getElementById("ob-ativar"); if (b) { b.textContent = "Ativando…"; b.disabled = true; }
+    await pushAtivar();
+    if (Notification.permission === "granted") {
+      obMostrar(OB_TOPO("Notificações ativadas ✓", "Vamos te avisar quando entrar FTD ou depósito.")
+        + `<div class="ob-botoes"><button class="ob-sec" onclick="obFechar()">Fechar</button>
+           <button class="ob-prim" onclick="pushTestar();obFechar()">Enviar teste</button></div>`);
+    } else {
+      obAdiar("notif", 7);
+      obMostrar(OB_TOPO("Notificações bloqueadas", EH_IOS
+        ? "Libere em Ajustes → Notificações → VS Track."
+        : "Libere nas configurações do navegador para este site (ícone de cadeado ao lado do endereço).")
+        + `<div class="ob-botoes"><button class="ob-prim" onclick="obFechar()">Entendi</button></div>`);
+    }
+  }
+
+  async function iniciarOnboarding() {
+    if (document.getElementById("conta-bloqueio")) return;
+    // 1) No celular, fora do app instalado: ensinar a instalar
+    if (EH_MOBILE && !INSTALADO) {
+      if (!obAdiado("instalar")) obInstalar();
+      return;
+    }
+    // 2) App instalado (ou computador): pedir para ativar as notificações
+    if (!PUSH_OK || Notification.permission === "denied") return;
+    try {
+      const sub = await pushInscricaoAtual();
+      if (sub && Notification.permission === "granted") {
+        // já ativo: só garante que o servidor conhece este aparelho
+        fetch("/push/inscrever", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: sub.toJSON(), aparelho: descreverAparelho() }) }).catch(() => {});
+        return;
+      }
+    } catch (e) {}
+    if (!obAdiado("notif")) obNotificacoes();
   }
 </script>
 </body>
