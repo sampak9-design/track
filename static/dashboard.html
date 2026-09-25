@@ -535,7 +535,7 @@
       #btn-att span { display:none; }
       #btn-att svg { width:18px; height:18px; }
       #sec-resumo select { width:100% !important; min-width:0 !important; }
-      #preset-grid { gap:5px !important; flex-wrap:nowrap !important; }
+      #preset-grid { gap:5px !important; flex-wrap:wrap !important; }
       #preset-grid .preset-btn { padding:7px 9px; font-size:.76rem; white-space:nowrap; }
       .topbar { padding:0 14px; }
       .sidebar-logo { height:auto; padding:14px 10px; }
@@ -687,6 +687,7 @@
           <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período Rápido</div>
           <div id="preset-grid" style="display:flex;gap:4px;flex-wrap:wrap">
             <button class="preset-btn ativo" data-preset="hoje" onclick="aplicarPreset('hoje',this)">Hoje</button>
+            <button class="preset-btn" data-preset="ontem" onclick="aplicarPreset('ontem',this)">Ontem</button>
             <button class="preset-btn" data-preset="7d" onclick="aplicarPreset('7d',this)">7 dias</button>
             <button class="preset-btn" data-preset="semana" onclick="aplicarPreset('semana',this)">Semana</button>
             <button class="preset-btn" data-preset="mes" onclick="aplicarPreset('mes',this)">Mês</button>
@@ -3012,6 +3013,9 @@
     let inicio, fim = hoje;
     if (preset === "hoje") {
       inicio = hoje;
+    } else if (preset === "ontem") {
+      inicio = new Date(hoje); inicio.setDate(hoje.getDate() - 1);
+      fim = inicio;
     } else if (preset === "7d") {
       inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 6);
     } else if (preset === "semana") {
