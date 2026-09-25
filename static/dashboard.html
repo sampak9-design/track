@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VS Track — Dashboard</title>
   <link rel="icon" type="image/png" href="/static/logo.png">
-  <link rel="apple-touch-icon" href="/static/logo.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#030303">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VS Track">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
@@ -552,6 +558,12 @@
       .fn-heat-wrap > div { width:100%; min-width:0 !important; }
       .fn-heat { align-self:center; }
     }
+
+    /* ─── Notificações (PWA) ─── */
+    .push-dica { background:rgba(86,215,253,.08); border:1px solid rgba(86,215,253,.25); border-radius:12px; padding:10px 12px; font-size:.78rem; color:#d5dcdf; margin-bottom:12px; line-height:1.5; }
+    .push-opcao { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid #0f1d22; font-size:.8rem; color:#b5b5b5; cursor:pointer; }
+    .push-opcao b { color:#fcfcfc; font-weight:600; }
+    .push-opcao input { accent-color:#56d7fd; width:16px; height:16px; margin-top:1px; flex-shrink:0; }
 
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
@@ -2565,6 +2577,33 @@
         <p style="font-size:0.82rem;color:#8a9599">Ajustes do dashboard e do tracker</p>
       </div>
 
+      <!-- Notificações no celular (PWA) -->
+      <div class="panel" id="push-panel">
+        <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#56d7fd" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notificações no celular
+        </div>
+        <p style="font-size:0.78rem;color:#8a9599;margin-bottom:14px">Receba avisos importantes neste aparelho, mesmo com o VS Track fechado.</p>
+        <div id="push-ios-dica" class="push-dica" style="display:none">
+          <b>No iPhone:</b> primeiro instale o VS Track na tela de início — toque em
+          <b>Compartilhar</b> <span style="font-size:1rem">⎋</span> → <b>Adicionar à Tela de Início</b>, abra pelo ícone e ative aqui.
+        </div>
+        <div id="push-status" style="font-size:0.8rem;color:#b5b5b5;margin-bottom:12px">Verificando…</div>
+        <div id="push-prefs" style="display:none;margin-bottom:14px">
+          <label class="push-opcao"><input type="checkbox" data-p="ftd"> <span><b>FTD</b> — primeiro depósito de um lead</span></label>
+          <label class="push-opcao"><input type="checkbox" data-p="deposito"> <span><b>Depósito</b> — redepósitos</span></label>
+          <label class="push-opcao"><input type="checkbox" data-p="cadastro"> <span><b>Cadastro</b> — novo cadastro na corretora</span></label>
+          <label class="push-opcao"><input type="checkbox" data-p="entrada"> <span><b>Entrada no canal</b> — cada pessoa que entra (pode ser muita notificação)</span></label>
+          <label class="push-opcao"><input type="checkbox" data-p="alerta"> <span><b>Alertas</b> — problemas, como o bot sair de um canal</span></label>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="push-ativar" onclick="pushAtivar()" style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Ativar neste aparelho</button>
+          <button id="push-testar" onclick="pushTestar()" style="display:none;background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600">Enviar teste</button>
+          <button id="push-desativar" onclick="pushDesativar()" style="display:none;background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600">Desativar</button>
+        </div>
+        <div id="push-msg" style="font-size:0.76rem;margin-top:10px"></div>
+      </div>
+
       <div class="panel">
         <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc;margin-bottom:6px;display:flex;align-items:center;gap:8px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#56d7fd" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -3993,7 +4032,7 @@
     if (id === "logs") { popularCanaisLogs(); carregarLogs(); }
     if (id === "trafego") { carregarTrafegoInit(); }
     if (id === "funil") { carregarFunil(); }
-    if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); }
+    if (id === "configuracoes") { carregarConfigGeral(); carregarConfigIA(); carregarPush(); }
     if (id === "ia") { document.getElementById("ia-input").focus(); }
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "automacao") { abrirAutomacao(); }
@@ -7090,6 +7129,101 @@
     }
   }
   function fecharTimeline() { document.getElementById("fn-modal").classList.remove("aberto"); }
+
+  // ── Notificações push (PWA) ──
+  const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const EH_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const INSTALADO = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let _pushReg = null;
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/static/sw.js", { scope: "/static/" }).then(r => { _pushReg = r; }).catch(() => {});
+  }
+  function pushMsg(txt, cor) { const m = document.getElementById("push-msg"); m.textContent = txt; m.style.color = cor || "#b5b5b5"; }
+  function b64ParaBytes(b64) {
+    const pad = "=".repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+  function descreverAparelho() {
+    const ua = navigator.userAgent;
+    const so = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Aparelho";
+    const nav = /Edg\//.test(ua) ? "Edge" : /Chrome|CriOS/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : /Firefox/.test(ua) ? "Firefox" : "";
+    return so + (nav ? " · " + nav : "") + (INSTALADO ? " · app" : "");
+  }
+  async function pushInscricaoAtual() {
+    const reg = _pushReg || await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+  }
+  function pushMostrar(ativo, prefs) {
+    document.getElementById("push-ativar").style.display = ativo ? "none" : "";
+    document.getElementById("push-testar").style.display = ativo ? "" : "none";
+    document.getElementById("push-desativar").style.display = ativo ? "" : "none";
+    document.getElementById("push-prefs").style.display = ativo ? "" : "none";
+    document.getElementById("push-status").innerHTML = ativo
+      ? '<span style="color:#22c55e">● Ativado neste aparelho</span> — escolha o que quer receber:'
+      : "Desativado neste aparelho.";
+    if (prefs) document.querySelectorAll("#push-prefs input").forEach(i => { i.checked = !!prefs[i.dataset.p]; });
+  }
+  async function carregarPush() {
+    if (!document.getElementById("push-panel")) return;
+    document.getElementById("push-ios-dica").style.display = (EH_IOS && !INSTALADO) ? "" : "none";
+    if (!PUSH_OK) {
+      document.getElementById("push-status").textContent = EH_IOS && !INSTALADO
+        ? "Instale na tela de início para ativar (veja acima)."
+        : "Este navegador não suporta notificações.";
+      document.getElementById("push-ativar").style.display = "none";
+      return;
+    }
+    try {
+      const sub = await pushInscricaoAtual();
+      if (sub && Notification.permission === "granted") {
+        const r = await fetch("/push/inscrever", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: sub.toJSON(), aparelho: descreverAparelho() }) });
+        const d = await r.json();
+        pushMostrar(true, d.prefs);
+      } else {
+        pushMostrar(false);
+        if (Notification.permission === "denied") pushMsg("As notificações estão bloqueadas nas configurações do navegador/aparelho para este site.", "#f59e0b");
+      }
+    } catch (e) { pushMostrar(false); }
+  }
+  async function pushAtivar() {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { pushMsg("Permissão negada. Libere as notificações nas configurações do aparelho.", "#f59e0b"); return; }
+      const { publica } = await (await fetch("/push/chave")).json();
+      const reg = _pushReg || await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ParaBytes(publica) });
+      const r = await fetch("/push/inscrever", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON(), aparelho: descreverAparelho() }) });
+      if (!r.ok) throw new Error("Erro " + r.status);
+      const d = await r.json();
+      pushMostrar(true, d.prefs);
+      pushMsg("✓ Ativado! Toque em “Enviar teste” para conferir.", "#22c55e");
+    } catch (e) { pushMsg("✗ Não foi possível ativar: " + e.message, "#ef4444"); }
+  }
+  async function pushTestar() {
+    const sub = await pushInscricaoAtual();
+    if (!sub) return pushMostrar(false);
+    const r = await fetch("/push/testar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+    const d = await r.json().catch(() => ({}));
+    pushMsg(d.enviados ? "✓ Teste enviado — deve chegar em alguns segundos." : "✗ Não consegui enviar o teste.", d.enviados ? "#22c55e" : "#ef4444");
+  }
+  async function pushDesativar() {
+    const sub = await pushInscricaoAtual();
+    if (sub) {
+      await fetch("/push/cancelar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+      await sub.unsubscribe();
+    }
+    pushMostrar(false); pushMsg("Notificações desativadas neste aparelho.");
+  }
+  document.addEventListener("change", async (e) => {
+    if (!e.target.closest || !e.target.closest("#push-prefs")) return;
+    const sub = await pushInscricaoAtual(); if (!sub) return;
+    const prefs = {}; document.querySelectorAll("#push-prefs input").forEach(i => { prefs[i.dataset.p] = i.checked; });
+    await fetch("/push/prefs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint, prefs }) });
+    pushMsg("✓ Preferências salvas.", "#22c55e");
+  });
 </script>
 </body>
 </html>

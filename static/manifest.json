@@ -1,0 +1,17 @@
+{
+  "name": "VS Track",
+  "short_name": "VS Track",
+  "description": "Painel de conversões e rastreamento",
+  "start_url": "/static/dashboard.html",
+  "scope": "/static/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030303",
+  "theme_color": "#030303",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/static/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
