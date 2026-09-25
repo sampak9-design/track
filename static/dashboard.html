@@ -512,6 +512,18 @@
     .inbox-filtro.ativo { background:rgba(86,215,253,.12); color:#56d7fd; border-color:rgba(86,215,253,.45); }
     .inbox-filtro.ativo span { color:#56d7fd; }
 
+    /* ─── Campos de filtro com a mesma altura ─── */
+    #sec-resumo select, #sec-trafego select, #sec-logs select, .fn-filtros select,
+    .periodo-input, #logs-telegram-id {
+      height:38px !important; box-sizing:border-box !important; font-size:.82rem !important;
+      border-radius:12px !important; padding-top:0 !important; padding-bottom:0 !important;
+      background-color:#0a1316 !important; border:1px solid #14282f !important; line-height:36px; }
+    #sec-resumo select, #sec-trafego select, #sec-logs select, .fn-filtros select { padding-left:12px !important; }
+    #sec-resumo > div:first-child { align-items:flex-start !important; }
+    #preset-grid .preset-btn, #sec-trafego .preset-btn { height:38px; display:inline-flex; align-items:center; }
+    #btn-att { height:38px; }
+    @media (max-width: 900px) { #preset-grid .preset-btn { height:34px; } #sec-resumo > div:first-child > .att-wrap { align-self:flex-end; } #btn-att { height:44px; } }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
