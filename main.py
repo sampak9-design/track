@@ -4388,6 +4388,8 @@ def _push_enviar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/stat
     except Exception as e:
         print(f"[PUSH ERRO preparar] {e}")
         return 0
+    from py_vapid import Vapid01
+    vapid = Vapid01.from_pem(chaves["vapid_privada"].encode())  # a lib não aceita PEM em texto
     payload = json.dumps({"titulo": titulo, "corpo": corpo, "url": url, "tipo": tipo}, ensure_ascii=False)
     enviados = 0
     for sub in subs:
@@ -4397,7 +4399,7 @@ def _push_enviar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/stat
             webpush(
                 subscription_info={"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}},
                 data=payload,
-                vapid_private_key=chaves["vapid_privada"],
+                vapid_private_key=vapid,
                 vapid_claims={"sub": "mailto:suporte@vstrack.app"},
                 ttl=3600,
             )
