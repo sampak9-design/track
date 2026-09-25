@@ -678,6 +678,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
     </div>
+    <div class="nav-item" onclick="mudarSecao('admin',this)" id="nav-admin" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      Admin
+    </div>
   </div>
 
   <div class="sidebar-bottom">
@@ -1093,6 +1097,24 @@
             <button class="panel-action" onclick="fecharTimeline()">Fechar ✕</button></div>
           <div id="fn-modal-conteudo"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ════ ADMIN ════ -->
+    <div class="secao" id="sec-admin">
+      <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:1.4rem;font-weight:700;color:#fcfcfc;margin-bottom:4px">Admin</h2>
+          <p style="font-size:0.82rem;color:#8a9599">Contas novas só acessam o VS Track depois que você aprovar.</p>
+        </div>
+        <button class="btn-atualizar" onclick="carregarAdmin()" style="height:38px">Atualizar</button>
+      </div>
+      <div class="cards-grid" id="admin-cards"></div>
+      <div class="panel">
+        <div class="tabela-wrap"><table>
+          <thead><tr><th>E-mail</th><th>Status</th><th>Criada em</th><th>Último acesso</th><th>Pageviews</th><th>Entradas</th><th></th></tr></thead>
+          <tbody id="admin-lista"><tr><td colspan="7" style="color:#8a9599">Carregando…</td></tr></tbody>
+        </table></div>
       </div>
     </div>
 
@@ -2902,7 +2924,7 @@
     depositos: "Depósitos", utms: "UTMs", membros: "Membros", logs: "Logs de Conversão",
     trafego: "Tráfego Meta", funil: "Funil da Página", ia: "Análise com IA", integracoes: "Pixels",
     canais: "Canais e Bots", tracker: "Gerador de Tracker",
-    solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster", configuracoes: "Configurações"
+    solicitacoes: "Solicitações de Entrada", automacao: "Automação", booster: "Booster", configuracoes: "Configurações", admin: "Admin"
   };
 
   // ── Stats / Resumo ──
@@ -3138,6 +3160,7 @@
     PROJETO_ID = data.session.user.app_metadata?.projeto_id || "";
     document.getElementById("user-email-disp").textContent = email;
     document.getElementById("user-avatar").textContent = email[0].toUpperCase();
+    verificarStatusConta();
     preencherWebhookURLs();
     definirDatasPadraoMes();
     carregar();
@@ -4037,6 +4060,7 @@
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "automacao") { abrirAutomacao(); }
     if (id === "booster") { abrirBooster(); }
+    if (id === "admin") { carregarAdmin(); }
   }
 
   // ── Análise com IA ──
@@ -7224,6 +7248,76 @@
     await fetch("/push/prefs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint, prefs }) });
     pushMsg("✓ Preferências salvas.", "#22c55e");
   });
+
+  // ── Status da conta (aprovação) e Admin ──
+  async function verificarStatusConta() {
+    try {
+      const r = await fetch("/auth/status");
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.status === "pendente" || d.status === "bloqueado") return mostrarContaBloqueada(d.status);
+      if (d.admin) document.getElementById("nav-admin").style.display = "";
+    } catch (e) {}
+  }
+  function mostrarContaBloqueada(status) {
+    const pend = status === "pendente";
+    const div = document.createElement("div");
+    div.id = "conta-bloqueio";
+    div.innerHTML = `<div style="position:fixed;inset:0;z-index:9999;background:#030303;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="max-width:420px;text-align:center;background:linear-gradient(180deg,rgba(17,43,51,.45),rgba(6,10,11,.95));border:1px solid rgba(86,215,253,.14);border-radius:24px;padding:32px 26px">
+        <img src="/static/logo-vstrack.png" style="width:190px;margin-bottom:18px">
+        <div style="font-size:1.15rem;font-weight:600;color:#fcfcfc;margin-bottom:8px">${pend ? "Conta aguardando aprovação" : "Conta bloqueada"}</div>
+        <div style="font-size:.85rem;color:#b5b5b5;line-height:1.6;margin-bottom:22px">${pend
+          ? "Sua conta foi criada e está em análise. Assim que for aprovada, é só entrar de novo."
+          : "O acesso desta conta foi bloqueado. Fale com o administrador."}</div>
+        <button onclick="sair()" style="background:#56d7fd;color:#031a20;border:none;padding:10px 22px;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit">Sair</button>
+      </div></div>`;
+    document.body.appendChild(div);
+  }
+
+  const ADMIN_STATUS = {
+    pendente:  '<span class="badge badge-yellow">Aguardando</span>',
+    aprovado:  '<span class="badge badge-green">Aprovada</span>',
+    bloqueado: '<span class="badge badge-red">Bloqueada</span>',
+  };
+  function fmtDataHora(v) {
+    if (!v) return "—";
+    const d = new Date(v); if (isNaN(d)) return "—";
+    return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+  async function carregarAdmin() {
+    const corpo = document.getElementById("admin-lista");
+    try {
+      const r = await fetch("/admin/usuarios");
+      if (!r.ok) throw new Error(r.status === 403 ? "Apenas o admin pode ver esta página." : "Erro " + r.status);
+      const { usuarios } = await r.json();
+      const n = (s) => usuarios.filter(u => u.status === s).length;
+      const card = (l, v, c) => `<div class="metric-card"><div class="metric-header"><span class="metric-label">${l}</span></div><div class="metric-value ${c}">${v}</div></div>`;
+      document.getElementById("admin-cards").innerHTML =
+        card("Contas", usuarios.length, "c-white") + card("Aguardando", n("pendente"), "c-yellow") +
+        card("Aprovadas", n("aprovado"), "c-green") + card("Bloqueadas", n("bloqueado"), "c-red");
+      corpo.innerHTML = usuarios.map(u => {
+        const acoes = u.admin ? '<span class="badge badge-blue">Admin</span>'
+          : u.status === "pendente" ? `<button onclick="adminStatus('${u.id}','aprovado')" style="background:#56d7fd;color:#031a20;border:none;padding:6px 12px;border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit;font-size:.76rem">Aprovar</button>
+               <button onclick="adminStatus('${u.id}','bloqueado')" style="background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.35);padding:6px 12px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.76rem;margin-left:6px">Recusar</button>`
+          : u.status === "aprovado" ? `<button onclick="adminStatus('${u.id}','bloqueado')" style="background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.35);padding:6px 12px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.76rem">Bloquear</button>`
+          : `<button onclick="adminStatus('${u.id}','aprovado')" style="background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:6px 12px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.76rem">Reativar</button>`;
+        return `<tr><td>${_escHtml(u.email || "")}</td><td>${ADMIN_STATUS[u.status] || u.status}</td>
+          <td>${fmtDataHora(u.criado_em)}</td><td>${fmtDataHora(u.ultimo_login)}</td>
+          <td>${(u.pageviews || 0).toLocaleString("pt-BR")}</td><td>${(u.entradas || 0).toLocaleString("pt-BR")}</td>
+          <td style="white-space:nowrap">${acoes}</td></tr>`;
+      }).join("") || '<tr><td colspan="7" style="color:#8a9599">Nenhuma conta.</td></tr>';
+    } catch (e) {
+      corpo.innerHTML = `<tr><td colspan="7" style="color:#ef4444">${_escHtml(e.message)}</td></tr>`;
+    }
+  }
+  async function adminStatus(uid, status) {
+    const txt = { aprovado: "Aprovar esta conta?", bloqueado: "Bloquear o acesso desta conta?" }[status];
+    if (txt && !confirm(txt)) return;
+    const r = await fetch(`/admin/usuarios/${uid}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); alert(d.detail || "Erro"); }
+    carregarAdmin();
+  }
 </script>
 </body>
 </html>

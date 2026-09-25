@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from supabase import create_client
 import uvicorn
@@ -37,7 +37,7 @@ app.add_middleware(
 # Rastreamento (/cadastro, /deposito, /ftd, /tracker/*) → vem do ?projeto= na URL.
 _ctx_projeto = contextvars.ContextVar("projeto_id", default=None)
 DEFAULT_PROJETO_ID = os.environ.get("DEFAULT_PROJETO_ID", "")
-_token_cache: dict = {}   # access_token -> (projeto_id, expira_em)
+_token_cache: dict = {}   # access_token -> (usuario, expira_em)
 
 
 def _pid() -> str:
@@ -45,7 +45,9 @@ def _pid() -> str:
     return _ctx_projeto.get() or DEFAULT_PROJETO_ID
 
 
-def _projeto_do_token(token: str) -> str:
+def _usuario_do_token(token: str) -> dict:
+    """Dados do login: projeto, status (aprovado | pendente | bloqueado) e se é admin.
+    Contas sem status (as antigas) contam como aprovadas."""
     agora = time.time()
     cache = _token_cache.get(token)
     if cache and cache[1] > agora:
@@ -54,11 +56,17 @@ def _projeto_do_token(token: str) -> str:
         resp = db.auth.get_user(token)
         user = getattr(resp, "user", None)
         meta = getattr(user, "app_metadata", None) or {}
-        pid  = meta.get("projeto_id") or ""
+        info = {"id": getattr(user, "id", None), "email": getattr(user, "email", None),
+                "projeto_id": meta.get("projeto_id") or "", "status": meta.get("status") or "aprovado",
+                "admin": bool(meta.get("admin"))}
     except Exception:
-        pid = ""
-    _token_cache[token] = (pid, agora + 60)
-    return pid
+        info = {"projeto_id": "", "status": "", "admin": False}
+    _token_cache[token] = (info, agora + 60)
+    return info
+
+
+def _projeto_do_token(token: str) -> str:
+    return _usuario_do_token(token).get("projeto_id") or ""
 
 
 @app.middleware("http")
@@ -66,9 +74,11 @@ async def resolver_projeto(request: Request, call_next):
     pid = None
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        pid = await asyncio.get_running_loop().run_in_executor(
-            None, _projeto_do_token, auth[7:]
-        ) or None
+        usuario = await asyncio.get_running_loop().run_in_executor(None, _usuario_do_token, auth[7:])
+        # Conta nova aguardando aprovação (ou bloqueada): só pode consultar o próprio status
+        if usuario.get("status") in ("pendente", "bloqueado") and not request.url.path.startswith("/auth/"):
+            return JSONResponse({"detail": "conta_" + usuario["status"]}, status_code=403)
+        pid = usuario.get("projeto_id") or None
     if not pid:
         pid = request.query_params.get("projeto") or None
     tok = _ctx_projeto.set(pid)
@@ -782,7 +792,7 @@ async def cadastrar_usuario(request: Request):
             "email": email,
             "password": senha,
             "email_confirm": True,
-            "app_metadata": {"projeto_id": projeto_id},
+            "app_metadata": {"projeto_id": projeto_id, "status": "pendente"},
         })
     except Exception as e:
         msg = str(e)
@@ -793,7 +803,8 @@ async def cadastrar_usuario(request: Request):
 
     user = getattr(res, "user", None)
     uid = getattr(user, "id", None) if user else None
-    print(f"[CADASTRO USUARIO] {email} criado (id={uid}, projeto={projeto_id})")
+    print(f"[CADASTRO USUARIO] {email} criado (id={uid}, projeto={projeto_id}) — aguardando aprovação")
+    notificar(DEFAULT_PROJETO_ID, "alerta", "🆕 Conta aguardando aprovação", f"{email} criou uma conta no VS Track")
     return {"status": "ok", "email": email, "id": uid, "projeto_id": projeto_id}
 
 
@@ -4462,6 +4473,68 @@ async def push_testar(request: Request):
                                 "Notificações ativadas neste aparelho!", "/static/dashboard.html",
                                 data.get("endpoint"))
     return {"status": "ok", "enviados": n}
+
+
+# ── Admin: aprovação de contas ───────────────────────────────────
+@app.get("/auth/status")
+def auth_status(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="login necessário")
+    u = _usuario_do_token(auth[7:])
+    return {"status": u.get("status"), "admin": u.get("admin"), "email": u.get("email")}
+
+
+def _exigir_admin(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    u = _usuario_do_token(auth[7:]) if auth.startswith("Bearer ") else {}
+    if not u.get("admin"):
+        raise HTTPException(status_code=403, detail="apenas admin")
+    return u
+
+
+def _contar(tabela: str, pid: str) -> int:
+    try:
+        return db.table(tabela).select("id", count="exact").eq("projeto_id", pid).limit(1).execute().count or 0
+    except Exception:
+        return 0
+
+
+@app.get("/admin/usuarios")
+def admin_usuarios(request: Request):
+    _exigir_admin(request)
+    lista = []
+    for u in db.auth.admin.list_users():
+        meta = u.app_metadata or {}
+        pid = meta.get("projeto_id") or ""
+        lista.append({
+            "id": u.id, "email": u.email, "projeto_id": pid,
+            "status": meta.get("status") or "aprovado", "admin": bool(meta.get("admin")),
+            "criado_em": str(u.created_at) if u.created_at else None,
+            "ultimo_login": str(u.last_sign_in_at) if u.last_sign_in_at else None,
+            "pageviews": _contar("tracker_pageviews", pid) if pid else 0,
+            "entradas": _contar("tracker_entradas", pid) if pid else 0,
+        })
+    ordem = {"pendente": 0, "aprovado": 1, "bloqueado": 2}
+    lista.sort(key=lambda x: (ordem.get(x["status"], 3), x["criado_em"] or ""))
+    return {"usuarios": lista}
+
+
+@app.post("/admin/usuarios/{uid}/status")
+async def admin_mudar_status(uid: str, request: Request):
+    eu = _exigir_admin(request)
+    novo = ((await request.json()).get("status") or "").strip()
+    if novo not in ("aprovado", "bloqueado", "pendente"):
+        raise HTTPException(status_code=400, detail="status inválido")
+    if uid == eu.get("id"):
+        raise HTTPException(status_code=400, detail="você não pode mudar o próprio status")
+    user = db.auth.admin.get_user_by_id(uid).user
+    meta = dict(user.app_metadata or {})
+    meta["status"] = novo
+    db.auth.admin.update_user_by_id(uid, {"app_metadata": meta})
+    _token_cache.clear()
+    print(f"[ADMIN] {eu.get('email')} mudou {user.email} para {novo}")
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
