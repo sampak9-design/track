@@ -7,6 +7,7 @@ import uvicorn
 import httpx
 import hashlib
 import json
+import re
 import time
 import asyncio
 import os
@@ -804,7 +805,7 @@ async def cadastrar_usuario(request: Request):
     user = getattr(res, "user", None)
     uid = getattr(user, "id", None) if user else None
     print(f"[CADASTRO USUARIO] {email} criado (id={uid}, projeto={projeto_id}) — aguardando aprovação")
-    notificar(DEFAULT_PROJETO_ID, "alerta", "🆕 Conta aguardando aprovação", f"{email} criou uma conta no VS Track")
+    notificar_evento(DEFAULT_PROJETO_ID, "conta_nova", email=email)
     return {"status": "ok", "email": email, "id": uid, "projeto_id": projeto_id}
 
 
@@ -1107,7 +1108,7 @@ async def cadastro(request: Request):
     await enviar_tiktok("CompleteRegistration", email=registro["email"], phone=registro["telefone"])
 
     print(f"[CADASTRO] {registro['email']} salvo (id={result_id})")
-    notificar(pid, "cadastro", "📝 Novo cadastro", _mascarar_email(registro["email"]) + (f" · {registro['utm_campaign']}" if registro.get("utm_campaign") else ""))
+    notificar_evento(pid, "cadastro", email=_mascarar_email(registro["email"]), campanha=registro.get("utm_campaign"))
     return {"status": "ok", "id": result_id}
 
 
@@ -1239,7 +1240,7 @@ async def deposito(request: Request):
     await enviar_tiktok("PlaceAnOrder", email=registro["email"], value=registro["valor"])
 
     print(f"[DEPOSITO] {registro['email']} - R$ {registro['valor']}")
-    notificar(pid, "deposito", "💵 Novo depósito", f"{_mascarar_email(registro['email'])} depositou R$ {registro['valor']}")
+    notificar_evento(pid, "deposito", email=_mascarar_email(registro["email"]), valor=registro["valor"], campanha=registro.get("utm_campaign"))
     return {"status": "ok", "id": result.data[0]["id"]}
 
 
@@ -1285,7 +1286,7 @@ async def deposito_get(request: Request):
         await enviar_tiktok("PlaceAnOrder", email=email, value=valor)
 
     print(f"[DEPOSITO GET] {email} - R$ {valor}")
-    notificar(pid, "deposito", "💵 Novo depósito", f"{_mascarar_email(email)} depositou R$ {valor}")
+    notificar_evento(pid, "deposito", email=_mascarar_email(email), valor=valor)
     return {"status": "ok", "id": (result.data[0]["id"] if result.data else None)}
 
 
@@ -1352,7 +1353,7 @@ async def _processar_ftd(data: dict, metodo: str = "POST"):
     await enviar_tiktok("PlaceAnOrder", email=email, value=valor)
 
     print(f"[FTD {metodo}] {email} - R$ {valor}")
-    notificar(pid, "ftd", "💰 Novo FTD!", f"{_mascarar_email(email)} fez o primeiro depósito de R$ {valor}")
+    notificar_evento(pid, "ftd", email=_mascarar_email(email), valor=valor, campanha=utms.get("utm_campaign"))
     return {"status": "ok", "id": result.data[0]["id"], "tipo": "ftd"}
 
 
@@ -1513,8 +1514,7 @@ async def telegram_webhook(request: Request):
                 try:
                     db.table("telegram_canais").delete().eq("telegram_id", str(chat_id)).execute()
                     print(f"[CANAL AUTO] Canal removido: {chat_title}")
-                    notificar(_pid(), "alerta", "⚠️ Bot removido do canal",
-                              f"O bot saiu de {chat_title}. Entradas desse canal não serão mais rastreadas.")
+                    notificar_evento(_pid(), "alerta_bot", canal=chat_title)
                 except Exception as e:
                     print(f"[CANAL AUTO ERRO] {e}")
 
@@ -1638,8 +1638,7 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         print(f"[TELEGRAM ERRO] {e}")
     if joined:
-        notificar(_pid(), "entrada", "👋 Entrou no canal",
-                  f"{first_name or username or user_id} · {chat_evento.get('title', '')}")
+        notificar_evento(_pid(), "entrada", nome=first_name or username or user_id, canal=chat_evento.get("title", ""))
 
     # Para JoinChannel/LeaveChannel: usa snapshot da última /tracker/entrada
     # action_source=website (igual ao funil do Pixel JS, melhor atribuição)
@@ -4375,33 +4374,26 @@ def _mascarar_email(email) -> str:
     return (nome[:2] + "***@" + dominio) if nome else "***@" + dominio
 
 
-def _push_enviar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/static/dashboard.html",
-                 endpoint: str = None) -> int:
-    """Envia a notificação para os aparelhos do projeto que ativaram esse tipo. Retorna quantos receberam."""
+def _push_para(subs: list, tipo: str, titulo: str, corpo: str, url: str = "/static/dashboard.html",
+               filtrar_prefs: bool = True) -> int:
+    """Envia para a lista de inscrições. Com filtrar_prefs, respeita o que cada aparelho ligou."""
     try:
         from pywebpush import webpush, WebPushException
-        chaves = _vapid_chaves()
-        q = db.table("push_inscricoes").select("id,endpoint,p256dh,auth,prefs").eq("projeto_id", pid)
-        if endpoint:
-            q = q.eq("endpoint", endpoint)
-        subs = q.execute().data or []
+        from py_vapid import Vapid01
+        vapid = Vapid01.from_pem(_vapid_chaves()["vapid_privada"].encode())  # a lib não aceita PEM em texto
     except Exception as e:
         print(f"[PUSH ERRO preparar] {e}")
         return 0
-    from py_vapid import Vapid01
-    vapid = Vapid01.from_pem(chaves["vapid_privada"].encode())  # a lib não aceita PEM em texto
     payload = json.dumps({"titulo": titulo, "corpo": corpo, "url": url, "tipo": tipo}, ensure_ascii=False)
     enviados = 0
     for sub in subs:
-        if not endpoint and not (sub.get("prefs") or {}).get(tipo):
+        if filtrar_prefs and not (sub.get("prefs") or {}).get(PUSH_CATEGORIA.get(tipo, tipo)):
             continue
         try:
             webpush(
                 subscription_info={"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}},
-                data=payload,
-                vapid_private_key=vapid,
-                vapid_claims={"sub": "mailto:suporte@vstrack.app"},
-                ttl=3600,
+                data=payload, vapid_private_key=vapid,
+                vapid_claims={"sub": "mailto:suporte@vstrack.app"}, ttl=3600,
             )
             enviados += 1
         except WebPushException as e:
@@ -4413,6 +4405,75 @@ def _push_enviar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/stat
         except Exception as e:
             print(f"[PUSH ERRO] {e}")
     return enviados
+
+
+def _push_enviar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/static/dashboard.html",
+                 endpoint: str = None) -> int:
+    """Envia para os aparelhos de um projeto (ou para um aparelho específico)."""
+    try:
+        q = db.table("push_inscricoes").select("id,endpoint,p256dh,auth,prefs").eq("projeto_id", pid)
+        if endpoint:
+            q = q.eq("endpoint", endpoint)
+        subs = q.execute().data or []
+    except Exception as e:
+        print(f"[PUSH ERRO buscar] {e}")
+        return 0
+    return _push_para(subs, tipo, titulo, corpo, url, filtrar_prefs=not endpoint)
+
+
+# Modelos das notificações automáticas (editáveis no Admin). Variáveis entre chaves.
+PUSH_MODELOS_PADRAO = {
+    "ftd":        {"nome": "Novo FTD", "quando": "Primeiro depósito de um lead",
+                   "titulo": "💰 Novo FTD!", "corpo": "{email} fez o primeiro depósito de R$ {valor}", "ativo": True},
+    "deposito":   {"nome": "Novo depósito", "quando": "Redepósito de um lead",
+                   "titulo": "💵 Novo depósito", "corpo": "{email} depositou R$ {valor}", "ativo": True},
+    "cadastro":   {"nome": "Novo cadastro", "quando": "Cadastro recebido da corretora",
+                   "titulo": "📝 Novo cadastro", "corpo": "{email} · {campanha}", "ativo": True},
+    "entrada":    {"nome": "Entrou no canal", "quando": "Alguém entra no canal do Telegram",
+                   "titulo": "👋 Entrou no canal", "corpo": "{nome} · {canal}", "ativo": True},
+    "alerta_bot": {"nome": "Bot removido", "quando": "O bot sai de um canal",
+                   "titulo": "⚠️ Bot removido do canal", "corpo": "O bot saiu de {canal}. Entradas desse canal não serão mais rastreadas.", "ativo": True},
+    "conta_nova": {"nome": "Conta aguardando aprovação", "quando": "Alguém cria conta no VS Track (só admin)",
+                   "titulo": "🆕 Conta aguardando aprovação", "corpo": "{email} criou uma conta no VS Track", "ativo": True},
+}
+# Qual opção do aparelho (Configurações) libera cada modelo
+PUSH_CATEGORIA = {"ftd": "ftd", "deposito": "deposito", "cadastro": "cadastro", "entrada": "entrada",
+                  "alerta_bot": "alerta", "conta_nova": "alerta"}
+PUSH_EXEMPLO = {"email": "jo***@gmail.com", "valor": "150,00", "campanha": "CAM 01 / 5 ADS", "nome": "João", "canal": "APOLLO IA | SEM GALE"}
+_push_modelos_cache: dict = {}
+
+
+def _push_modelos() -> dict:
+    agora = time.time()
+    if _push_modelos_cache.get("exp", 0) > agora:
+        return _push_modelos_cache["dados"]
+    salvos = {}
+    try:
+        r = db.table("configuracoes").select("valor").eq("projeto_id", "__global__").eq("chave", "push_modelos").execute().data
+        salvos = json.loads(r[0]["valor"]) if r else {}
+    except Exception:
+        pass
+    dados = {k: {**v, **{c: salvos.get(k, {}).get(c, v[c]) for c in ("titulo", "corpo", "ativo")}}
+             for k, v in PUSH_MODELOS_PADRAO.items()}
+    _push_modelos_cache.update({"dados": dados, "exp": agora + 60})
+    return dados
+
+
+def _preencher(texto: str, vars: dict) -> str:
+    out = re.sub(r"\{(\w+)\}", lambda m: str(vars.get(m.group(1)) or ""), texto or "")
+    out = re.sub(r"(\s*·\s*)+$", "", re.sub(r"^(\s*·\s*)+", "", out))  # tira separadores sobrando
+    return out.strip()
+
+
+def notificar_evento(pid: str, tipo: str, **vars):
+    """Monta a notificação pelo modelo do tipo (se estiver ativo) e envia em segundo plano."""
+    try:
+        m = _push_modelos().get(tipo)
+        if not m or not m.get("ativo"):
+            return
+        notificar(pid, tipo, _preencher(m["titulo"], vars), _preencher(m["corpo"], vars))
+    except Exception as e:
+        print(f"[PUSH ERRO modelo] {e}")
 
 
 def notificar(pid: str, tipo: str, titulo: str, corpo: str, url: str = "/static/dashboard.html"):
@@ -4537,6 +4598,114 @@ async def admin_mudar_status(uid: str, request: Request):
     _token_cache.clear()
     print(f"[ADMIN] {eu.get('email')} mudou {user.email} para {novo}")
     return {"status": "ok"}
+
+
+# ── Admin: notificações ──────────────────────────────────────────
+def _push_personalizadas() -> list:
+    try:
+        r = db.table("configuracoes").select("valor").eq("projeto_id", "__global__").eq("chave", "push_personalizadas").execute().data
+        return json.loads(r[0]["valor"]) if r else []
+    except Exception:
+        return []
+
+
+def _salvar_global(chave: str, valor):
+    txt = json.dumps(valor, ensure_ascii=False)
+    if db.table("configuracoes").select("chave").eq("projeto_id", "__global__").eq("chave", chave).execute().data:
+        db.table("configuracoes").update({"valor": txt}).eq("projeto_id", "__global__").eq("chave", chave).execute()
+    else:
+        db.table("configuracoes").insert({"chave": chave, "valor": txt, "projeto_id": "__global__"}).execute()
+
+
+@app.get("/admin/push")
+def admin_push(request: Request):
+    _exigir_admin(request)
+    emails = {}
+    try:
+        for u in db.auth.admin.list_users():
+            pid = (u.app_metadata or {}).get("projeto_id")
+            if pid:
+                emails.setdefault(pid, u.email)
+    except Exception:
+        pass
+    aparelhos = db.table("push_inscricoes").select("id,projeto_id,aparelho,criado_em,prefs") \
+        .order("criado_em", desc=True).execute().data or []
+    for a in aparelhos:
+        a["conta"] = emails.get(a["projeto_id"], a["projeto_id"][:8])
+    return {"aparelhos": aparelhos, "modelos": _push_modelos(), "personalizadas": _push_personalizadas(),
+            "variaveis": list(PUSH_EXEMPLO.keys()), "exemplo": PUSH_EXEMPLO}
+
+
+@app.post("/admin/push/modelos")
+async def admin_push_modelo(request: Request):
+    _exigir_admin(request)
+    d = await request.json()
+    tipo = d.get("tipo")
+    if tipo not in PUSH_MODELOS_PADRAO:
+        raise HTTPException(status_code=400, detail="modelo inválido")
+    atuais = {k: {c: v[c] for c in ("titulo", "corpo", "ativo")} for k, v in _push_modelos().items()}
+    if d.get("restaurar"):
+        atuais[tipo] = {c: PUSH_MODELOS_PADRAO[tipo][c] for c in ("titulo", "corpo", "ativo")}
+    else:
+        atuais[tipo] = {"titulo": (d.get("titulo") or "").strip()[:120], "corpo": (d.get("corpo") or "").strip()[:300],
+                        "ativo": bool(d.get("ativo"))}
+    _salvar_global("push_modelos", atuais)
+    _push_modelos_cache.clear()
+    return {"status": "ok", "modelo": _push_modelos()[tipo]}
+
+
+@app.post("/admin/push/personalizadas")
+async def admin_push_personalizada(request: Request):
+    _exigir_admin(request)
+    d = await request.json()
+    titulo, corpo = (d.get("titulo") or "").strip()[:120], (d.get("corpo") or "").strip()[:300]
+    if not titulo:
+        raise HTTPException(status_code=400, detail="informe o título")
+    lista = _push_personalizadas()
+    if d.get("id"):
+        lista = [{**x, "titulo": titulo, "corpo": corpo} if x["id"] == d["id"] else x for x in lista]
+    else:
+        lista.append({"id": uuid.uuid4().hex[:10], "titulo": titulo, "corpo": corpo})
+    _salvar_global("push_personalizadas", lista)
+    return {"status": "ok", "personalizadas": lista}
+
+
+@app.delete("/admin/push/personalizadas/{pid_}")
+def admin_push_personalizada_apagar(pid_: str, request: Request):
+    _exigir_admin(request)
+    lista = [x for x in _push_personalizadas() if x["id"] != pid_]
+    _salvar_global("push_personalizadas", lista)
+    return {"status": "ok", "personalizadas": lista}
+
+
+@app.delete("/admin/push/aparelhos/{aid}")
+def admin_push_aparelho_apagar(aid: int, request: Request):
+    _exigir_admin(request)
+    db.table("push_inscricoes").delete().eq("id", aid).execute()
+    return {"status": "ok"}
+
+
+@app.post("/admin/push/enviar")
+async def admin_push_enviar(request: Request):
+    """Envia agora. alvo: "todos" | id do aparelho. Conteúdo: modelo (com dados de exemplo) ou título/corpo."""
+    _exigir_admin(request)
+    d = await request.json()
+    if d.get("modelo"):
+        m = _push_modelos().get(d["modelo"])
+        if not m:
+            raise HTTPException(status_code=400, detail="modelo inválido")
+        titulo, corpo, tipo = _preencher(m["titulo"], PUSH_EXEMPLO), _preencher(m["corpo"], PUSH_EXEMPLO), d["modelo"]
+    else:
+        titulo, corpo, tipo = (d.get("titulo") or "").strip(), (d.get("corpo") or "").strip(), "personalizada"
+    if not titulo:
+        raise HTTPException(status_code=400, detail="notificação sem título")
+    q = db.table("push_inscricoes").select("id,endpoint,p256dh,auth,prefs")
+    alvo = d.get("alvo", "todos")
+    if alvo != "todos":
+        q = q.eq("id", int(alvo))
+    subs = q.execute().data or []
+    n = await asyncio.to_thread(_push_para, subs, tipo, titulo, corpo, "/static/dashboard.html", False)
+    return {"status": "ok", "enviados": n, "total": len(subs)}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

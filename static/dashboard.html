@@ -588,6 +588,32 @@
     @keyframes obSobe { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
     @keyframes obFade { from { opacity:0; } to { opacity:1; } }
 
+    /* ─── Admin: notificações ─── */
+    .adm-h3 { font-size:1.05rem; font-weight:600; color:#fcfcfc; margin:22px 0 12px; }
+    .adm-modelos { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+    .adm-modelo { background:#060a0b; border:1px solid #14282f; border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+    .adm-modelo.off { opacity:.55; }
+    .adm-modelo-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+    .adm-modelo-nome { font-size:.88rem; font-weight:600; color:#fcfcfc; }
+    .adm-modelo-quando { font-size:.72rem; color:#8a9599; margin-top:2px; }
+    .adm-modelo input[type=text], .adm-modelo textarea { width:100%; background:#0a1316; border:1px solid #14282f; color:#fcfcfc;
+      border-radius:10px !important; padding:8px 10px; font-size:.8rem; font-family:inherit; outline:none; resize:vertical; }
+    .adm-modelo input[type=text]:focus, .adm-modelo textarea:focus { border-color:#56d7fd; }
+    .adm-preview { display:flex; gap:10px; align-items:flex-start; background:rgba(255,255,255,.05); border-radius:14px; padding:10px; }
+    .adm-preview img { width:30px; height:30px; border-radius:8px; }
+    .adm-preview b { display:block; font-size:.78rem; color:#fcfcfc; }
+    .adm-preview span { font-size:.74rem; color:#b5b5b5; }
+    .adm-acoes { display:flex; gap:6px; flex-wrap:wrap; }
+    .adm-acoes button { padding:6px 12px; border-radius:10px; font-size:.74rem; font-weight:600; font-family:inherit; cursor:pointer;
+      background:transparent; color:#d5dcdf; border:1px solid rgba(86,215,253,.22); }
+    .adm-acoes button.prim { background:#56d7fd; color:#031a20; border:none; }
+    .adm-acoes button.perigo { color:#f87171; border-color:rgba(248,113,113,.35); }
+    .adm-switch { display:flex; gap:6px; align-items:center; font-size:.72rem; color:#8a9599; cursor:pointer; white-space:nowrap; }
+    .adm-switch input { accent-color:#56d7fd; width:15px; height:15px; }
+    .adm-chip { display:inline-block; font-size:.66rem; padding:1px 7px; border-radius:999px; background:#0f1d22; color:#b5b5b5; margin:1px 2px 1px 0; }
+    .adm-chip.on { background:rgba(86,215,253,.12); color:#56d7fd; }
+    #adm-push-alvo { background:#0a1316; border:1px solid #14282f; color:#fcfcfc; padding:0 30px 0 10px; height:36px; border-radius:12px; font-size:.8rem; font-family:inherit; }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -1138,6 +1164,34 @@
           <thead><tr><th>E-mail</th><th>Status</th><th>Criada em</th><th>Último acesso</th><th>Pageviews</th><th>Entradas</th><th></th></tr></thead>
           <tbody id="admin-lista"><tr><td colspan="7" style="color:#8a9599">Carregando…</td></tr></tbody>
         </table></div>
+      </div>
+
+      <h3 class="adm-h3">Notificações</h3>
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Aparelhos com notificações ativadas</div>
+          <div class="panel-subtitle">Quem ativou no celular ou computador</div></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:.74rem;color:#8a9599">Enviar testes para</span>
+            <select id="adm-push-alvo" style="min-width:200px"></select>
+          </div></div>
+        <div class="tabela-wrap"><table>
+          <thead><tr><th>Conta</th><th>Aparelho</th><th>Ativado em</th><th>Recebe</th><th></th></tr></thead>
+          <tbody id="adm-push-aparelhos"><tr><td colspan="5" style="color:#8a9599">Carregando…</td></tr></tbody>
+        </table></div>
+        <div id="adm-push-msg" style="font-size:.78rem;margin-top:10px"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Notificações automáticas</div>
+          <div class="panel-subtitle">Enviadas sozinhas quando o evento acontece. Variáveis: <span id="adm-push-vars"></span></div></div></div>
+        <div id="adm-push-modelos" class="adm-modelos"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Notificações personalizadas</div>
+          <div class="panel-subtitle">Crie avisos e envie quando quiser</div></div>
+          <button class="btn-atualizar" onclick="admPushNova()" style="height:36px">+ Nova notificação</button></div>
+        <div id="adm-push-personalizadas" class="adm-modelos"></div>
       </div>
     </div>
 
@@ -2643,7 +2697,6 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button id="push-ativar" onclick="pushAtivar()" style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Ativar neste aparelho</button>
-          <button id="push-testar" onclick="pushTestar()" style="display:none;background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600">Enviar teste</button>
           <button id="push-desativar" onclick="pushDesativar()" style="display:none;background:transparent;color:#d5dcdf;border:1px solid rgba(86,215,253,.22);padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-weight:600">Desativar</button>
         </div>
         <div id="push-msg" style="font-size:0.76rem;margin-top:10px"></div>
@@ -4083,7 +4136,7 @@
     if (id === "solicitacoes") { carregarSolicitacoes(); }
     if (id === "automacao") { abrirAutomacao(); }
     if (id === "booster") { abrirBooster(); }
-    if (id === "admin") { carregarAdmin(); }
+    if (id === "admin") { carregarAdmin(); carregarAdminPush(); }
   }
 
   // ── Análise com IA ──
@@ -7246,7 +7299,6 @@
   }
   function pushMostrar(ativo, prefs) {
     document.getElementById("push-ativar").style.display = ativo ? "none" : "";
-    document.getElementById("push-testar").style.display = ativo ? "" : "none";
     document.getElementById("push-desativar").style.display = ativo ? "" : "none";
     document.getElementById("push-prefs").style.display = ativo ? "" : "none";
     document.getElementById("push-status").innerHTML = ativo
@@ -7289,7 +7341,7 @@
       if (!r.ok) throw new Error("Erro " + r.status);
       const d = await r.json();
       pushMostrar(true, d.prefs);
-      pushMsg("✓ Ativado! Toque em “Enviar teste” para conferir.", "#22c55e");
+      pushMsg("✓ Ativado! Você vai receber os avisos escolhidos abaixo.", "#22c55e");
     } catch (e) { pushMsg("✗ Não foi possível ativar: " + e.message, "#ef4444"); }
   }
   async function pushTestar() {
@@ -7451,8 +7503,7 @@
     await pushAtivar();
     if (Notification.permission === "granted") {
       obMostrar(OB_TOPO("Notificações ativadas ✓", "Vamos te avisar quando entrar FTD ou depósito.")
-        + `<div class="ob-botoes"><button class="ob-sec" onclick="obFechar()">Fechar</button>
-           <button class="ob-prim" onclick="pushTestar();obFechar()">Enviar teste</button></div>`);
+        + `<div class="ob-botoes"><button class="ob-prim" onclick="obFechar()">Pronto</button></div>`);
     } else {
       obAdiar("notif", 7);
       obMostrar(OB_TOPO("Notificações bloqueadas", EH_IOS
@@ -7482,6 +7533,123 @@
     } catch (e) {}
     if (!obAdiado("notif")) obNotificacoes();
   }
+
+  // ── Admin: notificações ──
+  let admPush = null;
+  const PUSH_NOMES = { ftd: "FTD", deposito: "Depósito", cadastro: "Cadastro", entrada: "Entrada", alerta: "Alertas" };
+  function admPushMsg(t, cor) { const m = document.getElementById("adm-push-msg"); m.textContent = t; m.style.color = cor || "#b5b5b5"; }
+  function admPreencher(txt) {
+    return (txt || "").replace(/\{(\w+)\}/g, (_, k) => (admPush.exemplo || {})[k] || "")
+      .replace(/^(\s*·\s*)+|(\s*·\s*)+$/g, "").trim();
+  }
+  async function carregarAdminPush() {
+    try {
+      const r = await fetch("/admin/push");
+      if (!r.ok) return;
+      admPush = await r.json();
+      renderAdminPush();
+    } catch (e) {}
+  }
+  function renderAdminPush() {
+    const ap = admPush.aparelhos || [];
+    const sel = document.getElementById("adm-push-alvo"), atual = sel.value;
+    sel.innerHTML = `<option value="todos">Todos os aparelhos (${ap.length})</option>` +
+      ap.map(a => `<option value="${a.id}">${_escHtml(a.conta)} · ${_escHtml(a.aparelho || "aparelho")}</option>`).join("");
+    if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
+
+    document.getElementById("adm-push-aparelhos").innerHTML = ap.length ? ap.map(a => `<tr>
+        <td>${_escHtml(a.conta)}</td><td>${_escHtml(a.aparelho || "—")}</td><td>${fmtDataHora(a.criado_em)}</td>
+        <td>${Object.keys(PUSH_NOMES).map(k => `<span class="adm-chip ${a.prefs && a.prefs[k] ? "on" : ""}">${PUSH_NOMES[k]}</span>`).join("")}</td>
+        <td style="white-space:nowrap"><div class="adm-acoes">
+          <button onclick="admPushEnviar({alvo:'${a.id}', titulo:'🔔 VS Track', corpo:'Teste enviado pelo admin'})">Enviar teste</button>
+          <button class="perigo" onclick="admPushRemoverAparelho(${a.id})">Remover</button></div></td></tr>`).join("")
+      : '<tr><td colspan="5" style="color:#8a9599">Nenhum aparelho ativou as notificações ainda.</td></tr>';
+
+    document.getElementById("adm-push-vars").innerHTML = (admPush.variaveis || []).map(v => `<code style="color:#56d7fd">{${v}}</code>`).join(" ");
+
+    document.getElementById("adm-push-modelos").innerHTML = Object.entries(admPush.modelos).map(([k, m]) => `
+      <div class="adm-modelo ${m.ativo ? "" : "off"}" id="adm-m-${k}">
+        <div class="adm-modelo-topo"><div><div class="adm-modelo-nome">${_escHtml(m.nome)}</div><div class="adm-modelo-quando">${_escHtml(m.quando)}</div></div>
+          <label class="adm-switch"><input type="checkbox" ${m.ativo ? "checked" : ""} data-c="ativo"> Ativa</label></div>
+        <input type="text" data-c="titulo" value="${_escHtml(m.titulo)}" placeholder="Título" oninput="admPreview('${k}')">
+        <textarea data-c="corpo" rows="2" placeholder="Texto" oninput="admPreview('${k}')">${_escHtml(m.corpo)}</textarea>
+        <div class="adm-preview"><img src="/static/icon-192.png"><div><b data-p="t"></b><span data-p="c"></span></div></div>
+        <div class="adm-acoes">
+          <button class="prim" onclick="admSalvarModelo('${k}')">Salvar</button>
+          <button onclick="admPushEnviar({modelo:'${k}'})">Testar</button>
+          <button onclick="admSalvarModelo('${k}', true)">Restaurar padrão</button></div>
+      </div>`).join("");
+    Object.keys(admPush.modelos).forEach(k => admPreview(k));
+
+    const pers = admPush.personalizadas || [];
+    document.getElementById("adm-push-personalizadas").innerHTML = pers.length ? pers.map(p => `
+      <div class="adm-modelo" id="adm-p-${p.id}">
+        <input type="text" data-c="titulo" value="${_escHtml(p.titulo)}" placeholder="Título" oninput="admPreview('${p.id}', true)">
+        <textarea data-c="corpo" rows="2" placeholder="Texto" oninput="admPreview('${p.id}', true)">${_escHtml(p.corpo)}</textarea>
+        <div class="adm-preview"><img src="/static/icon-192.png"><div><b data-p="t"></b><span data-p="c"></span></div></div>
+        <div class="adm-acoes">
+          <button class="prim" onclick="admEnviarPersonalizada('${p.id}')">Enviar agora</button>
+          <button onclick="admSalvarPersonalizada('${p.id}')">Salvar</button>
+          <button class="perigo" onclick="admApagarPersonalizada('${p.id}')">Excluir</button></div>
+      </div>`).join("") : '<div style="color:#8a9599;font-size:.8rem">Nenhuma ainda. Clique em “+ Nova notificação”.</div>';
+    pers.forEach(p => admPreview(p.id, true));
+  }
+  function admCard(id, pers) { return document.getElementById((pers ? "adm-p-" : "adm-m-") + id); }
+  function admPreview(id, pers) {
+    const c = admCard(id, pers); if (!c) return;
+    c.querySelector('[data-p="t"]').textContent = admPreencher(c.querySelector('[data-c="titulo"]').value);
+    c.querySelector('[data-p="c"]').textContent = admPreencher(c.querySelector('[data-c="corpo"]').value);
+  }
+  async function admSalvarModelo(k, restaurar) {
+    const c = admCard(k);
+    const body = restaurar ? { tipo: k, restaurar: true } : { tipo: k,
+      titulo: c.querySelector('[data-c="titulo"]').value, corpo: c.querySelector('[data-c="corpo"]').value,
+      ativo: c.querySelector('[data-c="ativo"]').checked };
+    const r = await fetch("/admin/push/modelos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (r.ok) { admPushMsg("✓ Modelo salvo.", "#22c55e"); carregarAdminPush(); } else admPushMsg("✗ Erro ao salvar.", "#ef4444");
+  }
+  async function admPushEnviar(body) {
+    body.alvo = body.alvo || document.getElementById("adm-push-alvo").value;
+    admPushMsg("Enviando…");
+    const r = await fetch("/admin/push/enviar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return admPushMsg("✗ " + (d.detail || "Erro"), "#ef4444");
+    admPushMsg(d.enviados ? `✓ Enviada para ${d.enviados} de ${d.total} aparelho(s).` : `✗ Nenhum aparelho recebeu (${d.total} no alvo). Aparelhos inválidos são removidos automaticamente.`,
+      d.enviados ? "#22c55e" : "#ef4444");
+    if (d.enviados < d.total) carregarAdminPush();
+  }
+  async function admPushRemoverAparelho(id) {
+    if (!confirm("Remover este aparelho? Ele deixa de receber notificações.")) return;
+    await fetch("/admin/push/aparelhos/" + id, { method: "DELETE" }); carregarAdminPush();
+  }
+  async function admPushNova() {
+    const r = await fetch("/admin/push/personalizadas", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ titulo: "📢 Aviso", corpo: "Escreva aqui a mensagem" }) });
+    if (r.ok) { await carregarAdminPush(); admPushMsg("Nova notificação criada — edite e clique em Salvar ou Enviar agora."); }
+  }
+  function admDadosPersonalizada(id) {
+    const c = admCard(id, true);
+    return { id, titulo: c.querySelector('[data-c="titulo"]').value, corpo: c.querySelector('[data-c="corpo"]').value };
+  }
+  async function admSalvarPersonalizada(id) {
+    const r = await fetch("/admin/push/personalizadas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(admDadosPersonalizada(id)) });
+    admPushMsg(r.ok ? "✓ Salva." : "✗ Erro ao salvar.", r.ok ? "#22c55e" : "#ef4444");
+  }
+  async function admEnviarPersonalizada(id) {
+    const d = admDadosPersonalizada(id);
+    const alvo = document.getElementById("adm-push-alvo");
+    if (!confirm(`Enviar “${d.titulo}” para: ${alvo.options[alvo.selectedIndex].text}?`)) return;
+    await admSalvarPersonalizada(id);
+    admPushEnviar({ titulo: d.titulo, corpo: d.corpo });
+  }
+  async function admApagarPersonalizada(id) {
+    if (!confirm("Excluir esta notificação?")) return;
+    await fetch("/admin/push/personalizadas/" + id, { method: "DELETE" }); carregarAdminPush();
+  }
+  document.addEventListener("change", (e) => {
+    const card = e.target.closest && e.target.closest(".adm-modelo");
+    if (card && e.target.dataset.c === "ativo") card.classList.toggle("off", !e.target.checked);
+  });
 </script>
 </body>
 </html>
