@@ -2949,6 +2949,16 @@
     if (window._chartEvolucao) window._chartEvolucao.destroy();
     window._chartEvolucao = new Chart(ctx, {
       type: "line",
+      plugins: [{
+        id: "linhaVertical",
+        afterDatasetsDraw(chart) {
+          const a = chart.tooltip && chart.tooltip.getActiveElements();
+          if (!a || !a.length) return;
+          const x = a[0].element.x, { top, bottom } = chart.chartArea, c = chart.ctx;
+          c.save(); c.beginPath(); c.setLineDash([4, 4]); c.moveTo(x, top); c.lineTo(x, bottom);
+          c.lineWidth = 1; c.strokeStyle = "rgba(86,215,253,0.45)"; c.stroke(); c.restore();
+        },
+      }],
       data: {
         labels: dados.map(d => {
           // Se já vier no formato HH:00 (granularidade por hora), retorna direto
@@ -2966,7 +2976,16 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: "#d5dcdf", font: { size: 11 } } } },
+        // Balão com todas as linhas daquele horário, em qualquer ponto do eixo X
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { labels: { color: "#d5dcdf", font: { size: 11 } } },
+          tooltip: {
+            displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4, usePointStyle: true,
+            backgroundColor: "rgba(6,12,14,0.95)", borderColor: "rgba(86,215,253,0.35)", borderWidth: 1,
+            titleColor: "#56d7fd", bodyColor: "#fcfcfc", padding: 10,
+          },
+        },
         scales: {
           x: { grid: { display: false }, ticks: { color: "#8a9599", font: { size: 10 } } },
           y: { grid: { color: "rgba(255,255,255,0.05)" }, border: { dash: [4, 4], display: false }, ticks: { color: "#8a9599", font: { size: 11 } }, beginAtZero: true }
