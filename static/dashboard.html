@@ -524,6 +524,22 @@
     #btn-att { height:38px; }
     @media (max-width: 900px) { #preset-grid .preset-btn { height:34px; } #sec-resumo > div:first-child > .att-wrap { align-self:flex-end; } #btn-att { height:44px; } }
 
+    /* ─── Filtros do Funil ─── */
+    .fn-atualizar { height:38px; }
+    @media (max-width: 900px) {
+      .fn-filtros { display:grid !important; grid-template-columns:1fr 1fr 44px; gap:10px !important; align-items:end; }
+      .fn-filtros > div { min-width:0 !important; }
+      .fn-filtros > .periodo-wrap { grid-column:1 / -1; }
+      .fn-filtros > div:nth-child(3) { grid-column:2 / -1; }
+      .fn-filtros > div:nth-child(4) { grid-column:1 / 3; }
+      .fn-filtros select, .fn-filtros .periodo-input { width:100% !important; min-width:0 !important; }
+      .fn-atualizar { grid-column:3; width:44px; height:38px !important; padding:0; justify-content:center; gap:0; border-radius:12px;
+        background:linear-gradient(180deg, rgba(17,43,51,.55), rgba(6,10,11,.95)), #070c0e !important;
+        border:1px solid rgba(86,215,253,.22) !important; color:#56d7fd !important; box-shadow:none !important; }
+      .fn-atualizar span { display:none; }
+      .fn-atualizar svg { width:18px; height:18px; }
+    }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
@@ -1003,7 +1019,7 @@
           <select id="fn-device" onchange="carregarFunil()"><option value="">Todos</option><option value="mobile">Celular</option><option value="desktop">Computador</option><option value="tablet">Tablet</option></select></div>
         <div><label>Campanha</label>
           <select id="fn-campanha" onchange="carregarFunil()"><option value="">Todas</option></select></div>
-        <button class="btn-atualizar" onclick="carregarFunil()" style="height:33px">Atualizar</button>
+        <button class="btn-atualizar fn-atualizar" onclick="carregarFunil()" title="Atualizar" aria-label="Atualizar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span>Atualizar</span></button>
       </div>
 
       <div class="cards-grid" id="fn-cards"></div>
