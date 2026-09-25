@@ -2391,7 +2391,7 @@
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:0.95rem;font-weight:700;color:#fcfcfc">Campanhas</div>
-          <button onclick="carregarCampanhas()"
+          <button onclick="carregarCampanhasBooster()"
             style="background:transparent;border:1px solid rgba(86,215,253,.22);color:#d5dcdf;padding:6px 12px;border-radius:12px;cursor:pointer;font-size:0.74rem;font-family:inherit">↻ Atualizar</button>
         </div>
         <div id="b-lista-campanhas"></div>
@@ -4988,7 +4988,7 @@
     });
     if (tab === "contas") carregarBoosterContas();
     if (tab === "config") carregarBoosterConfig();
-    if (tab === "campanhas") { renderEmojisCampanha(); carregarCampanhas(); }
+    if (tab === "campanhas") { renderEmojisCampanha(); carregarCampanhasBooster(); }
     if (tab === "auto") carregarBoosterAuto();
     if (tab === "status") carregarStatusBooster();
   }
@@ -5391,7 +5391,7 @@
       msg.style.color = "#22c55e"; msg.style.display = "inline";
       setTimeout(() => { msg.style.display = "none"; }, 4000);
       document.getElementById("campc-link").value = "";
-      carregarCampanhas();
+      carregarCampanhasBooster();
     } catch(e) {
       msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
     } finally {
@@ -5430,7 +5430,7 @@
       msg.textContent = "✓ Campanha criada e iniciada"; msg.style.color = "#22c55e"; msg.style.display = "inline";
       setTimeout(() => { msg.style.display = "none"; }, 3000);
       document.getElementById("camp-link").value = "";
-      carregarCampanhas();
+      carregarCampanhasBooster();
     } catch(e) {
       msg.textContent = "✗ " + e.message; msg.style.color = "#ef4444"; msg.style.display = "inline";
     } finally {
@@ -5453,7 +5453,7 @@
     </span>`;
   }
 
-  async function carregarCampanhas() {
+  async function carregarCampanhasBooster() {
     const cont = document.getElementById("b-lista-campanhas");
     try {
       const r = await fetch("/booster/campanhas");
@@ -5504,7 +5504,7 @@
     if (!confirm("Cancelar campanha? Ações já agendadas serão interrompidas.")) return;
     try {
       await fetch(`/booster/campanhas/${id}/cancelar`, {method:"POST"});
-      carregarCampanhas();
+      carregarCampanhasBooster();
     } catch(e) { alert("✗ " + e.message); }
   }
 
@@ -5512,7 +5512,7 @@
     if (!confirm("Deletar campanha? Histórico de ações também será removido.")) return;
     try {
       await fetch(`/booster/campanhas/${id}`, {method:"DELETE"});
-      carregarCampanhas();
+      carregarCampanhasBooster();
     } catch(e) { alert("✗ " + e.message); }
   }
 
@@ -6254,7 +6254,47 @@
     localStorage.setItem("camp_colunas", JSON.stringify(arr));
   }
 
+  // Ordenação: padrão = ativas primeiro, depois maior gasto. Clique no título da coluna para mudar.
+  let campOrdem = { key: "padrao", dir: -1 };
+  const CAMP_ORDENAVEIS = ["status","nome","spend","impressions","reach","clicks","ctr","cpc","cpm","frequency","resultados","custo_resultado","joinchannel","custo_join"];
+  function valorOrdem(c, key) {
+    const ins = c.insights || {}, num = v => parseFloat(v) || 0;
+    const res = () => extrairResultado(c).value || 0;
+    switch (key) {
+      case "status": return (c.effective_status || c.status) === "ACTIVE" ? 1 : 0;
+      case "nome": return (c.name || "").toLowerCase();
+      case "resultados": return res();
+      case "custo_resultado": { const r = res(); return r > 0 ? num(ins.spend) / r : Infinity; }
+      case "joinchannel": return extrairJoinChannelCamp(c) || 0;
+      case "custo_join": { const j = extrairJoinChannelCamp(c); return j > 0 ? num(ins.spend) / j : Infinity; }
+      default: return num(ins[key]);
+    }
+  }
+  function ordenarCampanhas(camps) {
+    const k = campOrdem.key, d = campOrdem.dir;
+    return [...camps].sort((a, b) => {
+      if (k === "padrao") {
+        const s = valorOrdem(b, "status") - valorOrdem(a, "status");
+        return s || (valorOrdem(b, "spend") - valorOrdem(a, "spend"));
+      }
+      const va = valorOrdem(a, k), vb = valorOrdem(b, k);
+      const cmp = typeof va === "string" ? va.localeCompare(vb, "pt-BR") : (va === vb ? 0 : va > vb ? 1 : -1);
+      return cmp * d || (valorOrdem(b, "spend") - valorOrdem(a, "spend"));
+    });
+  }
+  function ordenarPor(key) {
+    if (campOrdem.key === key) {
+      // 2º clique inverte; 3º volta ao padrão
+      if (campOrdem.dir === (key === "nome" ? 1 : -1)) campOrdem.dir *= -1;
+      else campOrdem = { key: "padrao", dir: -1 };
+    } else {
+      campOrdem = { key, dir: key === "nome" ? 1 : -1 };
+    }
+    filtrarCampanhas();
+  }
+
   function renderCampanhas(camps) {
+    camps = ordenarCampanhas(camps);
     const tb = document.getElementById("t-campanhas");
     const head = document.getElementById("camp-header");
     const cols = getColunasAtivas();
@@ -6267,7 +6307,10 @@
       if (c.key === "selecionar") {
         return `<th style="text-align:center;padding:10px 14px;border-bottom:1px solid #14282f"><input type="checkbox" ${todasSel?"checked":""} onchange="selecionarTodas(this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:#56d7fd"></th>`;
       }
-      return `<th style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:#8a9599;font-weight:600;text-transform:uppercase;border-bottom:1px solid #14282f">${c.label}</th>`;
+      const ord = CAMP_ORDENAVEIS.includes(c.key);
+      const ativo = campOrdem.key === c.key;
+      const seta = ativo ? (campOrdem.dir === 1 ? " ▲" : " ▼") : (campOrdem.key === "padrao" && c.key === "spend" ? " ▼" : "");
+      return `<th ${ord ? `onclick="ordenarPor('${c.key}')" title="Ordenar"` : ""} style="text-align:${c.align};padding:10px 14px;font-size:0.72rem;color:${ativo ? "#56d7fd" : "#8a9599"};font-weight:600;text-transform:uppercase;border-bottom:1px solid #14282f;${ord ? "cursor:pointer;user-select:none;white-space:nowrap" : ""}">${c.label}${seta}</th>`;
     }).join("");
 
     document.getElementById("camp-count").textContent = camps.length;
