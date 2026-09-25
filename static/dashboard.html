@@ -465,9 +465,10 @@
     /* ─── Campo de período + calendário ─── */
     .periodo-campo { position:relative; display:flex; align-items:center; }
     .periodo-campo svg { position:absolute; left:12px; color:#56d7fd; pointer-events:none; }
-    #stats-periodo { width:100%; min-width:210px; background:#0a1316; border:1px solid #14282f; color:#fcfcfc;
+    .periodo-input { width:100%; min-width:200px; background:#0a1316; border:1px solid #14282f; color:#fcfcfc;
       padding:8px 12px 8px 36px; border-radius:12px; font-size:.82rem; font-family:inherit; outline:none; cursor:pointer; }
-    #stats-periodo:focus { border-color:#56d7fd; box-shadow:0 0 0 3px rgba(86,215,253,.12); }
+    .periodo-campo .periodo-input { padding:8px 12px 8px 36px !important; }
+    .periodo-input:focus { border-color:#56d7fd; box-shadow:0 0 0 3px rgba(86,215,253,.12); }
     .flatpickr-calendar { background:#0a1316; border:1px solid rgba(86,215,253,.18); border-radius:18px;
       box-shadow:0 20px 50px rgba(0,0,0,.6); font-family:'Figtree','Inter',sans-serif; }
     .flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after,
@@ -475,6 +476,9 @@
     .flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months,
     .flatpickr-current-month input.cur-year { color:#fcfcfc; fill:#fcfcfc; background:transparent; }
     .flatpickr-current-month .flatpickr-monthDropdown-months option { background:#0a1316; }
+    .flatpickr-current-month span.cur-month { color:#fcfcfc; font-weight:600; }
+    .flatpickr-current-month span.cur-month:hover, .flatpickr-current-month .numInputWrapper:hover { background:transparent; }
+    .fn-filtros .periodo-wrap { min-width:220px; }
     .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { color:#56d7fd; fill:#56d7fd; }
     .flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill:#8be5fe; }
     span.flatpickr-weekday { color:#8a9599; background:transparent; }
@@ -535,7 +539,7 @@
       #preset-grid .preset-btn { padding:7px 9px; font-size:.76rem; white-space:nowrap; }
       .topbar { padding:0 14px; }
       .sidebar-logo { height:auto; padding:14px 10px; }
-      #stats-periodo { min-width:0; }
+      .periodo-input { min-width:0; }
       .flatpickr-calendar { max-width:calc(100vw - 20px); }
     }
     @media (max-width: 420px) {
@@ -674,7 +678,7 @@
           <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Período</div>
           <div class="periodo-campo">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            <input type="text" id="stats-periodo" readonly placeholder="Todo o período">
+            <input type="text" id="stats-periodo" class="periodo-input" readonly placeholder="Todo o período">
           </div>
           <input type="hidden" id="stats-inicio">
           <input type="hidden" id="stats-fim">
@@ -977,8 +981,9 @@
       </style>
 
       <div class="fn-filtros">
-        <div><label>Data inicial</label><input type="date" id="fn-inicio" onchange="carregarFunil()"></div>
-        <div><label>Data final</label><input type="date" id="fn-fim" onchange="carregarFunil()"></div>
+        <div class="periodo-wrap"><label>Período</label>
+            <div class="periodo-campo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><input type="text" id="fn-periodo" class="periodo-input" readonly placeholder="Todo o período"></div>
+            <input type="hidden" id="fn-inicio"><input type="hidden" id="fn-fim"></div>
         <div><label>Idioma</label>
           <select id="fn-lang" onchange="carregarFunil()"><option value="">Todos</option><option value="pt">Português</option><option value="es">Espanhol (MX)</option></select></div>
         <div><label>Aparelho</label>
@@ -1357,13 +1362,10 @@
               <option value="">Selecione uma conta</option>
             </select>
           </div>
-          <div>
-            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Inicial</div>
-            <input id="trafego-data-inicio" onchange="carregarTrafego();carregarCampanhas()" type="date" style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
-          </div>
-          <div>
-            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Final</div>
-            <input id="trafego-data-fim" onchange="carregarTrafego();carregarCampanhas()" type="date" style="background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          <div class="periodo-wrap">
+            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Período</div>
+            <div class="periodo-campo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><input type="text" id="trafego-periodo" class="periodo-input" readonly placeholder="Todo o período"></div>
+            <input type="hidden" id="trafego-data-inicio"><input type="hidden" id="trafego-data-fim">
           </div>
           <div>
             <div style="font-size:0.68rem;color:transparent;margin-bottom:4px">.</div>
@@ -1620,15 +1622,10 @@
             <input id="logs-telegram-id" oninput="carregarLogs()" type="text" placeholder="ID do usuário"
               style="width:100%;background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
           </div>
-          <div>
-            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Inicial</div>
-            <input id="logs-data-inicio" onchange="carregarLogs()" type="date"
-              style="width:100%;background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
-          </div>
-          <div>
-            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Data Final</div>
-            <input id="logs-data-fim" onchange="carregarLogs()" type="date"
-              style="width:100%;background:#0a1316;border:1px solid #14282f;color:#d5dcdf;padding:7px 10px;border-radius:7px;font-size:0.8rem;font-family:inherit">
+          <div class="periodo-wrap" style="grid-column:span 2">
+            <div style="font-size:0.68rem;color:#5d6b70;font-weight:500;text-transform:uppercase;margin-bottom:4px">Período</div>
+            <div class="periodo-campo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><input type="text" id="logs-periodo" class="periodo-input" readonly placeholder="Todo o período"></div>
+            <input type="hidden" id="logs-data-inicio"><input type="hidden" id="logs-data-fim">
           </div>
         </div>
       </div>
@@ -2817,33 +2814,46 @@
   };
 
   // ── Stats / Resumo ──
-  // ── Período (calendário de intervalo) ──
-  let fpPeriodo = null;
-  function iniciarPeriodo() {
-    if (fpPeriodo || !window.flatpickr) return;
-    fpPeriodo = flatpickr("#stats-periodo", {
+  // ── Período (calendário de intervalo, reutilizável) ──
+  const PERIODOS = {
+    stats:   { campo: "stats-periodo",   ini: "stats-inicio",        fim: "stats-fim",
+               aoMudar: () => { onDataChangeManual(); carregarStats(); } },
+    trafego: { campo: "trafego-periodo", ini: "trafego-data-inicio", fim: "trafego-data-fim",
+               aoMudar: () => { document.querySelectorAll("#sec-trafego .preset-btn").forEach(b => b.classList.remove("ativo")); carregarTrafego(); carregarCampanhas(); } },
+    logs:    { campo: "logs-periodo",    ini: "logs-data-inicio",    fim: "logs-data-fim",   aoMudar: () => carregarLogs(), limpar: true },
+    fn:      { campo: "fn-periodo",      ini: "fn-inicio",           fim: "fn-fim",          aoMudar: () => carregarFunil() },
+  };
+  const _fp = {};
+  function iniciarPeriodo(chave) {
+    const cfg = PERIODOS[chave];
+    if (_fp[chave] || !window.flatpickr || !document.getElementById(cfg.campo)) return _fp[chave];
+    _fp[chave] = flatpickr("#" + cfg.campo, {
       mode: "range", locale: (flatpickr.l10ns && flatpickr.l10ns.pt) || "default",
-      dateFormat: "d/m/Y", disableMobile: true, maxDate: new Date(new Date().getFullYear() + 1, 11, 31),
+      dateFormat: "d/m/Y", disableMobile: true, monthSelectorType: "static",
       onClose(sel) {
         if (!sel.length) return;
-        const ini = sel[0], fim = sel[1] || sel[0];
-        document.getElementById("stats-inicio").value = fmtData(ini);
-        document.getElementById("stats-fim").value = fmtData(fim);
-        onDataChangeManual();
-        carregarStats();
+        document.getElementById(cfg.ini).value = fmtData(sel[0]);
+        document.getElementById(cfg.fim).value = fmtData(sel[1] || sel[0]);
+        sincronizarPeriodo(chave);
+        cfg.aoMudar();
       },
     });
+    return _fp[chave];
   }
-  function sincronizarPeriodo() {
-    iniciarPeriodo();
-    const ini = document.getElementById("stats-inicio").value, fim = document.getElementById("stats-fim").value;
-    const campo = document.getElementById("stats-periodo");
-    if (!ini && !fim) { if (fpPeriodo) fpPeriodo.clear(false); campo.value = ""; return; }
+  function sincronizarPeriodo(chave = "stats") {
+    const cfg = PERIODOS[chave];
+    const fp = iniciarPeriodo(chave);
+    const campo = document.getElementById(cfg.campo);
+    if (!campo) return;
+    const ini = document.getElementById(cfg.ini).value, fim = document.getElementById(cfg.fim).value;
+    if (!ini && !fim) { if (fp) fp.clear(false); campo.value = ""; return; }
     const d = (v) => { const [y, m, dd] = v.split("-").map(Number); return new Date(y, m - 1, dd); };
     const datas = [d(ini || fim), d(fim || ini)];
-    if (fpPeriodo) fpPeriodo.setDate(datas, false);
+    if (fp) fp.setDate(datas, false);
     const f = (x) => String(x.getDate()).padStart(2, "0") + "/" + String(x.getMonth() + 1).padStart(2, "0");
-    campo.value = (ini === fim) ? f(datas[0]) + "/" + datas[0].getFullYear() : f(datas[0]) + " – " + f(datas[1]) + "/" + datas[1].getFullYear();
+    campo.value = (datas[0].getTime() === datas[1].getTime())
+      ? f(datas[0]) + "/" + datas[0].getFullYear()
+      : f(datas[0]) + " – " + f(datas[1]) + "/" + datas[1].getFullYear();
   }
 
   async function carregarStats() {
@@ -5761,11 +5771,13 @@
     }
     document.getElementById("trafego-data-inicio").value = fmtData(inicio);
     document.getElementById("trafego-data-fim").value = fmtData(fim);
+    sincronizarPeriodo("trafego");
     await carregarCampanhas();
     carregarTrafego();
   }
 
   async function carregarTrafego() {
+    sincronizarPeriodo("trafego");
     const conta = document.getElementById("trafego-conta").value;
     const di = document.getElementById("trafego-data-inicio").value;
     const df = document.getElementById("trafego-data-fim").value;
@@ -6284,6 +6296,7 @@
   }
 
   async function carregarLogs() {
+    sincronizarPeriodo("logs");
     const params = new URLSearchParams();
     params.set("direcao", logsDirecaoAtual);
     const status = document.getElementById("logs-status").value; if (status) params.set("status", status);
@@ -6839,6 +6852,7 @@
       const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
       ini.value = iso(semana); fim.value = iso(hoje);
     }
+    sincronizarPeriodo("fn");
     const p = new URLSearchParams({ data_inicio: ini.value, data_fim: fim.value });
     for (const [id, k] of [["fn-lang", "lang"], ["fn-device", "device"], ["fn-campanha", "utm_campaign"]]) {
       const v = document.getElementById(id).value; if (v) p.set(k, v);
