@@ -900,6 +900,30 @@ async def metaads_callback(request: Request, code: str = None, error: str = None
     return RedirectResponse(url="/static/dashboard.html?metaads_ok=1")
 
 
+@app.post("/config/metaads/token")
+async def salvar_metaads_token(request: Request):
+    """Recebe um token colado (ex.: Usuário do Sistema, sem expiração), valida e busca as contas."""
+    data = await request.json()
+    token = (data.get("token") or "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Cole o token de acesso")
+    async with httpx.AsyncClient(timeout=20) as client:
+        me = (await client.get("https://graph.facebook.com/v19.0/me",
+                               params={"access_token": token, "fields": "id,name"})).json()
+        if "error" in me:
+            raise HTTPException(status_code=400, detail="Token inválido: " + me["error"].get("message", "")[:200])
+        r = (await client.get("https://graph.facebook.com/v19.0/me/adaccounts",
+                              params={"access_token": token, "fields": "id,name,account_status,currency,business_name"})).json()
+        if "error" in r:
+            raise HTTPException(status_code=400, detail="Sem acesso às contas de anúncio: " + r["error"].get("message", "")[:200])
+        contas = r.get("data", []) or []
+    if not contas:
+        raise HTTPException(status_code=400, detail="Token válido, mas nenhuma conta de anúncio está atribuída a ele")
+    _set_cfg("metaads_access_token", token)
+    _set_cfg("metaads_contas", json.dumps(contas, ensure_ascii=False))
+    return {"status": "ok", "nome": me.get("name"), "contas": contas}
+
+
 @app.delete("/config/metaads")
 def desconectar_metaads():
     try:

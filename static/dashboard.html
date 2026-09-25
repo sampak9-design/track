@@ -2017,6 +2017,17 @@
             </div>
           </div>
 
+          <!-- Token permanente (Usuário do Sistema) -->
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #14282f">
+            <div class="webhook-label-row">Ou cole um token de acesso (Usuário do Sistema — não expira)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="metaads-token" type="password" placeholder="EAA..." autocomplete="off"
+                style="flex:1;min-width:220px;background:#060a0b;border:1px solid #14282f;color:#fcfcfc;padding:9px 12px;border-radius:12px;font-size:0.82rem;font-family:inherit;outline:none">
+              <button onclick="salvarMetaAdsToken()" id="btn-metaads-token"
+                style="background:#56d7fd;color:#031a20;border:none;padding:9px 18px;border-radius:12px;cursor:pointer;font-size:0.82rem;font-family:inherit;font-weight:600;box-shadow:0 0 18px rgba(86,215,253,.22)">Salvar token</button>
+            </div>
+            <div id="metaads-token-msg" style="font-size:0.76rem;margin-top:8px;display:none"></div>
+          </div>
           <!-- Lista de contas conectadas -->
           <div id="metaads-contas-wrap" style="display:none;margin-top:18px">
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d2818;border:1px solid #1f6e3a;border-radius:8px;margin-bottom:12px">
@@ -3885,6 +3896,28 @@
       msg.textContent = "✗ " + (e.message || "Erro"); msg.style.color = "#ef4444"; msg.style.display = "inline";
     }
     btn.textContent = "Salvar credenciais"; btn.style.opacity = "1";
+  }
+
+  async function salvarMetaAdsToken() {
+    const inp = document.getElementById("metaads-token");
+    const btn = document.getElementById("btn-metaads-token");
+    const msg = document.getElementById("metaads-token-msg");
+    const token = inp.value.trim();
+    msg.style.display = "block";
+    if (!token) { msg.style.color = "#f59e0b"; msg.textContent = "⚠ Cole o token primeiro"; return; }
+    btn.textContent = "Validando..."; btn.disabled = true;
+    try {
+      const r = await fetch("/config/metaads/token", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ token }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.detail || ("Erro " + r.status));
+      inp.value = "";
+      msg.style.color = "#22c55e";
+      msg.textContent = "✓ Conectado como " + (d.nome || "usuário") + " — " + d.contas.length + " conta(s) de anúncio";
+      renderMetaAdsContas(d.contas);
+    } catch (e) {
+      msg.style.color = "#ef4444"; msg.textContent = "✗ " + e.message;
+    }
+    btn.textContent = "Salvar token"; btn.disabled = false;
   }
 
   function conectarFacebook() {
