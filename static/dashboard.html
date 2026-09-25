@@ -540,6 +540,19 @@
       .fn-atualizar svg { width:18px; height:18px; }
     }
 
+    /* ─── Caixas não estouram a tela; tabelas rolam por dentro ─── */
+    .grid-2 > *, .grid-3 > *, .grid-60-40 > *, .cards-grid > *, .panel { min-width:0; }
+    .tabela-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+    .tabela-wrap table { min-width:max-content; }
+    .tabela-wrap th, .tabela-wrap td { white-space:nowrap; }
+    .tabela-wrap::-webkit-scrollbar { height:4px; }
+    @media (max-width: 900px) {
+      .panel-header { flex-wrap:wrap; gap:8px; }
+      .fn-heat-wrap { flex-direction:column; }
+      .fn-heat-wrap > div { width:100%; min-width:0 !important; }
+      .fn-heat { align-self:center; }
+    }
+
     /* ─── Ajustes de celular ─── */
     @media (max-width: 900px) {
       .content { padding:16px 14px 40px; }
